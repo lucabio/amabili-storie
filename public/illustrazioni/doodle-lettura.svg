@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <g fill="none" stroke="#DCB88E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".65">
+    <circle cx="92" cy="118" r="14"></circle>
+    <path d="M86 122 q6 5 12 0"></path>
+    <circle cx="87" cy="114" r="1" fill="#DCB88E"></circle>
+    <circle cx="97" cy="114" r="1" fill="#DCB88E"></circle>
+    <path d="M80 108 q12 -12 24 0"></path>
+    <path d="M92 132 v30"></path>
+    <path d="M92 162 h30 v20"></path>
+    <path d="M92 162 v20"></path>
+    <circle cx="140" cy="134" r="10"></circle>
+    <path d="M136 137 q4 4 8 0"></path>
+    <circle cx="136" cy="131" r="1" fill="#DCB88E"></circle>
+    <circle cx="144" cy="131" r="1" fill="#DCB88E"></circle>
+    <path d="M140 144 v18"></path>
+    <path d="M96 150 q13 -7 25 -1 q13 -7 25 -1"></path>
+    <path d="M121 149 v10"></path>
+    <path d="M96 150 l1 10 q12 -6 24 0 q12 -6 24 0 l1 -10"></path>
+    <path d="M196 60 a16 16 0 1 0 12 27 a12 12 0 1 1 -12 -27 z"></path>
+    <path d="M166 92 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 z"></path>
+    <circle cx="212" cy="104" r="2" fill="#DCB88E"></circle>
+  </g>
+</svg>

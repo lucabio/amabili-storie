@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Amabili Storie
 
-## Getting Started
+Libri illustrati personalizzati che aiutano un bambino a superare un capriccio.
+Next.js 16 (App Router, JavaScript) + Supabase + Vercel AI Gateway. Deploy su Vercel.
 
-First, run the development server:
+## Avvio rapido
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Apri <http://localhost:3000>. **Funziona senza configurare niente**: senza Supabase vedi
+il brand di default, e senza chiave AI le storie escono da template scritti a mano. Serve
+a sviluppare l'interfaccia senza dipendere da servizi esterni.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Configurazione completa
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.example .env.local
+```
 
-## Learn More
+### Supabase
 
-To learn more about Next.js, take a look at the following resources:
+1. Crea il progetto su [supabase.com](https://supabase.com).
+2. SQL Editor → esegui `supabase/migrations/0001_init.sql`.
+3. Facoltativo, per avere un merchant di esempio: esegui anche `supabase/seed.sql`.
+4. Project Settings → API: copia URL, chiave `anon` e chiave `service_role` in `.env.local`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Diventare amministratore
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Il backoffice non si apre a chiunque si registri: bisogna essere elencati in
+`amministratori`. Crea l'utente da Supabase (Authentication → Add user), poi:
 
-## Deploy on Vercel
+```sql
+insert into public.amministratori (utente_id, email)
+select id, email from auth.users where email = 'tua@email.it';
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Poi entra da `/admin`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Generazione con AI
+
+Metti `AI_GATEWAY_API_KEY` (Vercel → AI Gateway → API keys) in `.env.local`. Su Vercel
+non serve: il Gateway si autentica da solo via OIDC.
+
+## Come funziona il multi-brand
+
+Un ente — un hotel, per dire — ha la sua versione del portale:
+
+```
+/?version=famiglia_serena
+```
+
+Il brand definisce colori, testi dell'hero, capricci offerti, listino sì/no e — la parte
+che conta davvero — il **prompt guida**: il filo comune che ogni storia di quell'ente
+deve seguire (il soggiorno in hotel, la colazione, il cane della struttura…). Si
+configura tutto da `/admin`, senza toccare il codice.
+
+## Ambienti
+
+| Branch | URL |
+|---|---|
+| `main` | amabilistorie.com |
+| `dev` | dev.amabilistorie.com |
+
+La grafica di riferimento sta nel repo `amabili-storie-demo` (demo.amabilistorie.com).
