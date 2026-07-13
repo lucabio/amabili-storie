@@ -10,7 +10,7 @@ export default function AnteprimaStoria({ storia, nome, mostraPrezzi }) {
   const emailValida = /.+@.+\..+/.test(email);
 
   return (
-    <section className="relative overflow-hidden bg-scuro px-4 py-[clamp(48px,6vw,80px)]">
+    <section className="relative flex min-h-svh snap-start flex-col justify-center overflow-hidden bg-scuro px-4 py-[clamp(48px,6vw,80px)]">
       <div
         className="pointer-events-none absolute -top-40 -right-25 h-100 w-100 rounded-full bg-accento/15"
         aria-hidden="true"

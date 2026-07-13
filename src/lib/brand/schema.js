@@ -17,13 +17,16 @@ export const brandSchema = z.object({
   nome: z.string().min(1),
   attivo: z.boolean().default(true),
 
+  // prefault, non default: in Zod 4 `.default()` corto-circuita e restituisce il
+  // valore così com'è, senza applicare i default dei campi interni. `{}` resterebbe
+  // `{}`. `.prefault()` lo fa invece passare per lo schema, che è ciò che serve qui.
   tema: z
     .object({
       accento: hexColor.default("#e96d4f"),
       accentoSoft: hexColor.default("#f6b27c"),
       scuro: hexColor.default("#43302a"),
     })
-    .default({}),
+    .prefault({}),
 
   logoUrl: z.url().nullable().default(null),
 
@@ -39,7 +42,7 @@ export const brandSchema = z.object({
         ),
       cta: z.string().default("Crea la storia gratis"),
     })
-    .default({}),
+    .prefault({}),
 
   /** Il filo comune delle storie dell'ente. Va dritto nel system prompt. */
   promptGuida: z.string().nullable().default(null),

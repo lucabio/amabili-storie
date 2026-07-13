@@ -1,10 +1,7 @@
 @import "tailwindcss";
 
-/*
- * Design tokens. I tre colori del brand sono sovrascrivibili a runtime: il
- * layout stampa le custom property --brand-* sul wrapper di pagina, quindi una
- * versione white-label (es. Hotel Famiglia Serena) deve fornire solo quelle.
- */
+/* Design tokens. I tre colori dell'accento sono i default di Amabili Storie:
+ * un brand white-label li sovrascrive a runtime, vedi `.tema-brand` più sotto. */
 @theme {
   --color-crema: #fff8f0;
   --color-crema-chiara: #fffdf8;
@@ -17,15 +14,42 @@
   --color-inchiostro-lieve: #c4ab9d;
   --color-pergamena: #e9d5c0;
 
-  --color-accento: var(--brand-accento, #e96d4f);
-  --color-accento-soft: var(--brand-accento-soft, #f6b27c);
-  --color-scuro: var(--brand-scuro, #43302a);
+  --color-accento: #e96d4f;
+  --color-accento-soft: #f6b27c;
+  --color-scuro: #43302a;
 
   --font-display: var(--font-fredoka), sans-serif;
   --font-sans: var(--font-figtree), sans-serif;
 
   --radius-card: 20px;
   --radius-pannello: 26px;
+}
+
+/*
+ * Da dove entrano i colori dell'ente. `TemaBrand` stampa --brand-* sul wrapper
+ * di pagina; qui li rimappiamo sui token che le utility Tailwind (bg-accento,
+ * text-scuro…) leggono davvero.
+ *
+ * La rimappatura deve stare SUL WRAPPER, non dentro @theme: le custom property
+ * si risolvono sull'elemento che le dichiara, e @theme dichiara su :root, dove
+ * --brand-* non esiste ancora. Lì `var(--brand-accento, …)` prenderebbe sempre
+ * il fallback, e il sottoalbero erediterebbe quel valore già risolto — cioè il
+ * tema del brand non arriverebbe mai a schermo.
+ */
+.tema-brand {
+  --color-accento: var(--brand-accento, #e96d4f);
+  --color-accento-soft: var(--brand-accento-soft, #f6b27c);
+  --color-scuro: var(--brand-scuro, #43302a);
+}
+
+/*
+ * Ogni sezione occupa una schermata e si aggancia allo scroll: una rotellina
+ * porta alla sezione dopo, non a metà strada. Le sezioni dichiarano
+ * `min-h-svh snap-start`, il piede `snap-end`.
+ */
+html {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -78,6 +102,24 @@ textarea::placeholder {
   }
 }
 
+/*
+ * La scia di lettere dell'hero: sboccia, sale di poco e svanisce, tutto
+ * dentro l'animazione. Chi la usa passa la rotazione in --rot.
+ */
+@keyframes letterInk {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6) rotate(var(--rot));
+  }
+  18% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -62%) scale(1.15) rotate(var(--rot));
+  }
+}
+
 @utility anim-rise {
   animation: rise 0.8s ease both;
 }
@@ -88,6 +130,10 @@ textarea::placeholder {
 
 @utility anim-pop {
   animation: popIn 0.35s ease both;
+}
+
+@utility anim-lettera {
+  animation: letterInk 1.6s ease-out forwards;
 }
 
 @utility anim-spinny {
@@ -119,6 +165,10 @@ textarea::placeholder {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   *::before,
   *::after {

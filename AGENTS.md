@@ -30,6 +30,10 @@ il prodotto venduto.
 - **Zod per i tipi a runtime.** Dove in TS ci sarebbe un `type`, qui c'è uno schema Zod
   validato ai confini: API route, Server Action, risposta del modello. Vedi
   `src/lib/storia/schema.js` e `src/lib/brand/schema.js`.
+  - **Zod 4, non 3**: `.default()` corto-circuita, cioè restituisce il valore così com'è
+    senza farlo passare per lo schema. Su un oggetto, `.default({})` resta `{}` e i
+    default dei campi interni non vengono mai applicati. Quando il default va validato
+    (praticamente sempre, per gli oggetti) usa **`.prefault()`**.
 - **Nomi in italiano** per il dominio (`capriccio`, `storia`, `genera`, `risolviBrand`).
   Il dominio è italiano, il codice lo segue.
 - **Next.js 16**, non 14. Le differenze che contano:

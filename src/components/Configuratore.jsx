@@ -122,7 +122,7 @@ export default function Configuratore({ brand, capricci }) {
     <>
       <section
         id="configuratore"
-        className="flex scroll-mt-6 flex-col justify-center bg-sabbia bg-[url('/illustrazioni/doodle-cielo.svg')] bg-[length:min(180px,22vw)] bg-[right_4%_top_10%] bg-no-repeat px-4 py-[clamp(32px,4vw,56px)]"
+        className="flex min-h-svh snap-start flex-col justify-center bg-sabbia bg-[url('/illustrazioni/doodle-cielo.svg')] bg-[length:min(180px,22vw)] bg-[right_4%_top_10%] bg-no-repeat px-4 py-[clamp(32px,4vw,56px)]"
       >
         <div className="mx-auto w-full max-w-[920px] rounded-pannello border border-bordo bg-white p-[clamp(24px,4.5vw,44px)] shadow-[0_24px_60px_-20px_rgba(67,48,42,0.14)]">
           <h2 className="text-center font-display text-[clamp(1.5rem,3vw,1.9rem)] font-semibold">
@@ -413,7 +413,7 @@ export default function Configuratore({ brand, capricci }) {
       </section>
 
       {storia && (
-        <div id="anteprima" className="scroll-mt-6">
+        <div id="anteprima">
           <AnteprimaStoria
             storia={storia}
             nome={nomePulito}

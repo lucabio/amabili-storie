@@ -2,6 +2,9 @@
  * Inietta i colori del brand come custom property CSS. Tutto il resto del sito
  * usa le utility Tailwind (bg-accento, text-scuro…), che leggono da qui: una
  * versione white-label si ottiene cambiando tre esadecimali nel backoffice.
+ *
+ * La classe `tema-brand` non è decorativa: è lei che rimappa --brand-* sui token
+ * del tema. Senza, i colori dell'ente non arrivano a schermo (vedi globals.css).
  */
 export default function TemaBrand({ brand, children }) {
   const stile = {
@@ -11,7 +14,7 @@ export default function TemaBrand({ brand, children }) {
   };
 
   return (
-    <div style={stile} className="bg-crema text-inchiostro">
+    <div style={stile} className="tema-brand bg-crema text-inchiostro">
       {children}
     </div>
   );

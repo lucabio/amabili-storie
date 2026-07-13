@@ -1,6 +1,6 @@
 export default function Prezzi() {
   return (
-    <section className="flex flex-col justify-center bg-crema bg-[url('/illustrazioni/doodle-passeggiata.svg')] bg-[length:min(130px,13vw)] bg-[left_2%_bottom_4%] bg-no-repeat px-6 py-[clamp(40px,5vw,64px)]">
+    <section className="flex min-h-svh snap-start flex-col justify-center bg-crema bg-[url('/illustrazioni/doodle-passeggiata.svg')] bg-[length:min(130px,13vw)] bg-[left_2%_bottom_4%] bg-no-repeat px-6 py-[clamp(40px,5vw,64px)]">
       <div className="mx-auto w-full max-w-[1080px]">
         <h2 className="mb-10 text-center font-display text-[clamp(1.7rem,3.4vw,2.2rem)] font-semibold">
           Semplice e trasparente

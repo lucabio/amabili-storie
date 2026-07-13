@@ -62,21 +62,19 @@ export default function Hero({ brand }) {
   return (
     <header
       onMouseMove={alMovimento}
-      className="relative flex min-h-[calc(100svh-38px)] flex-col justify-center overflow-hidden bg-[url('/illustrazioni/doodle-cielo.svg')] bg-[length:min(190px,22vw)] bg-[center_bottom_3%] bg-no-repeat"
+      className="relative flex min-h-svh snap-start flex-col justify-center overflow-hidden bg-[url('/illustrazioni/doodle-cielo.svg')] bg-[length:min(190px,22vw)] bg-[center_bottom_3%] bg-no-repeat"
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         {lettere.map((lettera) => (
           <span
             key={lettera.id}
-            className="absolute font-display font-semibold select-none"
+            className="anim-lettera absolute font-display font-semibold opacity-0 select-none"
             style={{
               left: lettera.x,
               top: lettera.y,
               fontSize: lettera.dimensione,
               color: lettera.chiara ? "var(--color-accento-soft)" : "var(--color-accento)",
-              transform: `translate(-50%, -50%) rotate(${lettera.rotazione})`,
-              animation: "popIn .35s ease both",
-              opacity: 0.55,
+              "--rot": lettera.rotazione,
             }}
           >
             {lettera.carattere}

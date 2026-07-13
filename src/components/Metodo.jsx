@@ -21,7 +21,7 @@ const PILASTRI = [
 
 export default function Metodo() {
   return (
-    <section className="flex flex-col justify-center bg-crema-scura bg-[url('/illustrazioni/doodle-lettura.svg')] bg-[length:min(135px,14vw)] bg-[right_2%_top_5%] bg-no-repeat px-4 py-[clamp(40px,5vw,64px)]">
+    <section className="flex min-h-svh snap-start flex-col justify-center bg-crema-scura bg-[url('/illustrazioni/doodle-lettura.svg')] bg-[length:min(135px,14vw)] bg-[right_2%_top_5%] bg-no-repeat px-4 py-[clamp(40px,5vw,64px)]">
       <div className="mx-auto max-w-[1080px]">
         <h2 className="text-center font-display text-[clamp(1.7rem,3.4vw,2.2rem)] font-semibold">
           Non un regalo. Uno strumento.

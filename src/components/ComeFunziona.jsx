@@ -24,7 +24,7 @@ const PASSI = [
 
 export default function ComeFunziona() {
   return (
-    <section className="flex flex-col justify-center bg-crema-chiara bg-[url('/illustrazioni/doodle-passeggiata.svg')] bg-[length:min(190px,24vw)] bg-[right_5%_bottom_8%] bg-no-repeat px-6 py-[clamp(40px,5vw,64px)]">
+    <section className="flex min-h-svh snap-start flex-col justify-center bg-crema-chiara bg-[url('/illustrazioni/doodle-passeggiata.svg')] bg-[length:min(190px,24vw)] bg-[right_5%_bottom_8%] bg-no-repeat px-6 py-[clamp(40px,5vw,64px)]">
       <div className="mx-auto w-full max-w-[1080px]">
         <h2 className="text-center font-display text-[clamp(1.7rem,3.4vw,2.2rem)] font-semibold">
           Come funziona
