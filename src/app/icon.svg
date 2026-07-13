@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!--
+    La favicon: la notte stellata della copertina, ridotta all'osso.
+    A 16px sopravvive solo ciò che è grande e contrastato — luna e una stella.
+    Niente contorni scuri come nelle illustrazioni: a questa scala impastano.
+  -->
+  <rect width="32" height="32" rx="8" fill="#E96D4F" />
+  <path
+    d="M22.5 19.8a8 8 0 1 1-8.3-11.6 6.6 6.6 0 0 0 8.3 11.6Z"
+    fill="#FFF8F0"
+  />
+  <path
+    d="M23.8 7.2l1.05 2.55 2.55 1.05-2.55 1.05-1.05 2.55-1.05-2.55L20.2 10.8l2.55-1.05Z"
+    fill="#FFF8F0"
+  />
+</svg>
