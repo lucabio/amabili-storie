@@ -42,3 +42,10 @@ next-env.d.ts
 
 # Playwright MCP
 .playwright-mcp/
+
+# supabase — stato locale del link al progetto, non va condiviso
+supabase/.temp/
+
+# claude code
+.claude/settings.local.json
+.claude/worktrees/
