@@ -1,0 +1,181 @@
+<!--
+  Mail di accesso al backoffice: codice a 6 cifre, con magic link di riserva.
+
+  Non è un file che l'app legge: va incollato a mano in Supabase → Authentication
+  → Emails → "Magic Link" (è il template che `signInWithOtp` usa per un utente che
+  esiste già). Sta nel repo perché il copy e i colori sono roba nostra, e senza
+  una copia versionata l'unico posto dove esisterebbe sarebbe una textarea nella
+  dashboard.
+
+  I due segnaposto sono di Supabase (sintassi Go):
+    {{ .Token }}            il codice a 6 cifre
+    {{ .ConfirmationURL }}  il link che porta a /auth/callback
+
+  Se togli {{ .Token }} il codice non arriva, e il login non funziona: la pagina
+  di login chiede quello. Il link da solo non basta.
+
+  HTML da client di posta: tabelle, stili inline, niente flexbox e niente font
+  remoti. Brutto da leggere, ma è l'unico che Outlook e Gmail rendono uguale.
+-->
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Il tuo codice di accesso</title>
+  </head>
+  <body
+    style="margin: 0; padding: 0; background-color: #fff8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased"
+  >
+    <!-- Anteprima nella lista dei messaggi: il codice si legge senza aprire. -->
+    <div
+      style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent"
+    >
+      Il tuo codice è {{ .Token }} — vale un'ora.
+    </div>
+
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #fff8f0"
+    >
+      <tr>
+        <td align="center" style="padding: 40px 16px">
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="max-width: 520px"
+          >
+            <!-- Testatina -->
+            <tr>
+              <td align="center" style="padding-bottom: 24px">
+                <span
+                  style="font-size: 12px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #e96d4f"
+                >
+                  Amabili Storie
+                </span>
+              </td>
+            </tr>
+
+            <!-- Riquadro -->
+            <tr>
+              <td
+                style="background-color: #ffffff; border: 1px solid #f3e3d3; border-radius: 20px; padding: 40px 32px"
+              >
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center">
+                      <h1
+                        style="margin: 0; font-size: 24px; line-height: 1.25; font-weight: 700; color: #43302a"
+                      >
+                        Il tuo codice di accesso
+                      </h1>
+                      <p
+                        style="margin: 12px 0 0; font-size: 15px; line-height: 1.6; font-weight: 500; color: #8c7268"
+                      >
+                        Digitalo nella pagina di accesso al backoffice.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Il codice -->
+                  <tr>
+                    <td align="center" style="padding: 28px 0 8px">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td
+                            align="center"
+                            style="background-color: #fff8f0; border: 1px solid #f3e3d3; border-radius: 14px; padding: 20px 28px"
+                          >
+                            <span
+                              style="font-family: 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace; font-size: 34px; font-weight: 700; letter-spacing: 0.24em; color: #43302a; text-indent: 0.24em; display: inline-block"
+                            >
+                              {{ .Token }}
+                            </span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td align="center" style="padding-bottom: 28px">
+                      <p style="margin: 0; font-size: 13px; font-weight: 600; color: #b08f7e">
+                        Vale un'ora, e una volta sola.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Separatore -->
+                  <tr>
+                    <td>
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <!-- Il 50% sulle celle laterali non è pignoleria: senza,
+                             collassano sul contenuto e le due lineette spariscono. -->
+                        <tr>
+                          <td width="50%" style="border-top: 1px solid #f3e3d3; font-size: 0; line-height: 0">&nbsp;</td>
+                          <td
+                            align="center"
+                            style="padding: 0 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #c4ab9d; white-space: nowrap"
+                          >
+                            oppure
+                          </td>
+                          <td width="50%" style="border-top: 1px solid #f3e3d3; font-size: 0; line-height: 0">&nbsp;</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Magic link -->
+                  <tr>
+                    <td align="center" style="padding-top: 28px">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td
+                            align="center"
+                            style="background-color: #e96d4f; border-radius: 9999px"
+                          >
+                            <a
+                              href="{{ .ConfirmationURL }}"
+                              style="display: inline-block; padding: 15px 32px; font-size: 15px; font-weight: 700; color: #fff8f0; text-decoration: none"
+                            >
+                              Entra con un clic
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                      <p
+                        style="margin: 14px 0 0; font-size: 13px; line-height: 1.6; font-weight: 500; color: #b08f7e"
+                      >
+                        Il link funziona solo nel browser da cui hai chiesto il codice.
+                        Se hai aperto la mail altrove, usa le sei cifre qui sopra.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Piede -->
+            <tr>
+              <td align="center" style="padding-top: 24px">
+                <p style="margin: 0; font-size: 13px; line-height: 1.6; font-weight: 500; color: #b08f7e">
+                  Se non hai chiesto tu di entrare, ignora questa mail:
+                  <br />
+                  senza il codice non entra nessuno.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
