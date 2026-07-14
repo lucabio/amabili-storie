@@ -22,11 +22,13 @@ export async function generaLibro(ordineId) {
   "use workflow";
 
   const { ordine, brand } = await caricaOrdine(ordineId);
-  const storiaId = await creaStoriaInGenerazione(ordine, brand);
+  const storiaId = await creaStoriaInGenerazione(ordine);
 
-  await avvisaCheStaNascendo(ordine, brand);
-
+  // Da qui in poi la riga "storie" esiste in stato in_generazione: qualunque cosa
+  // vada storto deve portarla in "fallita", altrimenti resta un fantasma bloccato
+  // per sempre (nessun errore, invisibile sia a "da rivedere" sia a "fallite").
   try {
+    await avvisaCheStaNascendo(ordine, brand);
     const contenuto = await scriviTesto(ordine, brand);
     await depositaInCoda(storiaId, contenuto);
     return { storiaId, stato: "in_revisione" };
@@ -65,7 +67,7 @@ async function caricaOrdine(ordineId) {
   return { ordine, brand };
 }
 
-async function creaStoriaInGenerazione(ordine, brand) {
+async function creaStoriaInGenerazione(ordine) {
   "use step";
 
   const db = creaClientAdmin();
@@ -138,9 +140,17 @@ async function depositaInCoda(storiaId, contenuto) {
 async function segnaFallita(storiaId, messaggio) {
   "use step";
 
-  const db = creaClientAdmin();
-  await db
-    .from("storie")
-    .update({ stato: "fallita", errore: messaggio })
-    .eq("id", storiaId);
+  // Questo step è già dentro il catch del workflow: il suo unico compito è
+  // scrivere l'errore vero, mai sostituirlo. Se anche l'update fallisce (DB giù,
+  // rete...) lo si inghiotte qui, così il chiamante rilancia sempre "problema"
+  // — il motivo originale del fallimento — invece dell'errore secondario.
+  try {
+    const db = creaClientAdmin();
+    await db
+      .from("storie")
+      .update({ stato: "fallita", errore: messaggio })
+      .eq("id", storiaId);
+  } catch {
+    // Volutamente ignorato: vedi commento sopra.
+  }
 }
