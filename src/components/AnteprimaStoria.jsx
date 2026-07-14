@@ -1,8 +1,10 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { acquista } from "@/app/checkout/azioni";
+import { salvaLead } from "@/lib/lead/azioni";
 import { formattaPrezzo, LISTINO } from "@/lib/ordini/schema";
 
 const OPZIONI_FORMATO = [
@@ -28,6 +30,15 @@ export default function AnteprimaStoria({ storia, nome, brand, parametri, format
 
   const emailValida = /.+@.+\..+/.test(email);
 
+  // Non c'è più, in questo form, una casella separata per "lascia la mail":
+  // da quando l'acquisto è vero, l'unico momento in cui un genitore lascia
+  // la mail è questo. Se comprare non riesce, quella mail non deve andare
+  // persa: la salviamo come lead, senza toccare l'errore già mostrato
+  // all'utente (il fallimento del lead non è un suo problema).
+  function salvaComeLead() {
+    salvaLead({ email, brand: parametri.brand }).catch(() => {});
+  }
+
   function compra(evento) {
     evento.preventDefault();
     if (!emailValida || inCorso) return;
@@ -43,10 +54,22 @@ export default function AnteprimaStoria({ storia, nome, brand, parametri, format
           formato: brand.accettaPagamenti ? formato : "ebook",
           parametri,
         });
-        if (risposta?.errore) setErrore(risposta.errore);
-        else setComprato(true);
+        if (risposta?.errore) {
+          setErrore(risposta.errore);
+          salvaComeLead();
+        } else {
+          setComprato(true);
+        }
       } catch (problema) {
+        // acquista() chiama redirect() al successo, e Next lo implementa
+        // lanciando un errore interno che deve arrivare al router — non è un
+        // fallimento dell'acquisto, è la sua riuscita. Senza questo rilancio
+        // finiremmo nel ramo "errore" (mostrando un messaggio inutile, per
+        // un istante, prima della navigazione) e — peggio — registreremmo
+        // come lead una mail che ha appena comprato con successo.
+        unstable_rethrow(problema);
         setErrore(problema?.message ?? "Non siamo riusciti a registrare l'ordine. Riprova.");
+        salvaComeLead();
       }
     });
   }
