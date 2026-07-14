@@ -54,6 +54,13 @@ export const brandSchema = z.object({
 
   /** Un ente che regala le storie agli ospiti non mostra il listino. */
   mostraPrezzi: z.boolean().default(true),
+
+  /**
+   * false = l'ente regala le storie: niente checkout, niente prezzi, l'ordine
+   * nasce comunque a prezzo zero. Diverso da `mostraPrezzi`, che nasconde solo
+   * il listino in vetrina ma lascia un checkout a pagamento.
+   */
+  accettaPagamenti: z.boolean().default(true),
 });
 
 /** Il brand di default: amabilistorie.com senza `?version=`. */
@@ -81,6 +88,7 @@ export function brandDaRiga(riga) {
     promptGuida: riga.prompt_guida ?? null,
     capricci: riga.capricci ?? null,
     mostraPrezzi: riga.mostra_prezzi,
+    accettaPagamenti: riga.accetta_pagamenti,
   });
 
   if (!risultato.success) {

@@ -40,6 +40,7 @@ export default async function ModificaMerchant({ params }) {
     promptGuida: riga.prompt_guida ?? "",
     capricci: riga.capricci,
     mostraPrezzi: riga.mostra_prezzi,
+    accettaPagamenti: riga.accetta_pagamenti,
   };
 
   return <ModuloBrand brand={brand} />;

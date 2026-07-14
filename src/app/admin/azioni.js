@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { utenteAmministratore } from "@/lib/admin/sessione";
+import { BRAND_DEFAULT } from "@/lib/brand/schema";
 import { CAPRICCIO_IDS } from "@/lib/domain/capricci";
 import { creaClientServer } from "@/lib/supabase/server";
 
@@ -38,6 +39,7 @@ const moduloBrandSchema = z.object({
   /** Vuoto = tutti i capricci. */
   capricci: z.array(z.enum(CAPRICCIO_IDS)).nullable(),
   mostraPrezzi: z.boolean(),
+  accettaPagamenti: z.boolean(),
 });
 
 function testo(formData, campo) {
@@ -72,6 +74,7 @@ export async function salvaBrand(_statoPrecedente, formData) {
     promptGuida: testo(formData, "promptGuida") || null,
     capricci: capricciScelti.length > 0 ? capricciScelti : null,
     mostraPrezzi: formData.get("mostraPrezzi") === "on",
+    accettaPagamenti: formData.get("accettaPagamenti") === "on",
   });
 
   if (!esito.success) {
@@ -79,19 +82,36 @@ export async function salvaBrand(_statoPrecedente, formData) {
   }
 
   const dati = esito.data;
+  const supabase = await creaClientServer();
+
+  // Il sito principale non si disattiva mai dal backoffice: è la home. La
+  // Server Action è un endpoint raggiungibile direttamente (un bottone
+  // nascosto in UI non basta), quindi il controllo va rifatto qui, guardando
+  // lo slug che sta davvero su Supabase — non quello dichiarato dal form, che
+  // potrebbe essere stato manomesso.
+  let sitoPrincipale = false;
+  if (dati.id) {
+    const { data: rigaEsistente } = await supabase
+      .from("brands")
+      .select("slug")
+      .eq("id", dati.id)
+      .maybeSingle();
+    sitoPrincipale = rigaEsistente?.slug === BRAND_DEFAULT.slug;
+  }
+
   const riga = {
     slug: dati.slug,
     nome: dati.nome,
-    attivo: dati.attivo,
+    attivo: sitoPrincipale ? true : dati.attivo,
     tema: dati.tema,
     logo_url: dati.logoUrl || null,
     hero: dati.hero,
     prompt_guida: dati.promptGuida,
     capricci: dati.capricci,
     mostra_prezzi: dati.mostraPrezzi,
+    accetta_pagamenti: dati.accettaPagamenti,
   };
 
-  const supabase = await creaClientServer();
   const { error } = dati.id
     ? await supabase.from("brands").update(riga).eq("id", dati.id)
     : await supabase.from("brands").insert(riga);
@@ -117,6 +137,15 @@ export async function eliminaBrand(formData) {
   if (!id) return;
 
   const supabase = await creaClientServer();
+
+  // Stesso discorso di salvaBrand: il sito principale non si elimina, e il
+  // controllo va fatto sullo slug che sta su Supabase, non su quanto arriva
+  // dal client.
+  const { data: riga } = await supabase.from("brands").select("slug").eq("id", id).maybeSingle();
+  if (riga?.slug === BRAND_DEFAULT.slug) {
+    redirect("/admin");
+  }
+
   await supabase.from("brands").delete().eq("id", id);
 
   revalidatePath("/admin");

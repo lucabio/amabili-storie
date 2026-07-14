@@ -49,7 +49,14 @@ export default function ModuloBrand({ brand }) {
     promptGuida: "",
     capricci: null,
     mostraPrezzi: true,
+    accettaPagamenti: true,
   };
+
+  // Il sito principale (amabilistorie.com senza ?version=) è la home: non si
+  // disattiva né si elimina dal backoffice. La regola vera vive nel server
+  // (azioni.js la applica comunque); qui è solo UX per non far cliccare a
+  // vuoto.
+  const principale = valori.slug === BRAND_DEFAULT.slug;
 
   return (
     <form action={azione} className="grid gap-6">
@@ -125,15 +132,32 @@ export default function ModuloBrand({ brand }) {
         </Campo>
 
         <div className="flex flex-wrap gap-6">
-          <label className="flex items-center gap-2 font-semibold">
-            <input
-              type="checkbox"
-              name="attivo"
-              defaultChecked={valori.attivo}
-              className="h-4 w-4 accent-[var(--color-accento)]"
-            />
-            Attivo
-          </label>
+          {principale ? (
+            <label className="flex items-center gap-2 font-semibold opacity-60">
+              <input type="hidden" name="attivo" value="on" />
+              <input
+                type="checkbox"
+                checked
+                disabled
+                readOnly
+                className="h-4 w-4 accent-[var(--color-accento)]"
+              />
+              Attivo
+              <span className="text-xs font-medium text-inchiostro-tenue">
+                (è la home: non si disattiva)
+              </span>
+            </label>
+          ) : (
+            <label className="flex items-center gap-2 font-semibold">
+              <input
+                type="checkbox"
+                name="attivo"
+                defaultChecked={valori.attivo}
+                className="h-4 w-4 accent-[var(--color-accento)]"
+              />
+              Attivo
+            </label>
+          )}
           <label className="flex items-center gap-2 font-semibold">
             <input
               type="checkbox"
@@ -143,7 +167,20 @@ export default function ModuloBrand({ brand }) {
             />
             Mostra il listino
             <span className="text-xs font-medium text-inchiostro-tenue">
-              (spegnilo se l&apos;ente regala le storie)
+              (nasconde solo i prezzi in vetrina — il checkout resta quello che è)
+            </span>
+          </label>
+          <label className="flex items-center gap-2 font-semibold">
+            <input
+              type="checkbox"
+              name="accettaPagamenti"
+              defaultChecked={valori.accettaPagamenti}
+              className="h-4 w-4 accent-[var(--color-accento)]"
+            />
+            Accetta pagamenti
+            <span className="text-xs font-medium text-inchiostro-tenue">
+              (spegnilo se l&apos;ente regala le storie: niente checkout, l&apos;ordine nasce
+              comunque, a prezzo zero)
             </span>
           </label>
         </div>
@@ -262,7 +299,7 @@ export default function ModuloBrand({ brand }) {
           {inCorso ? "Salvataggio…" : nuovo ? "Crea merchant" : "Salva modifiche"}
         </button>
 
-        {!nuovo && (
+        {!nuovo && !principale && (
           <button
             type="submit"
             formAction={eliminaBrand}
@@ -271,6 +308,11 @@ export default function ModuloBrand({ brand }) {
           >
             Elimina
           </button>
+        )}
+        {!nuovo && principale && (
+          <span className="text-sm font-medium text-inchiostro-tenue">
+            È il sito principale: non si elimina.
+          </span>
         )}
       </div>
     </form>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { esci } from "@/app/admin/azioni";
+import { BRAND_DEFAULT } from "@/lib/brand/schema";
 import { creaClientServer } from "@/lib/supabase/server";
 
 export default async function ElencoMerchant() {
@@ -12,7 +13,7 @@ export default async function ElencoMerchant() {
 
   const { data: brands, error } = await supabase
     .from("brands")
-    .select("id, slug, nome, attivo, prompt_guida, capricci, mostra_prezzi")
+    .select("id, slug, nome, attivo, prompt_guida, capricci, mostra_prezzi, accetta_pagamenti")
     .order("creato_il", { ascending: false });
 
   return (
@@ -67,6 +68,11 @@ export default async function ElencoMerchant() {
               <code className="rounded bg-crema-scura px-2 py-0.5 text-xs font-bold">
                 ?version={brand.slug}
               </code>
+              {brand.slug === BRAND_DEFAULT.slug && (
+                <span className="rounded-full bg-accento/20 px-2.5 py-0.5 text-xs font-bold uppercase">
+                  sito principale
+                </span>
+              )}
               {!brand.attivo && (
                 <span className="rounded-full bg-inchiostro-lieve/30 px-2.5 py-0.5 text-xs font-bold uppercase">
                   disattivato
@@ -75,6 +81,11 @@ export default async function ElencoMerchant() {
               {!brand.mostra_prezzi && (
                 <span className="rounded-full bg-accento-soft/30 px-2.5 py-0.5 text-xs font-bold uppercase">
                   senza listino
+                </span>
+              )}
+              {!brand.accetta_pagamenti && (
+                <span className="rounded-full bg-accento-soft/30 px-2.5 py-0.5 text-xs font-bold uppercase">
+                  regala le storie
                 </span>
               )}
             </div>
