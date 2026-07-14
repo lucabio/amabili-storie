@@ -199,7 +199,29 @@ export async function rigeneraStoria(storiaId) {
   // Il workflow riusa la riga esistente (vedi creaStoriaInGenerazione in
   // src/workflows/libro.js): la storia mantiene il suo id, quindi il link
   // nella mail già spedita al genitore continua a puntare qui.
-  await start(generaLibro, [storia.ordine_id]);
+  try {
+    await start(generaLibro, [storia.ordine_id]);
+  } catch (problema) {
+    // start() non è partito: nessun workflow prenderà mai in carico questa
+    // storia, e senza workflow nessuno la segnerà mai "fallita" (è compito
+    // suo, vedi il commento gemello in src/workflows/libro.js). Se non lo
+    // facciamo qui, la riga resta bloccata in "in_generazione" per sempre —
+    // il fantasma che questa funzione esiste per eliminare, e si tornerebbe
+    // a doverla sbloccare con SQL a mano. "fallita" è lo stato giusto: da lì
+    // l'amministratore può rigenerare di nuovo (TRANSIZIONI lo permette), e
+    // la coda mostra subito l'errore leggibile in `errore`.
+    const messaggio = `Avvio della rigenerazione fallito: ${problema.message}`;
+
+    await db
+      .from("storie")
+      .update({ stato: "fallita", errore: messaggio })
+      .eq("id", storiaId)
+      .eq("stato", "in_generazione");
+
+    revalidatePath("/admin/storie");
+    revalidatePath(`/admin/storie/${storiaId}`);
+    return { errore: messaggio };
+  }
 
   revalidatePath("/admin/storie");
   revalidatePath(`/admin/storie/${storiaId}`);

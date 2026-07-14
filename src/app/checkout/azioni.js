@@ -50,7 +50,25 @@ export async function acquista(datiGrezzi) {
   // Il run_id lo scrive il workflow stesso, nello step che crea la riga "storie"
   // (creaStoriaInGenerazione): start() ritorna subito, prima che quella riga esista,
   // quindi un update da qui sarebbe una corsa quasi sempre persa.
-  await start(generaLibro, [riga.id]);
+  try {
+    await start(generaLibro, [riga.id]);
+  } catch (problema) {
+    // Qui non c'è ancora nessuna riga "storie": nessun fantasma nella coda.
+    // Ma l'ordine sì, resta "pagato" per sempre senza che nessuno lo sappia
+    // (la coda del backoffice mostra le storie, non gli ordini). Non possiamo
+    // sistemarlo con una transizione di stato — "ordini.stato" ammette solo
+    // 'pagato'/'rimborsato' (migration 0002), qui non c'è spazio per un
+    // 'fallito' senza toccare lo schema, fuori perimetro per questa funzione.
+    // Il minimo indispensabile: loggarlo in modo cercabile e non redirigere
+    // come se tutto fosse andato bene, così chi ha pagato riprova subito
+    // invece di aspettare un libro che non arriverà mai.
+    console.error(`Avvio della generazione fallito per l'ordine ${riga.id}:`, problema.message);
+    return {
+      errore:
+        "Il tuo ordine è stato registrato, ma non siamo riusciti ad avviare la generazione del libro. Riprova, o scrivici indicando questo riferimento: " +
+        riga.id,
+    };
+  }
 
   redirect("/checkout/in-lavorazione");
 }
