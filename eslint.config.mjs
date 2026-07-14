@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Roba locale di Claude Code, worktree inclusi: non è codice del progetto.
     ".claude/**",
+    // Route generate dal Workflow DevKit a ogni build: non le scriviamo noi.
+    "src/app/.well-known/**",
   ]),
 ]);
 
