@@ -112,7 +112,13 @@ export async function salvaBrand(_statoPrecedente, formData) {
     hero: dati.hero,
     prompt_guida: dati.promptGuida,
     capricci: dati.capricci,
-    mostra_prezzi: dati.mostraPrezzi,
+    // Un listino che nessuno può pagare è incoerente: non scriviamo mai
+    // `mostra_prezzi: true` insieme a `accetta_pagamenti: false`. Questa
+    // Server Action è un endpoint HTTP raggiungibile direttamente (un form
+    // disabilitato in UI non basta), quindi la si corregge qui, allo stesso
+    // modo in cui `brandSchema` la corregge in lettura — due lati della
+    // stessa regola, non due regole diverse.
+    mostra_prezzi: dati.accettaPagamenti && dati.mostraPrezzi,
     accetta_pagamenti: dati.accettaPagamenti,
   };
 

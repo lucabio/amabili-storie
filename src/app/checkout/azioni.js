@@ -16,18 +16,11 @@ import { generaLibro } from "@/workflows/libro";
  * La firma non cambia, e la coda non si tocca.
  */
 export async function acquista(datiGrezzi) {
-  if (process.env.CHECKOUT_FINTO !== "1") {
-    throw new Error("Il checkout non è attivo.");
-  }
-
   const esito = ordineSchema.safeParse(datiGrezzi);
   if (!esito.success) {
     return { errore: "Dati dell'ordine non validi." };
   }
   const ordine = esito.data;
-
-  const db = creaClientAdmin();
-  if (!db) return { errore: "Supabase non è configurato." };
 
   // La verità sul brand — e quindi sul prezzo — si legge qui, dal database.
   // `ordine.parametri.brand` è solo lo slug che dice QUALE brand risolvere:
@@ -38,6 +31,20 @@ export async function acquista(datiGrezzi) {
   // quella decisione la prende `brand.accettaPagamenti` appena letto dal DB,
   // mai il formato o il prezzo che il client ha mandato.
   const brand = await risolviBrand(ordine.parametri.brand);
+
+  // La flag protegge SOLO il ramo a pagamento: l'acquisto è simulato finché
+  // non arriva Stripe, e quel simulacro non deve esistere in produzione. Il
+  // regalo di un ente che non accetta pagamenti non è un checkout finto: è
+  // una consegna gratuita legittima (formato fisso, prezzo azzerato qui
+  // sotto), e deve funzionare in produzione da subito — un ospite
+  // dell'Hotel Famiglia Serena non può dipendere da una flag di sviluppo.
+  if (brand.accettaPagamenti && process.env.CHECKOUT_FINTO !== "1") {
+    throw new Error("Il checkout non è attivo.");
+  }
+
+  const db = creaClientAdmin();
+  if (!db) return { errore: "Supabase non è configurato." };
+
   const formato = brand.accettaPagamenti ? ordine.formato : "ebook";
   const prezzoCents = brand.accettaPagamenti ? ordine.prezzoCents : 0;
 

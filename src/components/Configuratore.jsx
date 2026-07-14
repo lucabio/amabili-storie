@@ -412,15 +412,25 @@ export default function Configuratore({ brand, capricci }) {
                         </div>
                         <button
                           type="button"
+                          aria-pressed={cartaceo.scelto === true}
                           onClick={() => setCartaceo((p) => ({ ...p, scelto: true }))}
-                          className="lift rounded-full bg-accento px-5.5 py-2.5 text-sm font-bold text-crema"
+                          className={`lift rounded-full border px-5.5 py-2.5 text-sm font-bold ${
+                            cartaceo.scelto === true
+                              ? "border-accento bg-accento text-crema"
+                              : "border-bordo bg-white text-inchiostro-soft"
+                          }`}
                         >
                           Sì, aggiungi!
                         </button>
                         <button
                           type="button"
+                          aria-pressed={cartaceo.scelto === false}
                           onClick={() => setCartaceo((p) => ({ ...p, scelto: false }))}
-                          className="lift rounded-full border border-bordo bg-white px-5.5 py-2.5 text-sm font-bold text-inchiostro-soft"
+                          className={`lift rounded-full border px-5.5 py-2.5 text-sm font-bold ${
+                            cartaceo.scelto === false
+                              ? "border-accento bg-accento text-crema"
+                              : "border-bordo bg-white text-inchiostro-soft"
+                          }`}
                         >
                           Solo eBook
                         </button>
@@ -428,8 +438,10 @@ export default function Configuratore({ brand, capricci }) {
 
                       {cartaceo.scelto === true && (
                         <p className="anim-pop mt-4 rounded-[14px] bg-white p-4 text-sm font-semibold text-inchiostro-soft">
-                          L&apos;indirizzo di spedizione te lo chiediamo al checkout, dopo che hai
-                          visto l&apos;anteprima. Consegna in 5-8 giorni lavorativi.
+                          {/* Template literal, non testo JSX su più righe: a cavallo di
+                          un'espressione JSX collassa lo spazio dopo la graffa di
+                          chiusura, e "brossura" e "resta" finiscono attaccati. */}
+                          {`Segnato: il ${LISTINO[cartaceo.formato].etichetta.toLowerCase()} resta preselezionato quando generi l'anteprima — lì puoi ancora cambiarlo prima di confermare.`}
                         </p>
                       )}
                     </div>

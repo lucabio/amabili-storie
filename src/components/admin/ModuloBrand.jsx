@@ -167,7 +167,9 @@ export default function ModuloBrand({ brand }) {
             />
             Mostra il listino
             <span className="text-xs font-medium text-inchiostro-tenue">
-              (nasconde solo i prezzi in vetrina — il checkout resta quello che è)
+              (nasconde solo i prezzi in vetrina — il checkout resta quello che è. Se
+              sotto spegni &quot;Accetta pagamenti&quot;, il listino resta comunque
+              nascosto: un prezzo che nessuno può pagare non si mostra)
             </span>
           </label>
           <label className="flex items-center gap-2 font-semibold">

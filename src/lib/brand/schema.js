@@ -52,16 +52,35 @@ export const brandSchema = z.object({
   /** Sottoinsieme di capricci offerto dall'ente. null = tutti. */
   capricci: z.array(z.enum(CAPRICCIO_IDS)).min(1).nullable().default(null),
 
-  /** Un ente che regala le storie agli ospiti non mostra il listino. */
+  /**
+   * Un ente che regala le storie agli ospiti non mostra il listino. Ma non è
+   * indipendente da `accettaPagamenti`: mostrare un listino che nessuno può
+   * pagare è la contraddizione che il `.transform()` qui sotto elimina.
+   */
   mostraPrezzi: z.boolean().default(true),
 
   /**
    * false = l'ente regala le storie: niente checkout, niente prezzi, l'ordine
    * nasce comunque a prezzo zero. Diverso da `mostraPrezzi`, che nasconde solo
-   * il listino in vetrina ma lascia un checkout a pagamento.
+   * il listino in vetrina ma lascia un checkout a pagamento — ma solo se
+   * `accettaPagamenti` resta true. Il contrario (prezzi in vetrina, nessun
+   * modo di pagarli) non è una combinazione legittima.
    */
   accettaPagamenti: z.boolean().default(true),
-});
+})
+  .transform((brand) => ({
+    ...brand,
+    // La relazione fra i due campi si impone qui, non altrove: `brandSchema`
+    // è il collo di bottiglia che attraversa OGNI brand, comunque sia nato —
+    // una riga scritta dal backoffice, una riga scritta a mano su Supabase
+    // (Studio o service role, che le RLS non vede), o BRAND_DEFAULT. Un
+    // ente che non accetta pagamenti non mostra mai il listino, qualunque
+    // cosa dica `mostraPrezzi`: non un errore di validazione (che farebbe
+    // ripiegare `brandDaRiga` su BRAND_DEFAULT, nascondendo l'intero brand),
+    // ma una correzione silenziosa, perché il caso incoerente non deve poter
+    // esistere a valle, punto.
+    mostraPrezzi: brand.accettaPagamenti && brand.mostraPrezzi,
+  }));
 
 /** Il brand di default: amabilistorie.com senza `?version=`. */
 export const BRAND_DEFAULT = brandSchema.parse({
