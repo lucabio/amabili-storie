@@ -68,13 +68,26 @@ va avanti lo stesso, così non si può scoprire quali indirizzi sono validi.
 Metti `AI_GATEWAY_API_KEY` (Vercel → AI Gateway → API keys) in `.env.local`. Su Vercel
 non serve: il Gateway si autentica da solo via OIDC.
 
-## La coda di approvazione
+## Il giro completo
 
-Una storia acquistata non arriva a un bambino senza che un umano l'abbia letta.
+Il genitore sceglie un capriccio, personalizza i protagonisti — nome, età, e i **tratti
+opzionali**: capelli, occhi, corporatura, e una descrizione libera, che è il campo che vale
+di più — e riceve un'**anteprima gratuita di 3 pagine**, istantanea.
 
-Il checkout crea un ordine e lancia un workflow durevole che scrive le 22 pagine, avvisa il
-genitore per mail, e deposita la storia in `/admin/storie` in attesa di revisione. Lì la
-correggete a mano e la approvate: all'approvazione parte la mail "il libro è pronto".
+Se compra, nasce un ordine e parte un **workflow durevole** che scrive le 22 pagine, avvisa
+il genitore per mail, e deposita la storia in `/admin/storie` in attesa di revisione: **una
+storia acquistata non arriva a un bambino senza che un umano l'abbia letta**. Lì la
+correggete a mano e la approvate. All'approvazione parte la mail "il libro è pronto", col
+link a `/storie/<uuid>` — dove il genitore legge. L'uuid è la chiave: una storia non
+approvata dà 404.
+
+Una storia fallita o rifiutata si **rigenera** dal backoffice, riusando la stessa riga: così
+il link già in mano al genitore continua a funzionare.
+
+**Un brand vende o regala.** `accetta_pagamenti` decide se c'è un checkout: l'Hotel Famiglia
+Serena regala le storie ai propri ospiti (niente prezzi, ordine a prezzo zero), il sito
+principale le vende. E anche la home è un brand (`slug = amabili`): si modifica dal
+backoffice, non serve un deploy.
 
 **Il pagamento non c'è ancora.** Per provare il giro serve `CHECKOUT_FINTO=1` in `.env.local`:
 crea l'ordine e genera il libro senza far pagare nessuno. Gli ordini nati così hanno
