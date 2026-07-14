@@ -47,8 +47,15 @@ describe("ordine", () => {
 });
 
 describe("formattaPrezzo", () => {
-  it("mostra sempre due cifre decimali, anche a zero", () => {
+  it("mostra sempre due cifre decimali, anche quando finiscono per zero", () => {
     expect(formattaPrezzo(990)).toBe("9,90 €");
+    // I casi che troncherebbero, se troncassimo: mai "9,9 €", mai "10 €".
+    expect(formattaPrezzo(1000)).toBe("10,00 €");
+    expect(formattaPrezzo(0)).toBe("0,00 €");
+  });
+
+  it("regge anche sotto l'euro", () => {
+    expect(formattaPrezzo(5)).toBe("0,05 €");
   });
 
   it("usa la virgola all'italiana", () => {
