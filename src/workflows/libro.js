@@ -1,4 +1,4 @@
-import { FatalError } from "workflow";
+import { FatalError, getWorkflowMetadata } from "workflow";
 
 import { BRAND_DEFAULT, brandDaRiga } from "@/lib/brand/schema";
 import { inviaMail } from "@/lib/mail/invia";
@@ -70,6 +70,11 @@ async function caricaOrdine(ordineId) {
 async function creaStoriaInGenerazione(ordine) {
   "use step";
 
+  // getWorkflowMetadata() funziona anche dentro uno step (non solo nel workflow):
+  // qui è l'unico punto che conosce già il run_id e può scriverlo insieme alla riga,
+  // senza la corsa fra `start()` (che ritorna subito) e l'insert successivo.
+  const { workflowRunId } = getWorkflowMetadata();
+
   const db = creaClientAdmin();
   const { data, error } = await db
     .from("storie")
@@ -81,6 +86,7 @@ async function creaStoriaInGenerazione(ordine) {
       contenuto: {},
       fonte: "ai",
       stato: "in_generazione",
+      run_id: workflowRunId,
     })
     .select("id")
     .single();

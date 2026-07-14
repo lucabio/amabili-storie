@@ -47,9 +47,10 @@ export async function acquista(datiGrezzi) {
 
   if (error) return { errore: `Ordine non creato: ${error.message}` };
 
-  const run = await start(generaLibro, [riga.id]);
-
-  await db.from("storie").update({ run_id: run.runId }).eq("ordine_id", riga.id);
+  // Il run_id lo scrive il workflow stesso, nello step che crea la riga "storie"
+  // (creaStoriaInGenerazione): start() ritorna subito, prima che quella riga esista,
+  // quindi un update da qui sarebbe una corsa quasi sempre persa.
+  await start(generaLibro, [riga.id]);
 
   redirect("/checkout/in-lavorazione");
 }
