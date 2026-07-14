@@ -68,6 +68,25 @@ va avanti lo stesso, così non si può scoprire quali indirizzi sono validi.
 Metti `AI_GATEWAY_API_KEY` (Vercel → AI Gateway → API keys) in `.env.local`. Su Vercel
 non serve: il Gateway si autentica da solo via OIDC.
 
+## La coda di approvazione
+
+Una storia acquistata non arriva a un bambino senza che un umano l'abbia letta.
+
+Il checkout crea un ordine e lancia un workflow durevole che scrive le 22 pagine, avvisa il
+genitore per mail, e deposita la storia in `/admin/storie` in attesa di revisione. Lì la
+correggete a mano e la approvate: all'approvazione parte la mail "il libro è pronto".
+
+**Il pagamento non c'è ancora.** Per provare il giro serve `CHECKOUT_FINTO=1` in `.env.local`:
+crea l'ordine e genera il libro senza far pagare nessuno. Gli ordini nati così hanno
+`finto = true`, e si cancellano tutti con `delete from public.ordini where finto`.
+
+**`RESEND_API_KEY` ora serve davvero all'app**, non solo a Supabase: le mail al genitore le
+manda il portale, non il servizio di autenticazione.
+
+Se l'AI non è configurata, un libro acquistato **fallisce** invece di ripiegare sui template:
+lo trovate in coda come `fallita`, con l'errore in chiaro. È voluto — un cliente che ha pagato
+non può ricevere in silenzio una storia identica a tutte le altre.
+
 ## Come funziona il multi-brand
 
 Un ente — un hotel, per dire — ha la sua versione del portale:

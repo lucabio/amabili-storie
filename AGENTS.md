@@ -51,19 +51,47 @@ src/
   app/
     page.js                        Home: risolve il brand da ?version= e monta le sezioni
     api/storie/anteprima/route.js  POST → le 3 pagine gratuite
-    admin/                         Backoffice: login + CRUD dei merchant
-  components/                      UI del sito pubblico + admin/ModuloBrand
+    auth/callback/route.js         Dove atterra il magic link del backoffice
+    checkout/azioni.js             Ordine (finto, dietro flag) → lancia il workflow
+    admin/                         Backoffice: login OTP, CRUD merchant, coda storie
+  components/                      UI del sito pubblico + admin/ (ModuloBrand, EditorStoria)
   lib/
     domain/     capricci.js, animali.js — il catalogo, con l'arco narrativo di ogni capriccio
     brand/      schema.js (Zod + BRAND_DEFAULT), resolve.js (?version= → brand)
-    storia/     schema.js, prompt.js (il Metodo Amabili), genera.js, fallback.js
+    storia/     schema.js, prompt.js (il Metodo Amabili), genera.js, fallback.js, stati.js
+    ordini/     schema.js — il listino, e il prezzo che il client non decide
+    mail/       modelli.js (le due mail, brandizzate), invia.js (Resend)
     supabase/   client server (rispetta le RLS) e browser; creaClientAdmin le bypassa
     admin/      sessione.js — essere loggati non basta: si dev'essere amministratori
+  workflows/
+    libro.js                       generaLibro: la nascita di un libro, durevole
 supabase/
   migrations/0001_init.sql         brands, storie, lead, amministratori + RLS
+  migrations/0002_ordini_e_coda.sql  ordini + stato/revisione su storie
+  templates/                       La mail di accesso: da incollare in dashboard
   seed.sql                         Hotel Famiglia Serena, per lo sviluppo
 proxy.js                           Rinfresca la sessione Supabase su /admin/*
 ```
+
+## La coda di approvazione
+
+Nessuna storia acquistata arriva a un bambino senza che un umano l'abbia letta.
+Il checkout crea un **ordine**, che lancia un **workflow durevole** (`src/workflows/libro.js`):
+scrive le 22 pagine, avvisa il genitore che la storia sta nascendo, e la deposita in
+`in_revisione`. Da lì la coda in `/admin/storie` la mostra a voi: si corregge il testo a
+mano, si approva — e all'approvazione parte la mail "il libro è pronto".
+
+Due invarianti che non si negoziano:
+
+- **Il libro acquistato non ripiega mai sui template.** Se l'AI non è disponibile, la
+  generazione *fallisce* e la storia va in `fallita` con l'errore leggibile. Il fallback di
+  `fallback.js` resta solo per l'anteprima gratuita e per `npm run dev`: su un libro pagato
+  sarebbe una storia identica a tutte le altre, senza il `prompt_guida` dell'ente, e nessuno
+  se ne accorgerebbe finché non la legge un genitore. Vedi `generaStoria({ consentiFallback })`.
+- **`contenuto_originale` non si tocca.** È la versione uscita dall'AI; `contenuto` è quella
+  che correggete. La differenza fra le due è il diario di *cosa correggete sempre* — cioè
+  cosa c'è da aggiustare nel prompt. Sovrascriverla significa perdere l'unico dato che fa
+  migliorare il Metodo.
 
 **Il tema si propaga via CSS.** `TemaBrand` scrive `--brand-accento` e compagni sul
 wrapper di pagina; le utility Tailwind (`bg-accento`, `text-scuro`) leggono da lì. Una
@@ -94,9 +122,15 @@ npm run lint
 
 ## Cosa manca (in ordine di importanza)
 
-1. Progetto Supabase reale e applicazione della migration.
-2. Pagamenti (eBook 9,90 € / cartaceo 24,90–34,90 €) e generazione del libro completo (20-24 pagine).
-3. Illustrazioni generate: lo schema produce già `illustrazione` (la descrizione della scena), ma nessuno la disegna.
+1. **Illustrazioni generate**: lo schema produce già `illustrazione` (la descrizione della
+   scena), ma nessuno la disegna. È la fase 2, e il nodo non è il provider: è la **coerenza
+   del personaggio** fra le pagine. Si genera un foglio del personaggio e lo si passa come
+   riferimento visivo a ogni pagina.
+2. **Pagamenti veri.** Oggi il checkout è finto, dietro `CHECKOUT_FINTO=1`. Gli ordini nati
+   così hanno `finto = true`: il giorno del lancio si cancellano con una riga di SQL. Quando
+   arriva Stripe, il webhook fa gli stessi passi con `finto = false` — la coda non si tocca.
+3. **Il pulsante d'acquisto nel wizard**: la Server Action `acquista()` esiste, l'interfaccia
+   che la chiama no. Va disegnata insieme al checkout vero, non prima.
 4. Export PDF dell'eBook.
 5. Adapter di stampa e spedizione verso il fornitore.
-6. Persistenza di storie e lead: le tabelle esistono, nessuno ci scrive ancora.
+6. Persistenza dei lead: la tabella esiste, nessuno ci scrive ancora (le storie invece sì).
