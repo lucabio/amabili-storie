@@ -2,8 +2,13 @@
 
 import { useState, useTransition } from "react";
 
-import { approvaStoria, rifiutaStoria, salvaStoria } from "@/app/admin/storie/azioni";
-import { ETICHETTE } from "@/lib/storia/stati";
+import {
+  approvaStoria,
+  rifiutaStoria,
+  rigeneraStoria,
+  salvaStoria,
+} from "@/app/admin/storie/azioni";
+import { ETICHETTE, transizionePermessa } from "@/lib/storia/stati";
 
 export default function EditorStoria({ storia }) {
   const [contenuto, setContenuto] = useState(storia.contenuto);
@@ -12,6 +17,7 @@ export default function EditorStoria({ storia }) {
   const [inCorso, avvia] = useTransition();
 
   const revisionabile = storia.stato === "in_revisione";
+  const rigenerabile = transizionePermessa(storia.stato, "in_generazione");
 
   function aggiornaPagina(indice, campo, valore) {
     setContenuto((precedente) => ({
@@ -39,6 +45,17 @@ export default function EditorStoria({ storia }) {
           {storia.parametri?.nome} · {storia.parametri?.capriccio}
         </h1>
       </div>
+
+      {storia.stato === "fallita" && storia.errore && (
+        <p className="mt-4 rounded-card bg-accento/10 p-4 font-semibold text-accento">
+          La generazione è fallita: {storia.errore}
+        </p>
+      )}
+      {storia.stato === "rifiutata" && storia.note_revisione && (
+        <p className="mt-4 rounded-card bg-accento/10 p-4 font-semibold text-accento">
+          Rifiutata: {storia.note_revisione}
+        </p>
+      )}
 
       {esito?.errore && (
         <p className="mt-4 rounded-card bg-accento/10 p-4 font-semibold text-accento">
@@ -146,6 +163,17 @@ export default function EditorStoria({ storia }) {
               Rifiuta
             </button>
           </>
+        )}
+
+        {rigenerabile && (
+          <button
+            type="button"
+            disabled={inCorso}
+            onClick={() => esegui(() => rigeneraStoria(storia.id))}
+            className="lift rounded-full bg-accento px-6 py-3 font-bold text-crema disabled:opacity-40"
+          >
+            Rigenera
+          </button>
         )}
       </div>
     </div>

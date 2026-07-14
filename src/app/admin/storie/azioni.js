@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { start } from "workflow/api";
 
 import { utenteAmministratore } from "@/lib/admin/sessione";
 import { BRAND_DEFAULT, brandDaRiga } from "@/lib/brand/schema";
@@ -9,6 +10,7 @@ import { mailStoriaPronta } from "@/lib/mail/modelli";
 import { contenutoStoriaSchema } from "@/lib/storia/schema";
 import { transizionePermessa } from "@/lib/storia/stati";
 import { creaClientAdmin, creaClientServer } from "@/lib/supabase/server";
+import { generaLibro } from "@/workflows/libro";
 
 /** Nessuna di queste azioni parte se chi la chiama non è amministratore. */
 async function esigiAmministratore() {
@@ -155,5 +157,51 @@ export async function rifiutaStoria(storiaId, nota) {
   }
 
   revalidatePath("/admin/storie");
+  return { ok: true };
+}
+
+export async function rigeneraStoria(storiaId) {
+  await esigiAmministratore();
+
+  const storia = await leggiStoria(storiaId);
+  if (!storia) return { errore: "Storia inesistente." };
+
+  if (!transizionePermessa(storia.stato, "in_generazione")) {
+    return { errore: `Una storia "${storia.stato}" non si può rigenerare.` };
+  }
+
+  // Si riparte dall'ordine che aveva generato la storia: senza, non c'è nulla
+  // da rilanciare.
+  if (!storia.ordine_id) {
+    return {
+      errore: "Questa storia non ha un ordine collegato: non si sa cosa rigenerare.",
+    };
+  }
+
+  const db = creaClientAdmin();
+  const { data: righe, error } = await db
+    .from("storie")
+    .update({ stato: "in_generazione", errore: null })
+    // Vincolare l'UPDATE allo stato appena letto rende la transizione atomica:
+    // due click sullo stesso "Rigenera" non possono superare entrambi il
+    // controllo e avviare due workflow per lo stesso ordine.
+    .eq("id", storiaId)
+    .eq("stato", storia.stato)
+    .select("id");
+
+  if (error) return { errore: error.message };
+  if (!righe || righe.length === 0) {
+    return {
+      errore: "Qualcun altro ha già avviato la rigenerazione di questa storia nel frattempo: ricarica la pagina.",
+    };
+  }
+
+  // Il workflow riusa la riga esistente (vedi creaStoriaInGenerazione in
+  // src/workflows/libro.js): la storia mantiene il suo id, quindi il link
+  // nella mail già spedita al genitore continua a puntare qui.
+  await start(generaLibro, [storia.ordine_id]);
+
+  revalidatePath("/admin/storie");
+  revalidatePath(`/admin/storie/${storiaId}`);
   return { ok: true };
 }

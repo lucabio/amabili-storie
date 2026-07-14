@@ -86,20 +86,43 @@ async function creaStoriaInGenerazione(ordine) {
   const { workflowRunId } = getWorkflowMetadata();
 
   const db = creaClientAdmin();
-  const { data, error } = await db
+
+  const dati = {
+    ordine_id: ordine.id,
+    brand_id: ordine.brand_id,
+    email: ordine.email,
+    parametri: ordine.parametri,
+    contenuto: {},
+    fonte: "ai",
+    stato: "in_generazione",
+    errore: null,
+    note_revisione: null,
+    revisionata_da: null,
+    revisionata_il: null,
+    run_id: workflowRunId,
+  };
+
+  // Una rigenerazione (src/app/admin/storie/azioni.js, rigeneraStoria) rilancia
+  // questo stesso workflow sull'ordine di una storia "fallita" o "rifiutata".
+  // `storie.ordine_id` è unico (migration 0003): se una riga per questo ordine
+  // esiste già, la si riusa invece di inserirne una seconda, così la storia
+  // mantiene il suo id — è a quell'id che punta il link nella mail già spedita
+  // al genitore quando la storia era arrivata fino all'approvazione o al rifiuto.
+  const { data: esistente, error: erroreLettura } = await db
     .from("storie")
-    .insert({
-      ordine_id: ordine.id,
-      brand_id: ordine.brand_id,
-      email: ordine.email,
-      parametri: ordine.parametri,
-      contenuto: {},
-      fonte: "ai",
-      stato: "in_generazione",
-      run_id: workflowRunId,
-    })
     .select("id")
-    .single();
+    .eq("ordine_id", ordine.id)
+    .maybeSingle();
+
+  if (erroreLettura) throw new Error(`Lettura storia esistente fallita: ${erroreLettura.message}`);
+
+  if (esistente) {
+    const { error } = await db.from("storie").update(dati).eq("id", esistente.id);
+    if (error) throw new Error(`Aggiornamento storia fallito: ${error.message}`);
+    return esistente.id;
+  }
+
+  const { data, error } = await db.from("storie").insert(dati).select("id").single();
 
   if (error) throw new Error(`Creazione storia fallita: ${error.message}`);
   return data.id;
