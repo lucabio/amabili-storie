@@ -6,6 +6,7 @@ import AnteprimaStoria from "@/components/AnteprimaStoria";
 import CopertinaLive from "@/components/CopertinaLive";
 import { ANIMALI } from "@/lib/domain/animali";
 import { componiTitolo } from "@/lib/domain/capricci";
+import { formattaPrezzo, LISTINO } from "@/lib/ordini/schema";
 
 const ETICHETTE_STEP = ["Capriccio", "Famiglia", "Protagonisti"];
 
@@ -66,7 +67,7 @@ export default function Configuratore({ brand, capricci }) {
     papa: "",
     dettaglio: "",
   });
-  const [cartaceo, setCartaceo] = useState({ scelto: null, formato: "softcover" });
+  const [cartaceo, setCartaceo] = useState({ scelto: null, formato: "brossura" });
   const [caricamento, setCaricamento] = useState(false);
   const [errore, setErrore] = useState(null);
   const [storia, setStoria] = useState(null);
@@ -339,8 +340,14 @@ export default function Configuratore({ brand, capricci }) {
                               setCartaceo((p) => ({ ...p, formato: evento.target.value }))
                             }
                           >
-                            <option value="softcover">Softcover (brossura) — €24,90</option>
-                            <option value="hardcover">Hardcover (rilegato) — €34,90</option>
+                            <option value="brossura">
+                              {LISTINO.brossura.etichetta} (copertina morbida) —{" "}
+                              {formattaPrezzo(LISTINO.brossura.prezzoCents)}
+                            </option>
+                            <option value="rilegato">
+                              {LISTINO.rilegato.etichetta} (copertina rigida) —{" "}
+                              {formattaPrezzo(LISTINO.rilegato.prezzoCents)}
+                            </option>
                           </select>
                         </div>
                         <button

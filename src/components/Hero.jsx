@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useCallback, useRef, useState } from "react";
 
+import { formattaPrezzo, LISTINO } from "@/lib/ordini/schema";
+
 const SCIA = "AMABILI STORIE ";
 const DISTANZA_MINIMA = 45; // px tra una lettera e la successiva
 
@@ -114,7 +116,8 @@ export default function Hero({ brand }) {
             </a>
             {brand.mostraPrezzi && (
               <span className="text-sm font-semibold text-inchiostro-soft">
-                Anteprima gratuita · eBook 9,90 € · Cartaceo 34,90 €
+                Anteprima gratuita · eBook {formattaPrezzo(LISTINO.ebook.prezzoCents)} · Cartaceo{" "}
+                {formattaPrezzo(LISTINO.rilegato.prezzoCents)}
               </span>
             )}
           </div>

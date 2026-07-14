@@ -1,3 +1,5 @@
+import { formattaPrezzo, LISTINO } from "@/lib/ordini/schema";
+
 export default function Prezzi() {
   return (
     <section className="flex min-h-svh snap-start flex-col justify-center bg-crema bg-[url('/illustrazioni/doodle-passeggiata.svg')] bg-[length:min(130px,13vw)] bg-[left_2%_bottom_4%] bg-no-repeat px-6 py-[clamp(40px,5vw,64px)]">
@@ -24,7 +26,7 @@ export default function Prezzi() {
             </span>
             <h3 className="mt-4.5 font-display text-[1.35rem] font-semibold">eBook</h3>
             <p className="my-2 font-display text-[2.4rem] font-semibold text-accento-soft">
-              9,90 €
+              {formattaPrezzo(LISTINO.ebook.prezzoCents)}
             </p>
             <p className="leading-relaxed font-medium text-pergamena">
               20-24 pagine illustrate in PDF, consegna immediata via email. Rigenerazione
@@ -37,7 +39,9 @@ export default function Prezzi() {
               Il regalo perfetto
             </span>
             <h3 className="mt-4.5 font-display text-[1.35rem] font-semibold">Libro cartaceo</h3>
-            <p className="my-2 font-display text-[2.4rem] font-semibold">34,90 €</p>
+            <p className="my-2 font-display text-[2.4rem] font-semibold">
+              {formattaPrezzo(LISTINO.rilegato.prezzoCents)}
+            </p>
             <p className="leading-relaxed font-medium text-inchiostro-soft">
               Copertina rigida, carta di qualità, stampato apposta per voi e spedito a casa in
               5-8 giorni.

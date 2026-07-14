@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { formattaPrezzo, LISTINO } from "@/lib/ordini/schema";
+
 /** Le 3 pagine gratuite + la cattura email. */
 export default function AnteprimaStoria({ storia, nome, mostraPrezzi }) {
   const [email, setEmail] = useState("");
@@ -98,7 +100,8 @@ export default function AnteprimaStoria({ storia, nome, mostraPrezzi }) {
 
               {mostraPrezzi && (
                 <p className="mt-3.5 text-xs font-semibold text-inchiostro-tenue">
-                  eBook 9,90 € · Cartaceo rigido 34,90 € · Niente spam, promesso.
+                  eBook {formattaPrezzo(LISTINO.ebook.prezzoCents)} · Cartaceo rigido{" "}
+                  {formattaPrezzo(LISTINO.rilegato.prezzoCents)} · Niente spam, promesso.
                 </p>
               )}
             </div>
