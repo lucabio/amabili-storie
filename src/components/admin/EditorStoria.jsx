@@ -58,7 +58,8 @@ export default function EditorStoria({ storia }) {
           onChange={(evento) =>
             setContenuto({ ...contenuto, titolo: evento.target.value })
           }
-          className="mt-2 w-full rounded-[14px] border border-bordo bg-white px-4 py-3 font-display text-lg font-semibold outline-accento"
+          disabled={!revisionabile}
+          className="mt-2 w-full rounded-[14px] border border-bordo bg-white px-4 py-3 font-display text-lg font-semibold outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
         />
       </label>
 
@@ -73,7 +74,8 @@ export default function EditorStoria({ storia }) {
               value={pagina.testo}
               onChange={(evento) => aggiornaPagina(indice, "testo", evento.target.value)}
               rows={3}
-              className="mt-3 w-full rounded-[14px] border border-bordo px-4 py-3 leading-relaxed font-medium outline-accento"
+              disabled={!revisionabile}
+              className="mt-3 w-full rounded-[14px] border border-bordo px-4 py-3 leading-relaxed font-medium outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
             />
 
             <label className="mt-3 block">
@@ -86,7 +88,8 @@ export default function EditorStoria({ storia }) {
                   aggiornaPagina(indice, "illustrazione", evento.target.value)
                 }
                 rows={2}
-                className="mt-1.5 w-full rounded-[14px] border border-bordo px-4 py-2.5 text-sm font-medium outline-accento"
+                disabled={!revisionabile}
+                className="mt-1.5 w-full rounded-[14px] border border-bordo px-4 py-2.5 text-sm font-medium outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
               />
             </label>
           </div>
@@ -102,22 +105,23 @@ export default function EditorStoria({ storia }) {
           onChange={(evento) =>
             setContenuto({ ...contenuto, fraseAncora: evento.target.value })
           }
-          className="mt-2 w-full rounded-[14px] border border-bordo bg-white px-4 py-3 font-semibold outline-accento"
+          disabled={!revisionabile}
+          className="mt-2 w-full rounded-[14px] border border-bordo bg-white px-4 py-3 font-semibold outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
         />
       </label>
 
       <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-bordo pt-6">
-        <button
-          type="button"
-          disabled={inCorso}
-          onClick={() => esegui(() => salvaStoria(storia.id, contenuto))}
-          className="lift rounded-full border border-bordo bg-white px-6 py-3 font-bold disabled:opacity-40"
-        >
-          Salva
-        </button>
-
         {revisionabile && (
           <>
+            <button
+              type="button"
+              disabled={inCorso}
+              onClick={() => esegui(() => salvaStoria(storia.id, contenuto))}
+              className="lift rounded-full border border-bordo bg-white px-6 py-3 font-bold disabled:opacity-40"
+            >
+              Salva
+            </button>
+
             <button
               type="button"
               disabled={inCorso}

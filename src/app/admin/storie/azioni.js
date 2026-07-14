@@ -30,6 +30,15 @@ async function leggiStoria(storiaId) {
 export async function salvaStoria(storiaId, contenutoGrezzo) {
   await esigiAmministratore();
 
+  const storia = await leggiStoria(storiaId);
+  if (!storia) return { errore: "Storia inesistente." };
+
+  if (storia.stato !== "in_revisione") {
+    return {
+      errore: `Una storia "${storia.stato}" non si può più correggere: se il libro è già partito, la correzione è un libro nuovo, non una modifica.`,
+    };
+  }
+
   const esito = contenutoStoriaSchema.safeParse(contenutoGrezzo);
   if (!esito.success) {
     return { errore: esito.error.issues[0].message };
@@ -92,6 +101,11 @@ export async function approvaStoria(storiaId) {
 export async function rifiutaStoria(storiaId, nota) {
   const utente = await esigiAmministratore();
 
+  const notaPulita = typeof nota === "string" ? nota.trim() : "";
+  if (!notaPulita) {
+    return { errore: "Serve una nota per rifiutare una storia: fra un mese nessuno ricorderà il motivo." };
+  }
+
   const storia = await leggiStoria(storiaId);
   if (!storia) return { errore: "Storia inesistente." };
 
@@ -104,7 +118,7 @@ export async function rifiutaStoria(storiaId, nota) {
     .from("storie")
     .update({
       stato: "rifiutata",
-      note_revisione: nota,
+      note_revisione: notaPulita,
       revisionata_da: utente.id,
       revisionata_il: new Date().toISOString(),
     })
