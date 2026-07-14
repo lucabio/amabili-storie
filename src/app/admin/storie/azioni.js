@@ -45,14 +45,23 @@ export async function salvaStoria(storiaId, contenutoGrezzo) {
   }
 
   const db = creaClientAdmin();
-  const { error } = await db
+  const { data: righe, error } = await db
     .from("storie")
     // `contenuto_originale` non si tocca mai: è la versione dell'AI, e la
     // differenza con questa è il diario di cosa correggiamo sempre.
     .update({ contenuto: esito.data })
-    .eq("id", storiaId);
+    // Vincolare l'UPDATE allo stato appena letto rende la transizione atomica:
+    // due richieste concorrenti non possono superare entrambe il controllo.
+    .eq("id", storiaId)
+    .eq("stato", storia.stato)
+    .select("id");
 
   if (error) return { errore: error.message };
+  if (!righe || righe.length === 0) {
+    return {
+      errore: "Qualcun altro ha già modificato questa storia nel frattempo: ricarica la pagina.",
+    };
+  }
 
   revalidatePath(`/admin/storie/${storiaId}`);
   return { ok: true };
@@ -69,16 +78,26 @@ export async function approvaStoria(storiaId) {
   }
 
   const db = creaClientAdmin();
-  const { error } = await db
+  const { data: righe, error } = await db
     .from("storie")
     .update({
       stato: "approvata",
       revisionata_da: utente.id,
       revisionata_il: new Date().toISOString(),
     })
-    .eq("id", storiaId);
+    // Vincolare l'UPDATE allo stato appena letto rende la transizione atomica:
+    // due richieste concorrenti (approva + rifiuta, o due approva) non possono
+    // superare entrambe il controllo — "approvata" è irreversibile.
+    .eq("id", storiaId)
+    .eq("stato", storia.stato)
+    .select("id");
 
   if (error) return { errore: error.message };
+  if (!righe || righe.length === 0) {
+    return {
+      errore: "Qualcun altro ha già deciso su questa storia nel frattempo: ricarica la pagina.",
+    };
+  }
 
   // La mail non deve poter costare l'approvazione: se Resend è giù, la storia
   // resta approvata e la mail si rimanda a mano.
@@ -114,7 +133,7 @@ export async function rifiutaStoria(storiaId, nota) {
   }
 
   const db = creaClientAdmin();
-  const { error } = await db
+  const { data: righe, error } = await db
     .from("storie")
     .update({
       stato: "rifiutata",
@@ -122,9 +141,18 @@ export async function rifiutaStoria(storiaId, nota) {
       revisionata_da: utente.id,
       revisionata_il: new Date().toISOString(),
     })
-    .eq("id", storiaId);
+    // Vincolare l'UPDATE allo stato appena letto rende la transizione atomica:
+    // due richieste concorrenti non possono superare entrambe il controllo.
+    .eq("id", storiaId)
+    .eq("stato", storia.stato)
+    .select("id");
 
   if (error) return { errore: error.message };
+  if (!righe || righe.length === 0) {
+    return {
+      errore: "Qualcun altro ha già deciso su questa storia nel frattempo: ricarica la pagina.",
+    };
+  }
 
   revalidatePath("/admin/storie");
   return { ok: true };
