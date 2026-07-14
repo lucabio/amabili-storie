@@ -41,3 +41,19 @@ describe("mail pronta", () => {
     expect(html).toContain("https://amabilistorie.com/storie/abc");
   });
 });
+
+describe("escaping HTML del nome", () => {
+  it("non lascia passare markup iniettato nel nome", () => {
+    const nome = "Futura<script>alert(1)</script>";
+    const { oggetto, html } = mailStoriaInLavorazione({
+      nome,
+      brand: BRAND_DEFAULT,
+    });
+
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).toContain("Futura&lt;script&gt;alert(1)&lt;/script&gt;");
+
+    // L'oggetto non è HTML: resta testo grezzo, non escapizzato.
+    expect(oggetto).toContain("Futura");
+  });
+});

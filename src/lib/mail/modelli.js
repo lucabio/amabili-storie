@@ -6,10 +6,27 @@
  * Sono brandizzate: un ospite dell'Hotel Famiglia Serena riceve una mail col
  * teal dell'hotel e il suo nome, non con l'arancione di Amabili. I colori
  * arrivano da `brands.tema`, che è già lì.
+ *
+ * `nome` e `url` arrivano dal genitore (dal wizard); `brand.nome` e i colori
+ * di `brand.tema` arrivano dal backoffice (un amministratore, ma via DB): in
+ * entrambi i casi sono stringhe esterne e vanno escapizzate prima di finire
+ * nell'HTML. L'unica eccezione è `oggetto`: è un header di mail, non HTML, e
+ * lì il testo resta grezzo.
  */
 
+function escapeHtml(valore) {
+  return String(valore)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function scheletro({ brand, titolo, corpo, bottone }) {
-  const { accento, scuro } = brand.tema;
+  const accento = escapeHtml(brand.tema.accento);
+  const scuro = escapeHtml(brand.tema.scuro);
+  const nomeBrand = escapeHtml(brand.nome);
 
   return `<!doctype html>
 <html lang="it">
@@ -25,7 +42,7 @@ function scheletro({ brand, titolo, corpo, bottone }) {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px">
             <tr>
               <td align="center" style="padding-bottom:24px">
-                <span style="font-size:12px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${accento}">${brand.nome}</span>
+                <span style="font-size:12px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${accento}">${nomeBrand}</span>
               </td>
             </tr>
             <tr>
@@ -37,7 +54,7 @@ function scheletro({ brand, titolo, corpo, bottone }) {
             </tr>
             <tr>
               <td align="center" style="padding-top:24px">
-                <p style="margin:0;font-size:13px;line-height:1.6;font-weight:500;color:#b08f7e">${brand.nome}</p>
+                <p style="margin:0;font-size:13px;line-height:1.6;font-weight:500;color:#b08f7e">${nomeBrand}</p>
               </td>
             </tr>
           </table>
@@ -52,7 +69,7 @@ function bottoneHtml({ testo, url }, accento) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px">
     <tr>
       <td align="center" style="background-color:${accento};border-radius:9999px">
-        <a href="${url}" style="display:inline-block;padding:15px 32px;font-size:15px;font-weight:700;color:#fff8f0;text-decoration:none">${testo}</a>
+        <a href="${escapeHtml(url)}" style="display:inline-block;padding:15px 32px;font-size:15px;font-weight:700;color:#fff8f0;text-decoration:none">${testo}</a>
       </td>
     </tr>
   </table>`;
@@ -63,7 +80,7 @@ export function mailStoriaInLavorazione({ nome, brand }) {
     oggetto: `La storia di ${nome} è nata`,
     html: scheletro({
       brand,
-      titolo: `La storia di ${nome} è nata`,
+      titolo: `La storia di ${escapeHtml(nome)} è nata`,
       corpo:
         "La stiamo rileggendo una per una, perché un libro che finisce nelle mani di un bambino merita un paio d'occhi umani. Ti scriviamo appena è pronta: di solito bastano poche ore.",
     }),
@@ -75,7 +92,7 @@ export function mailStoriaPronta({ nome, brand, url }) {
     oggetto: `Il libro di ${nome} è pronto`,
     html: scheletro({
       brand,
-      titolo: `Il libro di ${nome} è pronto`,
+      titolo: `Il libro di ${escapeHtml(nome)} è pronto`,
       corpo: "L'abbiamo riletta, e ora è vostra. Buona lettura, stasera.",
       bottone: { testo: "Leggi la storia", url },
     }),
