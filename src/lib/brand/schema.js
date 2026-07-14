@@ -13,6 +13,8 @@ const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colore esadecimale non v
  * soggiorno all'Hotel Famiglia Serena, in Val Gardena").
  */
 export const brandSchema = z.object({
+  /** null per il sito principale: BRAND_DEFAULT non sta su Supabase. */
+  id: z.uuid().nullable().default(null),
   slug: z.string().min(1),
   nome: z.string().min(1),
   attivo: z.boolean().default(true),
@@ -69,6 +71,7 @@ export function brandDaRiga(riga) {
   if (!riga) return null;
 
   const risultato = brandSchema.safeParse({
+    id: riga.id ?? null,
     slug: riga.slug,
     nome: riga.nome,
     attivo: riga.attivo,
