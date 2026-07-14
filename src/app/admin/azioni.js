@@ -100,7 +100,11 @@ export async function salvaBrand(_statoPrecedente, formData) {
   }
 
   const riga = {
-    slug: dati.slug,
+    // Il sito principale non si rinomina. `risolviBrand(null)` cerca la home per
+    // slug: cambiarlo la farebbe ripiegare in silenzio su BRAND_DEFAULT — la home
+    // continuerebbe a funzionare, ma smetterebbe di essere modificabile da qui, e
+    // nessuno capirebbe perché.
+    slug: sitoPrincipale ? BRAND_DEFAULT.slug : dati.slug,
     nome: dati.nome,
     attivo: sitoPrincipale ? true : dati.attivo,
     tema: dati.tema,
