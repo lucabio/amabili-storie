@@ -71,3 +71,22 @@ export function storiaGenerataSchema(numeroPagine) {
       .describe("Consigli pratici per il genitore, uno per riga, concreti e attuabili."),
   });
 }
+
+/**
+ * Il contenuto di una storia salvata. È lo stesso schema che il modello produce,
+ * ma con un numero di pagine libero: serve a validare le correzioni fatte a mano
+ * nel backoffice, perché una modifica manuale non può produrre un libro malformato.
+ */
+export const contenutoStoriaSchema = z.object({
+  titolo: z.string().trim().min(1, "Il titolo non può essere vuoto"),
+  pagine: z
+    .array(
+      z.object({
+        testo: z.string().trim().min(1, "Una pagina non può essere vuota"),
+        illustrazione: z.string().trim().min(1, "Serve la descrizione della scena"),
+      }),
+    )
+    .min(1),
+  fraseAncora: z.string().trim().min(1, "La frase-àncora è il cuore del metodo"),
+  guidaGenitori: z.array(z.string().trim().min(1)).min(2).max(4),
+});
