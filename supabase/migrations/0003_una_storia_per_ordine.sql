@@ -1,0 +1,11 @@
+-- Una storia per ordine.
+--
+-- `creaStoriaInGenerazione` (src/workflows/libro.js) fa un insert in `storie`. Gli
+-- step del WDK possono essere rieseguiti: se lo step viene rieseguito dopo un
+-- successo parziale, senza un vincolo nascono due storie per lo stesso ordine.
+--
+-- Un unique index, non un `unique` inline: in Postgres i due si comportano
+-- allo stesso modo sui NULL (ogni NULL è distinto dagli altri, quindi non
+-- collide mai), ma l'index rende esplicito che la colonna resta nullable —
+-- le storie senza ordine, se mai ce ne saranno, non vengono bloccate.
+create unique index storie_ordine_id_unique_idx on public.storie (ordine_id);
