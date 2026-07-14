@@ -24,11 +24,21 @@ export async function generaLibro(ordineId) {
   const { ordine, brand } = await caricaOrdine(ordineId);
   const storiaId = await creaStoriaInGenerazione(ordine);
 
+  // La mail di cortesia non deve poter costare il libro: lo step ritenta da solo
+  // (è la politica di default del WDK), e se anche dopo tutti i tentativi Resend
+  // resta giù, si logga e si va avanti lo stesso — la storia rimane in coda.
+  // Questo try è volutamente separato da quello sotto: un fallimento qui non deve
+  // *mai* portare la storia in "fallita".
+  try {
+    await avvisaCheStaNascendo(ordine, brand);
+  } catch (problema) {
+    console.error(`Mail "storia in lavorazione" non spedita: ${problema.message}`);
+  }
+
   // Da qui in poi la riga "storie" esiste in stato in_generazione: qualunque cosa
   // vada storto deve portarla in "fallita", altrimenti resta un fantasma bloccato
   // per sempre (nessun errore, invisibile sia a "da rivedere" sia a "fallite").
   try {
-    await avvisaCheStaNascendo(ordine, brand);
     const contenuto = await scriviTesto(ordine, brand);
     await depositaInCoda(storiaId, contenuto);
     return { storiaId, stato: "in_revisione" };
