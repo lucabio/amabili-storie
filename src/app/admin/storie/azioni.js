@@ -212,14 +212,30 @@ export async function rigeneraStoria(storiaId) {
     // la coda mostra subito l'errore leggibile in `errore`.
     const messaggio = `Avvio della rigenerazione fallito: ${problema.message}`;
 
-    await db
+    const { error: erroreRecupero } = await db
       .from("storie")
       .update({ stato: "fallita", errore: messaggio })
       .eq("id", storiaId)
+      // Se nel frattempo il workflow era comunque partito ed è andato avanti,
+      // questo UPDATE non tocca nulla: non si sotterra un libro buono.
       .eq("stato", "in_generazione");
 
     revalidatePath("/admin/storie");
     revalidatePath(`/admin/storie/${storiaId}`);
+
+    // Doppio guasto: né il workflow è partito, né siamo riusciti a segnarlo.
+    // La storia resta in "in_generazione", da cui non si rigenera — cioè
+    // esattamente il fantasma. Non possiamo fare altro che dirlo forte, perché
+    // qui l'unica uscita è una mano umana.
+    if (erroreRecupero) {
+      console.error(
+        `Storia ${storiaId} bloccata in in_generazione: né avviata né segnata fallita (${erroreRecupero.message}).`,
+      );
+      return {
+        errore: `${messaggio} — e non siamo riusciti a segnarla come fallita: la storia è bloccata, avvisa chi sviluppa.`,
+      };
+    }
+
     return { errore: messaggio };
   }
 
