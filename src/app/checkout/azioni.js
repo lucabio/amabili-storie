@@ -29,7 +29,17 @@ export async function acquista(datiGrezzi) {
   const db = creaClientAdmin();
   if (!db) return { errore: "Supabase non è configurato." };
 
+  // La verità sul brand — e quindi sul prezzo — si legge qui, dal database.
+  // `ordine.parametri.brand` è solo lo slug che dice QUALE brand risolvere:
+  // non ci si fida di nient'altro che il client possa aver dichiarato su di
+  // esso (un "sono gratuito" nel payload non esiste nemmeno in ordineSchema,
+  // e se esistesse verrebbe comunque ignorato). Un ente che non accetta
+  // pagamenti regala il libro: formato fisso "ebook", prezzo azzerato — ma
+  // quella decisione la prende `brand.accettaPagamenti` appena letto dal DB,
+  // mai il formato o il prezzo che il client ha mandato.
   const brand = await risolviBrand(ordine.parametri.brand);
+  const formato = brand.accettaPagamenti ? ordine.formato : "ebook";
+  const prezzoCents = brand.accettaPagamenti ? ordine.prezzoCents : 0;
 
   const { data: riga, error } = await db
     .from("ordini")
@@ -37,8 +47,8 @@ export async function acquista(datiGrezzi) {
       brand_id: brand.id ?? null,
       email: ordine.email,
       parametri: ordine.parametri,
-      formato: ordine.formato,
-      prezzo_cents: ordine.prezzoCents,
+      formato,
+      prezzo_cents: prezzoCents,
       stato: "pagato",
       finto: true,
     })

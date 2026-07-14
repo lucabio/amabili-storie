@@ -49,3 +49,4 @@ supabase/.temp/
 # claude code
 .claude/settings.local.json
 .claude/worktrees/
+/.swc

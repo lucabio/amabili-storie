@@ -1,15 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
+import { acquista } from "@/app/checkout/azioni";
 import { formattaPrezzo, LISTINO } from "@/lib/ordini/schema";
 
-/** Le 3 pagine gratuite + la cattura email. */
-export default function AnteprimaStoria({ storia, nome, mostraPrezzi }) {
+const OPZIONI_FORMATO = [
+  { formato: "ebook", etichetta: "Solo eBook" },
+  { formato: "brossura", etichetta: "eBook + copertina morbida" },
+  { formato: "rilegato", etichetta: "eBook + copertina rigida" },
+];
+
+/**
+ * Le 3 pagine gratuite, e subito dopo l'acquisto vero.
+ *
+ * Il formato e il prezzo sono solo per la vetrina: la verità su quanto costa
+ * (e se costa qualcosa) la decide `acquista()` sul server, leggendo il brand
+ * dal database. Un `brand.accettaPagamenti` letto qui serve solo a scegliere
+ * quale porta mostrare, non a calcolare un prezzo.
+ */
+export default function AnteprimaStoria({ storia, nome, brand, parametri, formatoIniziale }) {
   const [email, setEmail] = useState("");
-  const [inviata, setInviata] = useState(false);
+  const [formato, setFormato] = useState(formatoIniziale || "ebook");
+  const [errore, setErrore] = useState(null);
+  const [comprato, setComprato] = useState(false);
+  const [inCorso, avvia] = useTransition();
 
   const emailValida = /.+@.+\..+/.test(email);
+
+  function compra(evento) {
+    evento.preventDefault();
+    if (!emailValida || inCorso) return;
+
+    setErrore(null);
+    avvia(async () => {
+      try {
+        const risposta = await acquista({
+          email,
+          // Per un brand che regala non c'è scelta: eBook, e il prezzo lo
+          // azzera comunque il server. Mandare "ebook" qui è solo per
+          // rispettare la forma dello schema, non una richiesta di sconto.
+          formato: brand.accettaPagamenti ? formato : "ebook",
+          parametri,
+        });
+        if (risposta?.errore) setErrore(risposta.errore);
+        else setComprato(true);
+      } catch (problema) {
+        setErrore(problema?.message ?? "Non siamo riusciti a registrare l'ordine. Riprova.");
+      }
+    });
+  }
 
   return (
     <section className="relative flex min-h-svh snap-start flex-col justify-center overflow-hidden bg-scuro px-4 py-[clamp(48px,6vw,80px)]">
@@ -53,34 +93,63 @@ export default function AnteprimaStoria({ storia, nome, mostraPrezzi }) {
         )}
 
         <div className="mx-auto mt-10 max-w-[540px] rounded-[22px] border border-dashed border-accento-soft/60 bg-crema/8 p-7 text-center">
-          {inviata ? (
+          {comprato ? (
             <div className="anim-pop">
               <p className="font-display text-[1.3rem] font-semibold text-accento-soft">
-                Sei in lista!
+                Il libro di {nome} è in lavorazione!
               </p>
               <p className="mt-2.5 leading-relaxed font-medium text-pergamena">
-                Ti scriviamo al lancio con il tuo sconto del 30% e l&apos;anteprima completa
-                della storia di {nome}. Sogni d&apos;oro nel frattempo.
+                Ti abbiamo scritto una mail. La rileggiamo con cura prima che arrivi: ti
+                avvisiamo appena è pronta.
               </p>
             </div>
           ) : (
             <div>
-              <p className="font-display text-[1.3rem] font-semibold text-crema">
-                Stiamo per aprire!
-              </p>
-              <p className="mt-2.5 leading-relaxed font-medium text-pergamena">
-                Lascia la tua email: al lancio ricevi il libro completo di {nome} con il{" "}
-                <span className="font-bold text-accento-soft">30% di sconto riservato</span>.
-              </p>
+              {brand.accettaPagamenti ? (
+                <>
+                  <p className="font-display text-[1.3rem] font-semibold text-crema">
+                    Porta a casa la storia intera
+                  </p>
+                  <p className="mt-2.5 leading-relaxed font-medium text-pergamena">
+                    20–24 pagine illustrate, la stessa cura che hai appena letto, rilette da
+                    un occhio umano prima di arrivarti.
+                  </p>
 
-              <form
-                className="mt-5 flex flex-wrap gap-3"
-                onSubmit={(evento) => {
-                  evento.preventDefault();
-                  // TODO: persistere il lead su Supabase (tabella `lead`).
-                  if (emailValida) setInviata(true);
-                }}
-              >
+                  <div className="mt-5 grid gap-2.5 text-left" role="radiogroup" aria-label="Formato">
+                    {OPZIONI_FORMATO.map((opzione) => (
+                      <label
+                        key={opzione.formato}
+                        className="flex cursor-pointer items-center gap-3 rounded-[14px] bg-crema px-4.5 py-3 font-semibold text-inchiostro"
+                      >
+                        <input
+                          type="radio"
+                          name="formato"
+                          value={opzione.formato}
+                          checked={formato === opzione.formato}
+                          onChange={() => setFormato(opzione.formato)}
+                          className="accent-accento"
+                        />
+                        <span className="flex-1">{opzione.etichetta}</span>
+                        <span className="font-display text-accento">
+                          {formattaPrezzo(LISTINO[opzione.formato].prezzoCents)}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="font-display text-[1.3rem] font-semibold text-crema">
+                    Il libro completo di {nome}, in regalo
+                  </p>
+                  <p className="mt-2.5 leading-relaxed font-medium text-pergamena">
+                    Lascia la tua email: scriviamo le altre pagine, le rileggiamo con cura, e
+                    te le mandiamo — gratis, un pensiero di {brand.nome}.
+                  </p>
+                </>
+              )}
+
+              <form className="mt-5 flex flex-wrap gap-3" onSubmit={compra}>
                 <input
                   type="email"
                   required
@@ -91,19 +160,25 @@ export default function AnteprimaStoria({ storia, nome, mostraPrezzi }) {
                 />
                 <button
                   type="submit"
-                  disabled={!emailValida}
+                  disabled={!emailValida || inCorso}
                   className="lift rounded-full bg-accento px-7 py-3.5 font-bold text-crema disabled:opacity-40"
                 >
-                  Blocca lo sconto
+                  {inCorso
+                    ? "Un attimo…"
+                    : brand.accettaPagamenti
+                      ? `Compra per ${formattaPrezzo(LISTINO[formato].prezzoCents)}`
+                      : "Ricevi il libro gratis"}
                 </button>
               </form>
 
-              {mostraPrezzi && (
-                <p className="mt-3.5 text-xs font-semibold text-inchiostro-tenue">
-                  eBook {formattaPrezzo(LISTINO.ebook.prezzoCents)} · Cartaceo rigido{" "}
-                  {formattaPrezzo(LISTINO.rilegato.prezzoCents)} · Niente spam, promesso.
-                </p>
+              {errore && (
+                <p className="mt-3.5 text-sm font-semibold text-accento-soft">{errore}</p>
               )}
+
+              <p className="mt-3.5 text-xs font-semibold text-inchiostro-tenue">
+                Niente spam, promesso.
+                {brand.accettaPagamenti && " Pagamento sicuro, ricevi il libro via email."}
+              </p>
             </div>
           )}
         </div>

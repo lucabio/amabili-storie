@@ -101,6 +101,11 @@ export default function Configuratore({ brand, capricci }) {
   const capriccioScelto = capricci.find((c) => c.id === modulo.capriccio);
   const nomePulito = modulo.nome.trim();
 
+  // Il pulsante "Solo eBook" non è decorativo: è la scelta di default, e
+  // "Sì, aggiungi!" la sposta sul formato scelto nel menu. Questo è solo il
+  // formato pre-selezionato al checkout, che nell'anteprima resta modificabile.
+  const formatoScelto = cartaceo.scelto ? cartaceo.formato : "ebook";
+
   const titoloCopertina = componiTitolo(capriccioScelto, nomePulito || "…");
   const iniziale = (nomePulito[0] || "A").toUpperCase();
 
@@ -369,7 +374,7 @@ export default function Configuratore({ brand, capricci }) {
                     </div>
                   </details>
 
-                  {brand.mostraPrezzi && (
+                  {brand.accettaPagamenti && (
                     <div className="mt-8 rounded-[18px] border border-dashed border-accento bg-accento/5 p-5.5">
                       <p className="mb-1.5 text-[1.05rem] font-bold text-accento">
                         Vuoi anche la copia cartacea?
@@ -479,7 +484,9 @@ export default function Configuratore({ brand, capricci }) {
           <AnteprimaStoria
             storia={storia}
             nome={nomePulito}
-            mostraPrezzi={brand.mostraPrezzi}
+            brand={brand}
+            parametri={{ ...modulo, brand: brand.slug }}
+            formatoIniziale={formatoScelto}
           />
         </div>
       )}
