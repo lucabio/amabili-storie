@@ -3,6 +3,20 @@ import { z } from "zod";
 import { animaleIdSchema } from "@/lib/domain/animali";
 import { capriccioIdSchema } from "@/lib/domain/capricci";
 
+/**
+ * I tratti di un personaggio: tutti opzionali, tutti stringhe vuote di default.
+ * Nutrono sia il prompt del testo sia, domani, la generazione delle illustrazioni.
+ * `descrizione` è il campo che vale di più: la descrizione libera breve dove un
+ * genitore scrive "ha sempre in mano un dinosauro di gomma".
+ */
+const trattiPersonaggioSchema = z.object({
+  capelli: z.string().trim().max(60).default(""),
+  coloreCapelli: z.string().trim().max(60).default(""),
+  coloreOcchi: z.string().trim().max(60).default(""),
+  corporatura: z.string().trim().max(60).default(""),
+  descrizione: z.string().trim().max(200).default(""),
+});
+
 /** Quello che il wizard manda al server. Validato al confine dell'API. */
 export const parametriStoriaSchema = z
   .object({
@@ -20,6 +34,17 @@ export const parametriStoriaSchema = z
     mamma: z.string().trim().max(40).default(""),
     papa: z.string().trim().max(40).default(""),
     dettaglio: z.string().trim().max(300).default(""),
+
+    // prefault, non default: in Zod 4 `.default()` corto-circuita e restituirebbe
+    // il valore così com'è (es. `{}` resterebbe `{}` invece di applicare i default
+    // dei tre personaggi). `.prefault()` lo fa passare per lo schema interno.
+    tratti: z
+      .object({
+        bambino: trattiPersonaggioSchema.prefault({}),
+        mamma: trattiPersonaggioSchema.prefault({}),
+        papa: trattiPersonaggioSchema.prefault({}),
+      })
+      .prefault({}),
 
     /** Slug del brand: decide il prompt guida applicato alla storia. */
     brand: z.string().trim().default("amabili"),

@@ -4,9 +4,18 @@ import { useState } from "react";
 
 import AnteprimaStoria from "@/components/AnteprimaStoria";
 import CopertinaLive from "@/components/CopertinaLive";
+import TrattiPersonaggio from "@/components/TrattiPersonaggio";
 import { ANIMALI } from "@/lib/domain/animali";
 import { componiTitolo } from "@/lib/domain/capricci";
 import { formattaPrezzo, LISTINO } from "@/lib/ordini/schema";
+
+const TRATTI_VUOTI = {
+  capelli: "",
+  coloreCapelli: "",
+  coloreOcchi: "",
+  corporatura: "",
+  descrizione: "",
+};
 
 const ETICHETTE_STEP = ["Capriccio", "Famiglia", "Protagonisti"];
 
@@ -66,6 +75,11 @@ export default function Configuratore({ brand, capricci }) {
     mamma: "",
     papa: "",
     dettaglio: "",
+    tratti: {
+      bambino: { ...TRATTI_VUOTI },
+      mamma: { ...TRATTI_VUOTI },
+      papa: { ...TRATTI_VUOTI },
+    },
   });
   const [cartaceo, setCartaceo] = useState({ scelto: null, formato: "brossura" });
   const [caricamento, setCaricamento] = useState(false);
@@ -74,6 +88,15 @@ export default function Configuratore({ brand, capricci }) {
 
   const aggiorna = (campo) => (evento) =>
     setModulo((precedente) => ({ ...precedente, [campo]: evento.target.value }));
+
+  const aggiornaTratto = (personaggio, campo) => (evento) =>
+    setModulo((precedente) => ({
+      ...precedente,
+      tratti: {
+        ...precedente.tratti,
+        [personaggio]: { ...precedente.tratti[personaggio], [campo]: evento.target.value },
+      },
+    }));
 
   const capriccioScelto = capricci.find((c) => c.id === modulo.capriccio);
   const nomePulito = modulo.nome.trim();
@@ -313,6 +336,38 @@ export default function Configuratore({ brand, capricci }) {
                       onChange={aggiorna("dettaglio")}
                     />
                   </div>
+
+                  <details className="group mt-5 rounded-[14px] border border-bordo bg-crema/60 p-4">
+                    <summary className="cursor-pointer list-none text-sm font-bold text-inchiostro-soft marker:content-none">
+                      <span className="inline-flex items-center gap-2">
+                        <span className="inline-block transition-transform group-open:rotate-90">
+                          ›
+                        </span>
+                        Aggiungi qualche dettaglio — facoltativo
+                      </span>
+                    </summary>
+                    <p className="mt-2 mb-4 text-xs font-medium text-inchiostro-tenue">
+                      Capelli, occhi, un oggetto che non lascia mai: più dettagli scrivi, più la
+                      storia sembrerà scritta apposta per loro.
+                    </p>
+                    <div className="grid gap-3">
+                      <TrattiPersonaggio
+                        titolo={`Aspetto di ${nomePulito || "chi vive la storia"}`}
+                        valori={modulo.tratti.bambino}
+                        aggiorna={(campo) => aggiornaTratto("bambino", campo)}
+                      />
+                      <TrattiPersonaggio
+                        titolo="Aspetto della mamma"
+                        valori={modulo.tratti.mamma}
+                        aggiorna={(campo) => aggiornaTratto("mamma", campo)}
+                      />
+                      <TrattiPersonaggio
+                        titolo="Aspetto del papà"
+                        valori={modulo.tratti.papa}
+                        aggiorna={(campo) => aggiornaTratto("papa", campo)}
+                      />
+                    </div>
+                  </details>
 
                   {brand.mostraPrezzi && (
                     <div className="mt-8 rounded-[18px] border border-dashed border-accento bg-accento/5 p-5.5">

@@ -1,6 +1,27 @@
 import { getAnimale } from "@/lib/domain/animali";
 import { getCapriccio } from "@/lib/domain/capricci";
 
+/** Etichette leggibili per i tratti di un personaggio, nell'ordine del prompt. */
+const ETICHETTE_TRATTI = [
+  ["capelli", "capelli"],
+  ["coloreCapelli", "colore capelli"],
+  ["coloreOcchi", "colore occhi"],
+  ["corporatura", "corporatura"],
+  ["descrizione", "dettaglio"],
+];
+
+/**
+ * Riassume i tratti compilati di un personaggio in una frase, ignorando i campi
+ * vuoti. Un elenco di campi vuoti ("capelli: , occhi: ") confonde il modello,
+ * quindi se non c'è nulla di compilato non produce nessuna riga.
+ */
+function descriviTratti(tratti) {
+  if (!tratti) return "";
+  return ETICHETTE_TRATTI.map(([campo, etichetta]) => tratti[campo] && `${etichetta}: ${tratti[campo]}`)
+    .filter(Boolean)
+    .join(", ");
+}
+
 /**
  * Il Metodo Amabili è la promessa del prodotto ("non un regalo, uno strumento"):
  * questi vincoli non sono stilistici, sono la ragione per cui una famiglia paga.
@@ -64,6 +85,25 @@ export function costruisciPrompt(parametri, numeroPagine) {
       `Dettaglio personale da intrecciare almeno una volta: ${parametri.dettaglio}.`,
     );
   }
+
+  const personaggi = [
+    { chiave: "bambino", intestazione: `Aspetto di ${parametri.nome}` },
+    {
+      chiave: "mamma",
+      intestazione: parametri.mamma ? `Aspetto di ${parametri.mamma}` : "Aspetto della mamma",
+    },
+    {
+      chiave: "papa",
+      intestazione: parametri.papa ? `Aspetto di ${parametri.papa}` : "Aspetto del papà",
+    },
+  ];
+  for (const { chiave, intestazione } of personaggi) {
+    const descrizione = descriviTratti(parametri.tratti?.[chiave]);
+    if (descrizione) {
+      righe.push(`${intestazione}: ${descrizione}.`);
+    }
+  }
+
   if (parametri.famiglia === "animali" && animale) {
     righe.push(
       `Tutti i personaggi sono ${animale.plurale.toLowerCase()}: mantieni la coerenza animale in tutta la storia.`,
