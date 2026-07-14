@@ -1,4 +1,6 @@
 // @ts-check
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- niente "type": "module" nel package.json, questo file resta CommonJS.
+const { withWorkflow } = require("@workflow/next");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -8,4 +10,4 @@ const nextConfig = {
   turbopack: { root: __dirname },
 };
 
-module.exports = nextConfig;
+module.exports = withWorkflow(nextConfig);
