@@ -2,9 +2,10 @@
  * Il libro intero, per il genitore che ha ricevuto il link via mail. È la
  * sorella maggiore di `AnteprimaStoria` (le 3 pagine gratuite): stessa
  * palette, stesse forme, stesso tono — ma qui ci sono tutte le pagine, la
- * frase-àncora e la guida genitori. `illustrazione` non si mostra mai: è la
- * descrizione della scena per la fase 2 (le illustrazioni vere), non testo
- * per il genitore. Server Component: niente qui ha bisogno del browser.
+ * frase-àncora e la guida genitori. `illustrazione` (la descrizione della
+ * scena) non si mostra mai; `illustrazioneUrl`, l'immagine generata dal
+ * backoffice, sì — quando c'è. Server Component: niente qui ha bisogno del
+ * browser.
  */
 export default function LettoreStoria({ storia, nome }) {
   return (
@@ -36,6 +37,14 @@ export default function LettoreStoria({ storia, nome }) {
               <span className="mb-3 block text-[11px] font-extrabold tracking-[0.16em] text-accento uppercase">
                 Pagina {indice + 1}
               </span>
+              {pagina.illustrazioneUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={pagina.illustrazioneUrl}
+                  alt=""
+                  className="mb-4 w-full rounded-[14px] border border-bordo"
+                />
+              )}
               <p className="text-lg leading-[1.8] font-medium text-inchiostro">{pagina.testo}</p>
             </article>
           ))}

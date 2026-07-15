@@ -24,8 +24,9 @@ export class AiNonDisponibile extends Error {
 
 /**
  * Su Vercel il Gateway si autentica da solo via OIDC; in locale serve la chiave.
+ * Vale sia per il testo sia per le illustrazioni: passano dallo stesso Gateway.
  */
-function aiDisponibile() {
+export function aiDisponibile() {
   return Boolean(process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN);
 }
 

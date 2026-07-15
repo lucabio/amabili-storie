@@ -9,11 +9,18 @@ import { creaClientAdmin } from "@/lib/supabase/server";
 import { generaLibro } from "@/workflows/libro";
 
 /**
- * Il checkout finto: crea l'ordine e lancia la generazione, senza far pagare
- * nessuno. Sta dietro una flag perché in produzione non deve esistere.
+ * Il checkout: crea l'ordine e lancia la generazione. Chi decide se un merchant
+ * fa pagare è il flag per-merchant `accetta_pagamenti`, gestito dal backoffice —
+ * non più una variabile d'ambiente globale.
  *
- * Quando arriva Stripe, il webhook fa gli stessi tre passi con `finto: false`.
- * La firma non cambia, e la coda non si tocca.
+ * Finché Stripe non è configurato (`STRIPE_SECRET_KEY` assente), ogni acquisto è
+ * *simulato*: l'ordine nasce con `finto = true`, così tutta la catena
+ * (ordine → workflow → coda) è testabile end-to-end senza far pagare nessuno.
+ * Il giorno del lancio si cancellano con `delete from ordini where finto`.
+ *
+ * La sicurezza non sta più in una flag da ricordare: appena `STRIPE_SECRET_KEY`
+ * esiste, la presenza di Stripe da sola dirotta sul pagamento vero — non si può
+ * più regalare per errore un libro a un merchant che vende.
  */
 export async function acquista(datiGrezzi) {
   const esito = ordineSchema.safeParse(datiGrezzi);
@@ -32,14 +39,15 @@ export async function acquista(datiGrezzi) {
   // mai il formato o il prezzo che il client ha mandato.
   const brand = await risolviBrand(ordine.parametri.brand);
 
-  // La flag protegge SOLO il ramo a pagamento: l'acquisto è simulato finché
-  // non arriva Stripe, e quel simulacro non deve esistere in produzione. Il
-  // regalo di un ente che non accetta pagamenti non è un checkout finto: è
-  // una consegna gratuita legittima (formato fisso, prezzo azzerato qui
-  // sotto), e deve funzionare in produzione da subito — un ospite
-  // dell'Hotel Famiglia Serena non può dipendere da una flag di sviluppo.
-  if (brand.accettaPagamenti && process.env.CHECKOUT_FINTO !== "1") {
-    throw new Error("Il checkout non è attivo.");
+  // Pagamenti reali = Stripe configurato. È la sola cosa che distingue un
+  // acquisto vero da uno simulato: nessuna flag di ambiente manuale.
+  const pagamentiReali = Boolean(process.env.STRIPE_SECRET_KEY);
+
+  // Un merchant che vende e ha Stripe attivo dovrebbe passare per il pagamento
+  // con carta — che però non esiste ancora. Meglio un errore gestito che un
+  // libro regalato per sbaglio: qui, un giorno, nascerà la sessione Stripe.
+  if (brand.accettaPagamenti && pagamentiReali) {
+    return { errore: "Il pagamento con carta non è ancora attivo." };
   }
 
   const db = creaClientAdmin();
@@ -57,7 +65,9 @@ export async function acquista(datiGrezzi) {
       formato,
       prezzo_cents: prezzoCents,
       stato: "pagato",
-      finto: true,
+      // Simulato finché non c'è Stripe. Quando arriverà, il suo webhook farà
+      // gli stessi passi con `finto: false` — la coda non se ne accorge.
+      finto: !pagamentiReali,
     })
     .select("id")
     .single();
