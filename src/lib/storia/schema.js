@@ -109,6 +109,9 @@ export const contenutoStoriaSchema = z.object({
       z.object({
         testo: z.string().trim().min(1, "Una pagina non può essere vuota"),
         illustrazione: z.string().trim().min(1, "Serve la descrizione della scena"),
+        // L'immagine generata dal backoffice, se c'è. `illustrazione` resta la
+        // descrizione della scena (il prompt); questo è il risultato disegnato.
+        illustrazioneUrl: z.url().nullish(),
       }),
     )
     .min(1),

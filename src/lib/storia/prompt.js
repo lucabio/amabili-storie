@@ -112,3 +112,59 @@ export function costruisciPrompt(parametri, numeroPagine) {
 
   return righe.join("\n");
 }
+
+/**
+ * Lo stile visivo, identico per ogni pagina. La coerenza di un libro illustrato
+ * nasce da qui: stesso stile, stessa scheda personaggi, scena che cambia.
+ */
+const STILE_ILLUSTRAZIONE =
+  "Illustrazione per un libro per bambini, stile acquerello digitale dai colori caldi e morbidi, linee dolci, atmosfera tenera e rassicurante. Composizione pulita, sfondo semplice. NESSUN testo, nessuna scritta, nessuna lettera, nessun numero, nessun bordo o cornice nell'immagine.";
+
+/**
+ * La scheda dei personaggi: la stessa in ogni pagina, così il bambino ha lo
+ * stesso aspetto dall'inizio alla fine. Nasce dai tratti che il genitore ha
+ * compilato (`descrizione` compresa: "ha sempre in mano un dinosauro di gomma").
+ */
+function schedaPersonaggi(parametri) {
+  const animale = getAnimale(parametri.animale);
+  const eta = `${parametri.eta} anni`;
+
+  const base =
+    parametri.famiglia === "animali" && animale
+      ? `${parametri.nome}, un piccolo ${animale.singolare} di ${eta}`
+      : `${parametri.nome}, ${parametri.genere === "bimba" ? "una bambina" : "un bambino"} di ${eta}`;
+
+  const righe = [];
+  const trattiBambino = descriviTratti(parametri.tratti?.bambino);
+  righe.push(`- Protagonista: ${base}${trattiBambino ? ` (${trattiBambino})` : ""}.`);
+
+  const trattiMamma = descriviTratti(parametri.tratti?.mamma);
+  const trattiPapa = descriviTratti(parametri.tratti?.papa);
+  if (parametri.mamma || trattiMamma) {
+    righe.push(`- Mamma${parametri.mamma ? ` (${parametri.mamma})` : ""}${trattiMamma ? `: ${trattiMamma}` : ""}.`);
+  }
+  if (parametri.papa || trattiPapa) {
+    righe.push(`- Papà${parametri.papa ? ` (${parametri.papa})` : ""}${trattiPapa ? `: ${trattiPapa}` : ""}.`);
+  }
+
+  if (parametri.famiglia === "animali" && animale) {
+    righe.push(`- Tutti i personaggi sono ${animale.plurale.toLowerCase()}, in ${animale.ambiente}.`);
+  }
+
+  return righe.join("\n");
+}
+
+/**
+ * Il prompt per generare l'illustrazione di UNA pagina: stile fisso + scheda
+ * personaggi (per la coerenza fra pagine) + la scena di questa pagina.
+ */
+export function costruisciPromptIllustrazione({ scena, parametri }) {
+  return [
+    STILE_ILLUSTRAZIONE,
+    "",
+    "Personaggi (mantieni lo stesso identico aspetto in ogni illustrazione del libro):",
+    schedaPersonaggi(parametri),
+    "",
+    `Scena da illustrare: ${scena}`,
+  ].join("\n");
+}

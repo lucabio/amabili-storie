@@ -52,14 +52,16 @@ src/
     page.js                        Home: risolve il brand da ?version= e monta le sezioni
     api/storie/anteprima/route.js  POST → le 3 pagine gratuite
     auth/callback/route.js         Dove atterra il magic link del backoffice
-    checkout/azioni.js             Ordine (finto, dietro flag) → lancia il workflow
+    checkout/azioni.js             Ordine (simulato finché non c'è Stripe) → lancia il workflow
     storie/[id]/page.js            Dove il genitore legge il libro approvato
+    admin/storie/[id]/pdf/route.js Scarica il libro in PDF (solo amministratori)
     admin/                         Backoffice: login OTP, CRUD merchant, coda storie
   components/                      UI del sito pubblico + admin/ (ModuloBrand, EditorStoria)
   lib/
     domain/     capricci.js, animali.js — il catalogo, con l'arco narrativo di ogni capriccio
     brand/      schema.js (Zod + BRAND_DEFAULT), resolve.js (?version= → brand)
-    storia/     schema.js, prompt.js (il Metodo Amabili), genera.js, fallback.js, stati.js
+    storia/     schema.js, prompt.js (il Metodo Amabili), genera.js, fallback.js, stati.js,
+                illustrazioni.js (Nano Banana), storage.js (Supabase Storage), pdf.jsx (@react-pdf)
     ordini/     schema.js — il listino, e il prezzo che il client non decide
     mail/       modelli.js (le mail, brandizzate), invia.js (Resend)
     lead/       azioni.js — chi lascia la mail e non compra
@@ -68,7 +70,7 @@ src/
   workflows/
     libro.js                       generaLibro: la nascita di un libro, durevole
 supabase/
-  migrations/                      0001 … 0005 — vanno applicate con la CLI, mai a mano
+  migrations/                      0001 … 0006 — vanno applicate con la CLI, mai a mano
   templates/                       La mail di accesso: da incollare in dashboard
   seed.sql                         Hotel Famiglia Serena, per lo sviluppo
 proxy.js                           Rinfresca la sessione Supabase su /admin/*
@@ -186,17 +188,20 @@ scrivi i valori nuovi, e li rifiuta.
 Il backlog vero sta su Notion (*Amabili Storie – Document Hub → Product Backlog*). Qui le
 cose che chi tocca il codice deve sapere subito:
 
-1. **Le illustrazioni non esistono.** Lo schema produce già `illustrazione` — la descrizione
-   della scena, una per pagina — ma nessuno la disegna. Un libro illustrato senza
-   illustrazioni non è il prodotto. Il nodo non è il provider: è la **coerenza del
-   personaggio** fra le pagine. Si genera un foglio del personaggio (alimentato dai tratti
-   che il genitore compila) e lo si passa come riferimento visivo a ogni pagina. Le figure
-   vanno riviste nel backoffice **prima** dell'approvazione, con retry per singola pagina —
-   ed è l'unica ragione per cui la generazione gira su Workflow DevKit.
-2. **I pagamenti sono finti**, dietro `CHECKOUT_FINTO=1` (che in produzione non esiste). Gli
-   ordini nati così hanno `finto = true`: si cancellano con `delete from ordini where finto`.
-   Quando arriva Stripe, il webhook fa gli stessi passi con `finto = false` — la coda non si
-   tocca.
+1. **Le illustrazioni: c'è la generazione, manca la coerenza forte.** Dal backoffice
+   (`EditorStoria`) ogni pagina ha un tasto "Genera illustrazione" con retry: `illustrazioni.js`
+   chiama Nano Banana via Gateway, `storage.js` salva su Supabase Storage, l'URL finisce in
+   `contenuto.pagine[i].illustrazioneUrl` (e si vede nel lettore e nel PDF). Il prompt usa una
+   **scheda personaggi** fissa (dai tratti del genitore) per tenere l'aspetto costante, ma ogni
+   pagina è ancora generata **in modo indipendente**. Il passo che manca è la coerenza vera:
+   generare un foglio del personaggio e passarlo come **immagine di riferimento** a ogni pagina
+   (Nano Banana accetta immagini in input). Serve la migration `0006` applicata (bucket storage).
+2. **I pagamenti sono simulati finché non c'è Stripe.** Se un merchant fa pagare lo decide il
+   flag per-merchant `accetta_pagamenti` dal backoffice — non più una env globale. Finché
+   `STRIPE_SECRET_KEY` è assente ogni ordine nasce con `finto = true` (`delete from ordini where
+   finto` per pulirli). Quando la chiave c'è, il ramo a pagamento prende il posto del simulato:
+   manca ancora la sessione Stripe vera e il suo webhook, che farà gli stessi passi con
+   `finto = false` — la coda non si tocca.
 3. **Un cartaceo si può ordinare ma nessuno chiede dove spedirlo.** `ordini` non ha una
    colonna per l'indirizzo. O lo si raccoglie, o si vendono solo eBook.
 4. **La gratuità è un URL pubblico.** Chiunque scriva `?version=famiglia_serena` riceve un
@@ -204,8 +209,9 @@ cose che chi tocca il codice deve sapere subito:
    pubblici (`acquista`, `salvaLead`, l'anteprima) non hanno rate limit né antibot.
 5. **Non esiste la produzione**: manca il progetto Supabase di prod, manca quello Vercel, e
    `main` non porta da nessuna parte.
-6. **Export PDF dell'eBook**, e poi l'adapter verso il fornitore di stampa (ancora da
-   scegliere).
+6. **Export PDF dell'eBook: c'è dal backoffice** (`/admin/storie/<id>/pdf`, `pdf.jsx` con
+   `@react-pdf/renderer`). Manca il PDF per il **genitore** (oggi lo scarica solo
+   l'amministratore) e l'adapter verso il fornitore di stampa (ancora da scegliere).
 7. **Il backoffice non è mai stato usato a mano.** Coda, editor, approvazione e rigenerazione
    sono stati verificati leggendo il codice e pilotando le azioni via script, ma nessuno li ha
    ancora guidati dall'interfaccia.

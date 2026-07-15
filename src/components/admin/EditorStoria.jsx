@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 
 import {
   approvaStoria,
+  generaIllustrazioneStoria,
   rifiutaStoria,
   rigeneraStoria,
   salvaStoria,
@@ -14,6 +15,7 @@ export default function EditorStoria({ storia }) {
   const [contenuto, setContenuto] = useState(storia.contenuto);
   const [nota, setNota] = useState("");
   const [esito, setEsito] = useState(null);
+  const [illustrando, setIllustrando] = useState({});
   const [inCorso, avvia] = useTransition();
 
   const revisionabile = storia.stato === "in_revisione";
@@ -26,6 +28,24 @@ export default function EditorStoria({ storia }) {
         i === indice ? { ...pagina, [campo]: valore } : pagina,
       ),
     }));
+  }
+
+  // Generare un'immagine è lento (secondi): stato per-pagina, così i bottoni
+  // delle altre pagine restano usabili mentre una è in corso.
+  async function illustra(indice) {
+    setIllustrando((stato) => ({ ...stato, [indice]: true }));
+    setEsito(null);
+    const risposta = await generaIllustrazioneStoria(
+      storia.id,
+      indice,
+      contenuto.pagine[indice].illustrazione,
+    );
+    setIllustrando((stato) => ({ ...stato, [indice]: false }));
+    if (risposta?.ok && risposta.url) {
+      aggiornaPagina(indice, "illustrazioneUrl", risposta.url);
+    } else {
+      setEsito(risposta);
+    }
   }
 
   function esegui(azione) {
@@ -44,6 +64,12 @@ export default function EditorStoria({ storia }) {
         <h1 className="font-display text-2xl font-semibold">
           {storia.parametri?.nome} · {storia.parametri?.capriccio}
         </h1>
+        <a
+          href={`/admin/storie/${storia.id}/pdf`}
+          className="lift ml-auto rounded-full border border-bordo bg-white px-5 py-2.5 text-sm font-bold text-inchiostro-soft"
+        >
+          Scarica PDF
+        </a>
       </div>
 
       {storia.stato === "fallita" && storia.errore && (
@@ -109,6 +135,31 @@ export default function EditorStoria({ storia }) {
                 className="mt-1.5 w-full rounded-[14px] border border-bordo px-4 py-2.5 text-sm font-medium outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
               />
             </label>
+
+            <div className="mt-4 flex flex-wrap items-start gap-4">
+              {pagina.illustrazioneUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={pagina.illustrazioneUrl}
+                  alt={`Illustrazione pagina ${indice + 1}`}
+                  className="h-40 w-40 rounded-[14px] border border-bordo object-cover"
+                />
+              )}
+              {revisionabile && (
+                <button
+                  type="button"
+                  disabled={illustrando[indice] || !pagina.illustrazione?.trim()}
+                  onClick={() => illustra(indice)}
+                  className="lift rounded-full border border-accento px-5 py-2.5 text-sm font-bold text-accento disabled:opacity-40"
+                >
+                  {illustrando[indice]
+                    ? "Sto disegnando…"
+                    : pagina.illustrazioneUrl
+                      ? "Rigenera illustrazione"
+                      : "Genera illustrazione"}
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
