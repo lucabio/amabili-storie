@@ -1,5 +1,8 @@
+import path from "node:path";
+
 import {
   Document,
+  Font,
   Image,
   Page,
   StyleSheet,
@@ -8,16 +11,50 @@ import {
   renderToBuffer,
 } from "@react-pdf/renderer";
 
+import { fontById, layoutPagina } from "@/lib/storia/layout";
+
 /**
- * Il libro in PDF, layout da albo illustrato: ogni pagina è l'illustrazione a
- * tutta pagina, col testo in sovrimpressione su una fascia semitrasparente in
- * basso — non testo e immagine separati. Copertina scura col titolo, pagina di
- * chiusura con frase-àncora e guida genitori.
+ * Il libro in PDF, impaginato come nell'editor: immagine e testo alle posizioni
+ * e dimensioni scelte a mano (frazioni della pagina), con lo stile del testo
+ * scelto a mano — WYSIWYG vero. Copertina scura e pagina di chiusura restano
+ * fisse.
  *
- * Font built-in del PDF (Helvetica): coprono accenti e virgolette basse «».
- * Le immagini sono URL pubblici di Supabase Storage, scaricati al render.
+ * I font sono gli stessi file di `public/fonts` usati dall'editor (registrati
+ * qui sotto). `next.config.js` li include nel bundle serverless della route PDF.
  * Sta in un `.jsx` (usa JSX) ma NON è React DOM: `renderToBuffer` → Buffer PDF.
  */
+
+const dirFont = path.join(process.cwd(), "public", "fonts");
+const f = (nome) => path.join(dirFont, nome);
+
+Font.register({
+  family: "Baloo2",
+  fonts: [
+    { src: f("baloo2-regular.ttf"), fontWeight: "normal" },
+    { src: f("baloo2-bold.ttf"), fontWeight: "bold" },
+  ],
+});
+Font.register({
+  family: "Fraunces",
+  fonts: [
+    { src: f("fraunces-regular.ttf"), fontWeight: "normal" },
+    { src: f("fraunces-bold.ttf"), fontWeight: "bold" },
+    { src: f("fraunces-italic.ttf"), fontWeight: "normal", fontStyle: "italic" },
+    { src: f("fraunces-bolditalic.ttf"), fontWeight: "bold", fontStyle: "italic" },
+  ],
+});
+Font.register({
+  family: "Nunito",
+  fonts: [
+    { src: f("nunito-regular.ttf"), fontWeight: "normal" },
+    { src: f("nunito-bold.ttf"), fontWeight: "bold" },
+    { src: f("nunito-italic.ttf"), fontWeight: "normal", fontStyle: "italic" },
+    { src: f("nunito-bolditalic.ttf"), fontWeight: "bold", fontStyle: "italic" },
+  ],
+});
+
+/** Frazione 0–1 → percentuale, con clamp. */
+const pct = (n) => `${Math.max(0, Math.min(1, n)) * 100}%`;
 
 const stili = StyleSheet.create({
   copertina: {
@@ -28,6 +65,7 @@ const stili = StyleSheet.create({
     backgroundColor: "#43302a",
   },
   occhiello: {
+    fontFamily: "Nunito",
     fontSize: 11,
     letterSpacing: 2,
     textTransform: "uppercase",
@@ -35,56 +73,26 @@ const stili = StyleSheet.create({
     marginBottom: 16,
   },
   titolo: {
-    fontSize: 30,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Fraunces",
+    fontWeight: "bold",
+    fontSize: 32,
     textAlign: "center",
     color: "#ffffff",
     lineHeight: 1.3,
   },
-  paginaLibro: {
-    position: "relative",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-  },
-  sfondoPieno: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-  },
-  immagine: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  },
+  pagina: { position: "relative" },
   numero: {
     position: "absolute",
-    top: 20,
-    right: 24,
+    top: 18,
+    right: 20,
+    fontFamily: "Nunito",
     fontSize: 10,
-    fontFamily: "Helvetica-Bold",
+    fontWeight: "bold",
     color: "#ffffff",
     backgroundColor: "rgba(67,48,42,0.55)",
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderRadius: 10,
-  },
-  fascia: {
-    backgroundColor: "rgba(253,250,246,0.86)",
-    paddingVertical: 22,
-    paddingHorizontal: 32,
-    margin: 20,
-    borderRadius: 14,
-  },
-  testo: {
-    fontSize: 15,
-    lineHeight: 1.7,
-    color: "#2b211d",
-    textAlign: "center",
   },
   chiusura: {
     flexDirection: "column",
@@ -93,17 +101,15 @@ const stili = StyleSheet.create({
     backgroundColor: "#f7efe6",
   },
   ancora: {
+    fontFamily: "Fraunces",
+    fontStyle: "italic",
     fontSize: 18,
-    fontFamily: "Helvetica-Oblique",
     textAlign: "center",
     marginBottom: 32,
   },
-  guidaTitolo: {
-    fontSize: 14,
-    fontFamily: "Helvetica-Bold",
-    marginBottom: 12,
-  },
+  guidaTitolo: { fontFamily: "Nunito", fontWeight: "bold", fontSize: 14, marginBottom: 12 },
   consiglio: {
+    fontFamily: "Nunito",
     fontSize: 12,
     lineHeight: 1.6,
     color: "#4a3f39",
@@ -111,22 +117,60 @@ const stili = StyleSheet.create({
   },
 });
 
-function PaginaLibro({ pagina, indice, accento, accentoSoft }) {
+function PaginaLibro({ pagina, indice, accentoSoft }) {
+  const { immagine, testo, stile } = layoutPagina(pagina);
+  const meta = fontById(stile.font);
+  const corsivo = stile.corsivo && meta.corsivo;
+
   return (
-    <Page size="A5" orientation="landscape" style={stili.paginaLibro}>
-      {pagina.illustrazioneUrl ? (
-        // @react-pdf Image, non <img> HTML: la regola alt-text non si applica.
-        // eslint-disable-next-line jsx-a11y/alt-text
-        <Image src={pagina.illustrazioneUrl} style={stili.immagine} />
-      ) : (
-        <View style={[stili.sfondoPieno, { backgroundColor: accentoSoft }]} />
-      )}
-      <Text style={stili.numero}>{indice + 1}</Text>
-      <View style={stili.fascia}>
-        <Text style={[stili.testo, pagina.illustrazioneUrl ? null : { color: accento }]}>
+    <Page size="A5" orientation="landscape" style={stili.pagina}>
+      <View
+        style={{
+          position: "absolute",
+          left: pct(immagine.x),
+          top: pct(immagine.y),
+          width: pct(immagine.w),
+          height: pct(immagine.h),
+        }}
+      >
+        {pagina.illustrazioneUrl ? (
+          // @react-pdf Image, non <img> HTML: la regola alt-text non si applica.
+          // eslint-disable-next-line jsx-a11y/alt-text
+          <Image
+            src={pagina.illustrazioneUrl}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ) : (
+          <View style={{ width: "100%", height: "100%", backgroundColor: accentoSoft }} />
+        )}
+      </View>
+
+      <View
+        style={{
+          position: "absolute",
+          left: pct(testo.x),
+          top: pct(testo.y),
+          width: pct(testo.w),
+          height: pct(testo.h),
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          style={{
+            fontFamily: meta.pdfFamily,
+            fontSize: stile.dimensione,
+            color: stile.colore,
+            textAlign: stile.allineamento,
+            fontWeight: stile.grassetto ? "bold" : "normal",
+            fontStyle: corsivo ? "italic" : "normal",
+            lineHeight: 1.4,
+          }}
+        >
           {pagina.testo}
         </Text>
       </View>
+
+      <Text style={stili.numero}>{indice + 1}</Text>
     </Page>
   );
 }
@@ -143,13 +187,7 @@ function LibroPDF({ contenuto, brand }) {
       </Page>
 
       {contenuto.pagine.map((pagina, indice) => (
-        <PaginaLibro
-          key={indice}
-          pagina={pagina}
-          indice={indice}
-          accento={accento}
-          accentoSoft={accentoSoft}
-        />
+        <PaginaLibro key={indice} pagina={pagina} indice={indice} accentoSoft={accentoSoft} />
       ))}
 
       <Page size="A5" orientation="landscape" style={stili.chiusura}>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 
+import TelaPagina from "@/components/admin/TelaPagina";
 import {
   approvaStoria,
   generaIllustrazioneStoria,
@@ -9,7 +10,10 @@ import {
   rigeneraStoria,
   salvaStoria,
 } from "@/app/admin/storie/azioni";
+import { ALLINEAMENTI, FONT_CATALOG, layoutPagina } from "@/lib/storia/layout";
 import { ETICHETTE, transizionePermessa } from "@/lib/storia/stati";
+
+const ETICHETTE_ALLINEAMENTO = { left: "Sx", center: "Ce", right: "Dx" };
 
 export default function EditorStoria({ storia }) {
   const [contenuto, setContenuto] = useState(storia.contenuto);
@@ -25,6 +29,7 @@ export default function EditorStoria({ storia }) {
   const totale = pagine.length;
   const indice = Math.min(pagina, Math.max(0, totale - 1));
   const corrente = pagine[indice];
+  const lay = corrente ? layoutPagina(corrente) : null;
 
   const revisionabile = storia.stato === "in_revisione";
   const rigenerabile = transizionePermessa(storia.stato, "in_generazione");
@@ -58,6 +63,28 @@ export default function EditorStoria({ storia }) {
       pagine: precedente.pagine.map((p, j) => (j === i ? { ...p, [campo]: valore } : p)),
     }));
   }
+
+  // Fonde un pezzo di layout (un riquadro o lo stile) partendo sempre dai default
+  // interi, così una pagina senza layout ne acquista uno valido al primo tocco.
+  function aggiornaLayout(i, patch) {
+    setContenuto((precedente) => ({
+      ...precedente,
+      pagine: precedente.pagine.map((p, j) => {
+        if (j !== i) return p;
+        const base = layoutPagina(p);
+        return {
+          ...p,
+          layout: {
+            immagine: { ...base.immagine, ...(patch.immagine ?? {}) },
+            testo: { ...base.testo, ...(patch.testo ?? {}) },
+            stile: { ...base.stile, ...(patch.stile ?? {}) },
+          },
+        };
+      }),
+    }));
+  }
+
+  const aggiornaStile = (i, patch) => aggiornaLayout(i, { stile: patch });
 
   async function illustra(i) {
     setIllustrando((s) => ({ ...s, [i]: true }));
@@ -131,9 +158,7 @@ export default function EditorStoria({ storia }) {
         </p>
       )}
       {esito?.ok && (
-        <p className="mt-4 rounded-card bg-accento-soft/20 p-4 font-semibold text-scuro">
-          Fatto.
-        </p>
+        <p className="mt-4 rounded-card bg-accento-soft/20 p-4 font-semibold text-scuro">Fatto.</p>
       )}
 
       <label className="mt-8 block">
@@ -185,24 +210,19 @@ export default function EditorStoria({ storia }) {
                 Pagina {indice + 1} di {totale}
               </span>
               <span className="text-xs font-medium text-inchiostro-tenue">
-                ← → per sfogliare
+                trascina e ridimensiona · ← → per sfogliare
               </span>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <TelaPagina
+              pagina={corrente}
+              layout={lay}
+              attivo={revisionabile}
+              onLayout={(patch) => aggiornaLayout(indice, patch)}
+            />
+
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
               <div className="flex flex-col gap-3">
-                {corrente.illustrazioneUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={corrente.illustrazioneUrl}
-                    alt={`Illustrazione pagina ${indice + 1}`}
-                    className="h-64 w-full rounded-[14px] border border-bordo object-cover"
-                  />
-                ) : (
-                  <div className="flex h-64 w-full items-center justify-center rounded-[14px] border border-dashed border-bordo bg-crema text-sm font-medium text-inchiostro-tenue">
-                    {illustrando[indice] ? "Sto disegnando…" : "Nessuna illustrazione"}
-                  </div>
-                )}
                 {revisionabile && (
                   <button
                     type="button"
@@ -222,16 +242,6 @@ export default function EditorStoria({ storia }) {
                     {erroriPagina[indice]}
                   </p>
                 )}
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <textarea
-                  value={corrente.testo}
-                  onChange={(evento) => aggiornaPagina(indice, "testo", evento.target.value)}
-                  rows={6}
-                  disabled={!revisionabile}
-                  className="w-full rounded-[14px] border border-bordo px-4 py-3 leading-relaxed font-medium outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
-                />
                 <label className="block">
                   <span className="text-xs font-bold text-inchiostro-tenue uppercase">
                     La scena da illustrare
@@ -246,6 +256,102 @@ export default function EditorStoria({ storia }) {
                     className="mt-1.5 w-full rounded-[14px] border border-bordo px-4 py-2.5 text-sm font-medium outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
                   />
                 </label>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {revisionabile && lay && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={lay.stile.font}
+                      onChange={(evento) => aggiornaStile(indice, { font: evento.target.value })}
+                      className="rounded-[10px] border border-bordo bg-white px-2.5 py-2 text-sm font-semibold outline-accento"
+                    >
+                      {FONT_CATALOG.map((font) => (
+                        <option key={font.chiave} value={font.chiave}>
+                          {font.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="flex items-center gap-1 rounded-[10px] border border-bordo bg-white px-1">
+                      <button
+                        type="button"
+                        aria-label="Riduci dimensione"
+                        onClick={() =>
+                          aggiornaStile(indice, { dimensione: Math.max(8, lay.stile.dimensione - 1) })
+                        }
+                        className="px-2 py-1 text-lg font-bold text-inchiostro-soft"
+                      >
+                        −
+                      </button>
+                      <span className="w-6 text-center text-sm font-bold">{lay.stile.dimensione}</span>
+                      <button
+                        type="button"
+                        aria-label="Aumenta dimensione"
+                        onClick={() =>
+                          aggiornaStile(indice, {
+                            dimensione: Math.min(60, lay.stile.dimensione + 1),
+                          })
+                        }
+                        className="px-2 py-1 text-lg font-bold text-inchiostro-soft"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <input
+                      type="color"
+                      aria-label="Colore del testo"
+                      value={lay.stile.colore}
+                      onChange={(evento) => aggiornaStile(indice, { colore: evento.target.value })}
+                      className="h-9 w-10 cursor-pointer rounded-[10px] border border-bordo bg-white"
+                    />
+
+                    <div className="flex items-center gap-1 rounded-[10px] border border-bordo bg-white px-1">
+                      {ALLINEAMENTI.map((a) => (
+                        <button
+                          key={a}
+                          type="button"
+                          onClick={() => aggiornaStile(indice, { allineamento: a })}
+                          className={`rounded-[8px] px-2 py-1 text-xs font-bold ${
+                            lay.stile.allineamento === a
+                              ? "bg-accento text-crema"
+                              : "text-inchiostro-soft"
+                          }`}
+                        >
+                          {ETICHETTE_ALLINEAMENTO[a]}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => aggiornaStile(indice, { grassetto: !lay.stile.grassetto })}
+                      className={`rounded-[10px] border border-bordo px-3 py-2 text-sm font-black ${
+                        lay.stile.grassetto ? "bg-accento text-crema" : "bg-white text-inchiostro-soft"
+                      }`}
+                    >
+                      G
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => aggiornaStile(indice, { corsivo: !lay.stile.corsivo })}
+                      className={`rounded-[10px] border border-bordo px-3 py-2 text-sm font-semibold italic ${
+                        lay.stile.corsivo ? "bg-accento text-crema" : "bg-white text-inchiostro-soft"
+                      }`}
+                    >
+                      C
+                    </button>
+                  </div>
+                )}
+
+                <textarea
+                  value={corrente.testo}
+                  onChange={(evento) => aggiornaPagina(indice, "testo", evento.target.value)}
+                  rows={5}
+                  disabled={!revisionabile}
+                  className="w-full rounded-[14px] border border-bordo px-4 py-3 leading-relaxed font-medium outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
+                />
               </div>
             </div>
           </article>
