@@ -1,5 +1,79 @@
 @import "tailwindcss";
 
+/* I font impaginabili dell'editor storia. Gli stessi file (public/fonts) sono
+ * registrati in @react-pdf (pdf.jsx): ciò che si trascina è ciò che si stampa.
+ * Baloo 2 non ha corsivo. */
+@font-face {
+  font-family: "Baloo2 Amabili";
+  src: url("/fonts/baloo2-regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Baloo2 Amabili";
+  src: url("/fonts/baloo2-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fraunces Amabili";
+  src: url("/fonts/fraunces-regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fraunces Amabili";
+  src: url("/fonts/fraunces-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fraunces Amabili";
+  src: url("/fonts/fraunces-italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fraunces Amabili";
+  src: url("/fonts/fraunces-bolditalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Nunito Amabili";
+  src: url("/fonts/nunito-regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Nunito Amabili";
+  src: url("/fonts/nunito-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Nunito Amabili";
+  src: url("/fonts/nunito-italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Nunito Amabili";
+  src: url("/fonts/nunito-bolditalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 /* Design tokens. I tre colori dell'accento sono i default di Amabili Storie:
  * un brand white-label li sovrascrive a runtime, vedi `.tema-brand` più sotto. */
 @theme {

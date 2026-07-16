@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { animaleIdSchema } from "@/lib/domain/animali";
 import { capriccioIdSchema } from "@/lib/domain/capricci";
+import { ALLINEAMENTI, FONT_KEYS } from "@/lib/storia/layout";
 
 /**
  * I tratti di un personaggio: tutti opzionali, tutti stringhe vuote di default.
@@ -97,6 +98,31 @@ export function storiaGenerataSchema(numeroPagine) {
   });
 }
 
+/** Un riquadro sulla pagina: posizione e dimensione in frazioni (0–1). */
+const riquadroSchema = z.object({
+  x: z.number().default(0),
+  y: z.number().default(0),
+  w: z.number().default(1),
+  h: z.number().default(1),
+});
+
+/** Lo stile del testo di una pagina (a blocco: vale per tutto il testo). */
+const stileTestoSchema = z.object({
+  font: z.enum(FONT_KEYS).default("baloo2"),
+  dimensione: z.number().min(8).max(60).default(16),
+  colore: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colore non valido").default("#2b211d"),
+  allineamento: z.enum(ALLINEAMENTI).default("center"),
+  grassetto: z.boolean().default(false),
+  corsivo: z.boolean().default(false),
+});
+
+/** L'impaginazione di una pagina. Assente = si usano i default (LAYOUT_DEFAULT). */
+const layoutPaginaSchema = z.object({
+  immagine: riquadroSchema.prefault({}),
+  testo: riquadroSchema.prefault({}),
+  stile: stileTestoSchema.prefault({}),
+});
+
 /**
  * Il contenuto di una storia salvata. È lo stesso schema che il modello produce,
  * ma con un numero di pagine libero: serve a validare le correzioni fatte a mano
@@ -112,6 +138,9 @@ export const contenutoStoriaSchema = z.object({
         // L'immagine generata dal backoffice, se c'è. `illustrazione` resta la
         // descrizione della scena (il prompt); questo è il risultato disegnato.
         illustrazioneUrl: z.url().nullish(),
+        // Impaginazione: dove stanno immagine e testo, e con che stile. Assente
+        // sulle storie vecchie: si ripiega sui default.
+        layout: layoutPaginaSchema.nullish(),
       }),
     )
     .min(1),

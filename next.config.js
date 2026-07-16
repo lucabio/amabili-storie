@@ -8,6 +8,12 @@ const nextConfig = {
   // La root va fissata, altrimenti nei git worktree Turbopack trova più
   // lockfile e sceglie la directory sbagliata.
   turbopack: { root: __dirname },
+  // I .ttf in public/ non finirebbero nel bundle della funzione serverless
+  // (public è servito dalla CDN, non dal filesystem della funzione). La route
+  // PDF li legge da process.cwd(): li includo esplicitamente nel tracing.
+  outputFileTracingIncludes: {
+    "/admin/storie/[id]/pdf": ["./public/fonts/**"],
+  },
 };
 
 module.exports = withWorkflow(nextConfig);
