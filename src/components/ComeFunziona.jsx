@@ -33,11 +33,11 @@ export default function ComeFunziona() {
           Tre passi, pochi minuti, una storia che è davvero sua.
         </p>
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-5">
+        <div className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-3 md:grid md:grid-cols-3 md:overflow-visible md:pb-0">
           {PASSI.map((passo) => (
             <div
               key={passo.n}
-              className="lift-card rounded-card border border-bordo bg-white p-5"
+              className="lift-card w-[80%] shrink-0 snap-start rounded-card border border-bordo bg-white p-5 md:w-auto"
             >
               <div className="mb-4.5 h-[150px] overflow-hidden rounded-[14px]">
                 <Image

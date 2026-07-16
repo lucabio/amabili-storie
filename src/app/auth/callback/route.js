@@ -16,8 +16,15 @@ export async function GET(request) {
   const codice = searchParams.get("code");
   const errore = searchParams.get("error");
 
+  // Dove tornare dopo l'accesso. Solo path interni (via `next` di
+  // ModuloLoginCliente): mai un redirect verso l'esterno. Il backoffice non
+  // passa `next` e resta su /admin.
+  const prossimo = searchParams.get("next");
+  const destinazione = prossimo && prossimo.startsWith("/") ? prossimo : "/admin";
+  const paginaLogin = destinazione.startsWith("/area") ? "/area/login" : "/admin/login";
+
   const alLogin = (motivo) =>
-    NextResponse.redirect(`${origin}/admin/login?errore=${motivo}`);
+    NextResponse.redirect(`${origin}${paginaLogin}?errore=${motivo}`);
 
   if (errore) {
     return alLogin(searchParams.get("error_code") === "otp_expired" ? "scaduto" : "link");
@@ -32,5 +39,5 @@ export async function GET(request) {
   const { error } = await supabase.auth.exchangeCodeForSession(codice);
   if (error) return alLogin("link");
 
-  return NextResponse.redirect(`${origin}/admin`);
+  return NextResponse.redirect(`${origin}${destinazione}`);
 }

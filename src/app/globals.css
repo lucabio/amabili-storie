@@ -120,10 +120,20 @@
  * Ogni sezione occupa una schermata e si aggancia allo scroll: una rotellina
  * porta alla sezione dopo, non a metà strada. Le sezioni dichiarano
  * `min-h-svh snap-start`, il piede `snap-end`.
+ *
+ * Ma lo snap "mandatory" è una scelta da desktop: su mobile intrappola le
+ * sezioni più alte del viewport — l'hero col libro restava tagliato a metà,
+ * perché il browser rimbalzava sempre a un punto d'aggancio. Lo attiviamo solo
+ * dove le sezioni ci stanno davvero: schermo largo e abbastanza alto.
  */
 html {
-  scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
+}
+
+@media (min-width: 768px) and (min-height: 700px) {
+  html {
+    scroll-snap-type: y mandatory;
+  }
 }
 
 body {

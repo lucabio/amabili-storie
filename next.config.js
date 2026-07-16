@@ -13,6 +13,7 @@ const nextConfig = {
   // PDF li legge da process.cwd(): li includo esplicitamente nel tracing.
   outputFileTracingIncludes: {
     "/admin/storie/[id]/pdf": ["./public/fonts/**"],
+    "/area/storie/[id]/pdf": ["./public/fonts/**"],
   },
 };
 

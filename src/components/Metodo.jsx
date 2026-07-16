@@ -22,7 +22,7 @@ const PILASTRI = [
 export default function Metodo() {
   return (
     <section className="flex min-h-svh snap-start flex-col justify-center bg-crema-scura bg-[url('/illustrazioni/doodle-lettura.svg')] bg-[length:min(135px,14vw)] bg-[right_2%_top_5%] bg-no-repeat px-4 py-[clamp(40px,5vw,64px)]">
-      <div className="mx-auto max-w-[1080px]">
+      <div className="mx-auto w-full max-w-[1080px]">
         <h2 className="text-center font-display text-[clamp(1.7rem,3.4vw,2.2rem)] font-semibold">
           Non un regalo. Uno strumento.
         </h2>
@@ -31,9 +31,12 @@ export default function Metodo() {
           non solo per fare sorridere.
         </p>
 
-        <div className="mt-10 grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-5">
+        <div className="mt-10 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-3 md:grid md:grid-cols-3 md:overflow-visible md:pb-0">
           {PILASTRI.map((pilastro) => (
-            <div key={pilastro.n} className="lift-card rounded-card bg-white p-7">
+            <div
+              key={pilastro.n}
+              className="lift-card w-[80%] shrink-0 snap-start rounded-card bg-white p-7 md:w-auto"
+            >
               <span className="font-display text-[0.95rem] tracking-[0.08em] text-accento">
                 {pilastro.n}
               </span>
