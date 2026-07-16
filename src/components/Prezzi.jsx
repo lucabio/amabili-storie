@@ -8,8 +8,8 @@ export default function Prezzi() {
           Semplice e trasparente
         </h2>
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] items-stretch gap-5">
-          <div className="lift-card rounded-[22px] border border-bordo bg-white p-7.5 text-center">
+        <div className="flex snap-x snap-mandatory items-stretch gap-5 overflow-x-auto pb-3 md:grid md:grid-cols-3 md:overflow-visible md:pb-0">
+          <div className="lift-card w-[80%] shrink-0 snap-start rounded-[22px] border border-bordo bg-white p-7.5 text-center md:w-auto">
             <span className="rounded-full bg-crema-scura px-3.5 py-1.5 text-[11px] font-extrabold tracking-[0.14em] text-inchiostro-soft uppercase">
               Provala sopra
             </span>
@@ -20,7 +20,7 @@ export default function Prezzi() {
             </p>
           </div>
 
-          <div className="rounded-[22px] bg-scuro p-7.5 text-center text-crema shadow-[0_24px_50px_-14px_rgba(67,48,42,0.45)] transition-transform duration-250 hover:-translate-y-1">
+          <div className="w-[80%] shrink-0 snap-start rounded-[22px] bg-scuro p-7.5 text-center text-crema shadow-[0_24px_50px_-14px_rgba(67,48,42,0.45)] transition-transform duration-250 hover:-translate-y-1 md:w-auto">
             <span className="rounded-full bg-accento px-3.5 py-1.5 text-[11px] font-extrabold tracking-[0.14em] text-crema uppercase">
               Il più scelto
             </span>
@@ -34,7 +34,7 @@ export default function Prezzi() {
             </p>
           </div>
 
-          <div className="lift-card rounded-[22px] border border-bordo bg-white p-7.5 text-center">
+          <div className="lift-card w-[80%] shrink-0 snap-start rounded-[22px] border border-bordo bg-white p-7.5 text-center md:w-auto">
             <span className="rounded-full bg-accento-soft px-3.5 py-1.5 text-[11px] font-extrabold tracking-[0.14em] text-inchiostro uppercase">
               Il regalo perfetto
             </span>

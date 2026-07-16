@@ -39,5 +39,6 @@ export async function proxy(request) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  // Anche l'area cliente ha una sessione da rinfrescare, non solo il backoffice.
+  matcher: ["/admin/:path*", "/area/:path*"],
 };
