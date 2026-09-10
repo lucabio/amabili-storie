@@ -53,7 +53,8 @@ src/
     api/storie/anteprima/route.js  POST → le 3 pagine gratuite
     auth/callback/route.js         Dove atterra il magic link del backoffice
     checkout/azioni.js             Ordine (simulato finché non c'è Stripe) → lancia il workflow
-    storie/[id]/page.js            Dove il genitore legge il libro approvato
+    storie/[id]/page.js            Dove il genitore legge il libro approvato (link con uuid)
+    area/                          Area cliente: login OTP, le proprie storie, il PDF dell'eBook
     admin/storie/[id]/pdf/route.js Scarica il libro in PDF (solo amministratori)
     admin/                         Backoffice: login OTP, CRUD merchant, coda storie
   components/                      UI del sito pubblico + admin/ (ModuloBrand, EditorStoria)
@@ -61,19 +62,21 @@ src/
     domain/     capricci.js, animali.js — il catalogo, con l'arco narrativo di ogni capriccio
     brand/      schema.js (Zod + BRAND_DEFAULT), resolve.js (?version= → brand)
     storia/     schema.js, prompt.js (il Metodo Amabili), genera.js, fallback.js, stati.js,
-                illustrazioni.js (Nano Banana), storage.js (Supabase Storage), pdf.jsx (@react-pdf)
+                illustrazioni.js (Nano Banana), storage.js (Supabase Storage), pdf.jsx (@react-pdf),
+                layout.js — l'impaginazione in frazioni 0–1, condivisa fra editor e PDF
     ordini/     schema.js — il listino, e il prezzo che il client non decide
     mail/       modelli.js (le mail, brandizzate), invia.js (Resend)
     lead/       azioni.js — chi lascia la mail e non compra
     supabase/   client server (rispetta le RLS) e browser; creaClientAdmin le bypassa
     admin/      sessione.js — essere loggati non basta: si dev'essere amministratori
+    cliente/    sessione.js — nell'area cliente basta essere loggati: filtrano le RLS
   workflows/
     libro.js                       generaLibro: la nascita di un libro, durevole
 supabase/
-  migrations/                      0001 … 0006 — vanno applicate con la CLI, mai a mano
+  migrations/                      0001 … 0007 — vanno applicate con la CLI, mai a mano
   templates/                       La mail di accesso: da incollare in dashboard
   seed.sql                         Hotel Famiglia Serena, per lo sviluppo
-proxy.js                           Rinfresca la sessione Supabase su /admin/*
+proxy.js                           Rinfresca la sessione Supabase su /admin/* e /area/*
 ```
 
 ## Il giro completo, dal clic alla consegna
@@ -147,13 +150,27 @@ rompere questa proprietà: è ciò che rende il progetto sviluppabile a mani nud
 Si lavora su `dev`; `main` si tocca solo via PR. Database: `amb-str-web-app-dev`, Francoforte
 (i dati riguardano bambini e restano in UE).
 
+**Come si chiama un branch:**
+
+```
+<tipo>/asd-<ref>-<nome-in-inglese>      feature | bug | improvement
+```
+
+`feature/asd-6-english-codebase`, `bug/asd-12-shipping-address`. Il `<ref>` è il numero della
+carta sulla **Dev Board** di Notion (`ASD-6`); il nome è corto, in inglese, minuscolo, parole
+separate da trattino. Si parte sempre da `dev`. Ovunque altro — commit, PR, commenti — si cita
+la carta come la scrive Notion: `ASD-6`.
+
 ## Comandi
 
 ```bash
 npm run dev     # http://localhost:3000 — gira anche senza .env.local
 npm run build
 npm run lint
-npm test        # Vitest
+npm test        # Vitest — i test sono src/**/*.test.js, ambiente node, alias @ → src/
+npm run test:watch
+npx vitest run src/lib/storia/genera.test.js   # un solo file
+npx vitest run -t "nome del test"              # un solo test
 
 npx supabase db push          # applica le migration che il remoto non ha
 npx supabase migration list   # local e remote devono coincidere
@@ -174,7 +191,9 @@ scrivi i valori nuovi, e li rifiuta.
   database**. Le transizioni sono atomiche: l'`UPDATE` è vincolato allo stato appena letto, e
   zero righe toccate significa "qualcun altro è arrivato prima".
 - **I dati dei bambini non escono dal browser**: `storie`, `ordini` e `lead` hanno le RLS
-  attive e **nessuna policy di scrittura**. Scrive solo il server con la service role.
+  attive e **nessuna policy di scrittura**. Scrive solo il server con la service role. In
+  lettura le policy si sommano in OR: gli amministratori vedono tutto, il cliente loggato
+  solo `email = auth.email()` (migration `0007`) — l'area cliente non filtra a mano.
 - **Workflow DevKit**: le funzioni `"use workflow"` girano in una VM sandboxata (niente rete,
   niente moduli Node); solo le `"use step"` hanno Node pieno. Il workflow orchestra, gli step
   lavorano.
@@ -209,9 +228,9 @@ cose che chi tocca il codice deve sapere subito:
    pubblici (`acquista`, `salvaLead`, l'anteprima) non hanno rate limit né antibot.
 5. **Non esiste la produzione**: manca il progetto Supabase di prod, manca quello Vercel, e
    `main` non porta da nessuna parte.
-6. **Export PDF dell'eBook: c'è dal backoffice** (`/admin/storie/<id>/pdf`, `pdf.jsx` con
-   `@react-pdf/renderer`). Manca il PDF per il **genitore** (oggi lo scarica solo
-   l'amministratore) e l'adapter verso il fornitore di stampa (ancora da scegliere).
+6. **Export PDF dell'eBook: c'è** dal backoffice (`/admin/storie/<id>/pdf`) e dall'area
+   cliente (`/area/storie/<id>/pdf`, solo se `approvata`), entrambe con `pdf.jsx`
+   (`@react-pdf/renderer`). Manca l'adapter verso il fornitore di stampa (ancora da scegliere).
 7. **Il backoffice non è mai stato usato a mano.** Coda, editor, approvazione e rigenerazione
    sono stati verificati leggendo il codice e pilotando le azioni via script, ma nessuno li ha
    ancora guidati dall'interfaccia.
