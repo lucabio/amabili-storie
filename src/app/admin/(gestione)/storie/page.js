@@ -1,9 +1,9 @@
 import Link from "next/link";
 
-import { ETICHETTE, STATI } from "@/lib/storia/stati";
-import { creaClientServer } from "@/lib/supabase/server";
+import { LABELS, STATES } from "@/lib/story/states";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-const COLORI_STATO = {
+const STATE_COLORS = {
   in_generazione: "bg-inchiostro-lieve/25 text-inchiostro",
   in_revisione: "bg-accento text-crema",
   approvata: "bg-accento-soft/40 text-scuro",
@@ -11,58 +11,58 @@ const COLORI_STATO = {
   fallita: "bg-accento/15 text-accento",
 };
 
-function daQuanto(iso) {
-  const ore = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
-  if (ore < 1) return "da poco";
-  if (ore < 24) return `da ${ore} ${ore === 1 ? "ora" : "ore"}`;
-  const giorni = Math.floor(ore / 24);
-  return `da ${giorni} ${giorni === 1 ? "giorno" : "giorni"}`;
+function howLongAgo(iso) {
+  const hours = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
+  if (hours < 1) return "da poco";
+  if (hours < 24) return `da ${hours} ${hours === 1 ? "ora" : "ore"}`;
+  const days = Math.floor(hours / 24);
+  return `da ${days} ${days === 1 ? "giorno" : "giorni"}`;
 }
 
-export default async function Coda({ searchParams }) {
-  // Next 16: searchParams è una Promise.
-  const filtri = await searchParams;
-  const supabase = await creaClientServer();
+export default async function Queue({ searchParams }) {
+  // Next 16: searchParams is a Promise.
+  const filters = await searchParams;
+  const supabase = await createServerSupabase();
   if (!supabase) return null;
 
   let query = supabase
     .from("storie")
     .select("id, stato, parametri, creato_il, errore, brands (slug, nome)")
-    // Le più vecchie in cima: la coda si smaltisce dal fondo.
+    // Oldest at the top: the queue is worked from the bottom.
     .order("creato_il", { ascending: true });
 
-  if (filtri?.stato) query = query.eq("stato", filtri.stato);
-  if (filtri?.merchant === "principale") query = query.is("brand_id", null);
+  if (filters?.stato) query = query.eq("stato", filters.stato);
+  if (filters?.merchant === "principale") query = query.is("brand_id", null);
 
-  const { data: storie, error } = await query;
+  const { data: stories, error } = await query;
 
-  // Il filtro per merchant si applica qui e non nella query: `brands.slug` sta in
-  // una tabella collegata, e filtrarci sopra costringerebbe a una inner join che
-  // butterebbe via le storie del sito principale (che di brand non ne hanno).
-  const visibili =
-    filtri?.merchant && filtri.merchant !== "principale"
-      ? (storie ?? []).filter((s) => s.brands?.slug === filtri.merchant)
-      : (storie ?? []);
+  // The merchant filter is applied here and not in the query: `brands.slug` is
+  // in a related table, and filtering on it would force an inner join that would
+  // throw away the main site's stories (which have no brand).
+  const visible =
+    filters?.merchant && filters.merchant !== "principale"
+      ? (stories ?? []).filter((story) => story.brands?.slug === filters.merchant)
+      : (stories ?? []);
 
-  const daRivedere = visibili.filter((s) => s.stato === "in_revisione").length;
+  const toReview = visible.filter((story) => story.stato === "in_revisione").length;
 
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold">Storie</h1>
       <p className="mt-1 font-medium text-inchiostro-soft">
-        {daRivedere === 0
+        {toReview === 0
           ? "Niente da rivedere. La coda è vuota."
-          : `${daRivedere} ${daRivedere === 1 ? "storia aspetta" : "storie aspettano"} di essere riviste.`}
+          : `${toReview} ${toReview === 1 ? "storia aspetta" : "storie aspettano"} di essere riviste.`}
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        <Filtro attivo={!filtri?.stato} href="/admin/storie" testo="Tutte" />
-        {STATI.map((stato) => (
-          <Filtro
-            key={stato}
-            attivo={filtri?.stato === stato}
-            href={`/admin/storie?stato=${stato}`}
-            testo={ETICHETTE[stato]}
+        <Filter active={!filters?.stato} href="/admin/storie" label="Tutte" />
+        {STATES.map((state) => (
+          <Filter
+            key={state}
+            active={filters?.stato === state}
+            href={`/admin/storie?stato=${state}`}
+            label={LABELS[state]}
           />
         ))}
       </div>
@@ -73,38 +73,38 @@ export default async function Coda({ searchParams }) {
         </p>
       )}
 
-      {visibili.length === 0 && (
+      {visible.length === 0 && (
         <p className="mt-8 rounded-card border border-dashed border-bordo p-8 text-center font-medium text-inchiostro-soft">
           Nessuna storia qui.
         </p>
       )}
 
       <div className="mt-6 grid gap-3">
-        {visibili.map((storia) => (
+        {visible.map((story) => (
           <Link
-            key={storia.id}
-            href={`/admin/storie/${storia.id}`}
+            key={story.id}
+            href={`/admin/storie/${story.id}`}
             className="lift-card block rounded-card border border-bordo bg-white p-5"
           >
             <div className="flex flex-wrap items-center gap-3">
               <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${COLORI_STATO[storia.stato]}`}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${STATE_COLORS[story.stato]}`}
               >
-                {ETICHETTE[storia.stato]}
+                {LABELS[story.stato]}
               </span>
               <h2 className="font-display text-lg font-semibold">
-                {storia.parametri?.nome ?? "senza nome"}
+                {story.parametri?.nome ?? "senza nome"}
               </h2>
               <span className="text-sm font-semibold text-inchiostro-tenue">
-                {storia.parametri?.capriccio}
+                {story.parametri?.capriccio}
               </span>
               <span className="ml-auto text-sm font-semibold text-inchiostro-tenue">
-                {storia.brands?.nome ?? "Sito principale"} · {daQuanto(storia.creato_il)}
+                {story.brands?.nome ?? "Sito principale"} · {howLongAgo(story.creato_il)}
               </span>
             </div>
 
-            {storia.errore && (
-              <p className="mt-3 text-sm font-semibold text-accento">{storia.errore}</p>
+            {story.errore && (
+              <p className="mt-3 text-sm font-semibold text-accento">{story.errore}</p>
             )}
           </Link>
         ))}
@@ -113,17 +113,17 @@ export default async function Coda({ searchParams }) {
   );
 }
 
-function Filtro({ attivo, href, testo }) {
+function Filter({ active, href, label }) {
   return (
     <Link
       href={href}
       className={`rounded-full border px-4 py-2 text-sm font-bold ${
-        attivo
+        active
           ? "border-accento bg-accento text-crema"
           : "border-bordo bg-white text-inchiostro-soft"
       }`}
     >
-      {testo}
+      {label}
     </Link>
   );
 }

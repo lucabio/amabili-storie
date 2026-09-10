@@ -1,22 +1,22 @@
 import { notFound } from "next/navigation";
 
-import EditorStoria from "@/components/admin/EditorStoria";
-import { creaClientServer } from "@/lib/supabase/server";
+import StoryEditor from "@/components/admin/StoryEditor";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-export default async function Revisione({ params }) {
-  // Next 16: params è una Promise.
+export default async function Review({ params }) {
+  // Next 16: params is a Promise.
   const { id } = await params;
 
-  const supabase = await creaClientServer();
+  const supabase = await createServerSupabase();
   if (!supabase) return null;
 
-  const { data: storia } = await supabase
+  const { data: story } = await supabase
     .from("storie")
     .select("*")
     .eq("id", id)
     .maybeSingle();
 
-  if (!storia) notFound();
+  if (!story) notFound();
 
-  return <EditorStoria storia={storia} />;
+  return <StoryEditor story={story} />;
 }

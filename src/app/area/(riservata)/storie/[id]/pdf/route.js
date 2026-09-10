@@ -1,54 +1,55 @@
-import { BRAND_DEFAULT, brandDaRiga } from "@/lib/brand/schema";
-import { utenteCliente } from "@/lib/cliente/sessione";
-import { generaPdfLibro } from "@/lib/storia/pdf";
-import { contenutoStoriaSchema } from "@/lib/storia/schema";
-import { creaClientServer } from "@/lib/supabase/server";
+import { BRAND_DEFAULT, brandFromRow } from "@/lib/brand/schema";
+import { customerUser } from "@/lib/customer/session";
+import { generateBookPdf } from "@/lib/story/pdf";
+import { storyContentSchema } from "@/lib/story/schema";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-// @react-pdf gira solo su Node.
+// @react-pdf only runs on Node.
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /**
- * GET /area/storie/<id>/pdf — il cliente riscarica il PDF di una sua storia.
+ * GET /area/storie/<id>/pdf — the customer downloads the PDF of one of their
+ * stories again.
  *
- * Doppia serratura: dev'essere loggato (utenteCliente) E la lettura passa dalle
- * RLS con la sua sessione, che restituiscono solo le storie con la sua email.
- * In più esigiamo lo stato `approvata`: una storia non ancora pronta non si
- * scarica.
+ * Double lock: they must be logged in (customerUser) AND the read goes through
+ * RLS with their session, which only returns the stories with their email. On
+ * top of that we demand the `approvata` state: a story that is not ready yet is
+ * not downloaded.
  */
 export async function GET(_request, { params }) {
-  const utente = await utenteCliente();
-  if (!utente) return new Response("Non autorizzato.", { status: 401 });
+  const user = await customerUser();
+  if (!user) return new Response("Non autorizzato.", { status: 401 });
 
-  // Next 16: params è una Promise.
+  // Next 16: params is a Promise.
   const { id } = await params;
 
-  const supabase = await creaClientServer();
+  const supabase = await createServerSupabase();
   if (!supabase) return new Response("Supabase non è configurato.", { status: 503 });
 
-  const { data: storia } = await supabase
+  const { data: story } = await supabase
     .from("storie")
     .select("*, brands (*)")
     .eq("id", id)
     .eq("stato", "approvata")
     .maybeSingle();
 
-  if (!storia) return new Response("Storia non trovata.", { status: 404 });
+  if (!story) return new Response("Storia non trovata.", { status: 404 });
 
-  const contenuto = contenutoStoriaSchema.safeParse(storia.contenuto);
-  if (!contenuto.success) return new Response("Il contenuto della storia non è valido.", { status: 422 });
+  const content = storyContentSchema.safeParse(story.contenuto);
+  if (!content.success) return new Response("Il contenuto della storia non è valido.", { status: 422 });
 
-  const brand = brandDaRiga(storia.brands) ?? BRAND_DEFAULT;
+  const brand = brandFromRow(story.brands) ?? BRAND_DEFAULT;
 
   let pdf;
   try {
-    pdf = await generaPdfLibro({ contenuto: contenuto.data, brand });
-  } catch (problema) {
-    console.error(`PDF cliente della storia "${id}" non generato:`, problema.message);
+    pdf = await generateBookPdf({ content: content.data, brand });
+  } catch (problem) {
+    console.error(`PDF cliente della storia "${id}" non generato:`, problem.message);
     return new Response("Non siamo riusciti a comporre il PDF.", { status: 500 });
   }
 
-  const nomeFile = `${(contenuto.data.titolo || "storia")
+  const fileName = `${(content.data.titolo || "storia")
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase() || "storia"}.pdf`;
@@ -56,7 +57,7 @@ export async function GET(_request, { params }) {
   return new Response(pdf, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${nomeFile}"`,
+      "Content-Disposition": `attachment; filename="${fileName}"`,
     },
   });
 }

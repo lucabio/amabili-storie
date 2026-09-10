@@ -1,41 +1,41 @@
-import { risolviBrand } from "@/lib/brand/resolve";
-import { generaStoria, PAGINE_ANTEPRIMA } from "@/lib/storia/genera";
-import { parametriStoriaSchema } from "@/lib/storia/schema";
+import { resolveBrand } from "@/lib/brand/resolve";
+import { generateStory, PREVIEW_PAGES } from "@/lib/story/generate";
+import { storyParamsSchema } from "@/lib/story/schema";
 
-/** Generare una storia costa: alziamo il limite oltre i 10s di default. */
+/** Generating a story costs: raise the limit past the 10s default. */
 export const maxDuration = 60;
 
-/** POST /api/storie/anteprima — le 3 pagine gratuite del configuratore. */
+/** POST /api/storie/anteprima — the 3 free pages of the configurator. */
 export async function POST(request) {
-  let corpo;
+  let body;
   try {
-    corpo = await request.json();
+    body = await request.json();
   } catch {
-    return Response.json({ errore: "Corpo della richiesta non valido" }, { status: 400 });
+    return Response.json({ error: "Corpo della richiesta non valido" }, { status: 400 });
   }
 
-  const esito = parametriStoriaSchema.safeParse(corpo);
-  if (!esito.success) {
+  const parsed = storyParamsSchema.safeParse(body);
+  if (!parsed.success) {
     return Response.json(
-      { errore: "Parametri non validi", dettagli: esito.error.flatten().fieldErrors },
+      { error: "Parametri non validi", details: parsed.error.flatten().fieldErrors },
       { status: 422 },
     );
   }
 
-  const parametri = esito.data;
-  const brand = await risolviBrand(parametri.brand);
+  const params = parsed.data;
+  const brand = await resolveBrand(params.brand);
 
   try {
-    const { storia, fonte } = await generaStoria({
-      parametri,
+    const { story, source } = await generateStory({
+      params,
       brand,
-      numeroPagine: PAGINE_ANTEPRIMA,
+      pageCount: PREVIEW_PAGES,
     });
-    return Response.json({ storia, fonte, brand: brand.slug });
-  } catch (errore) {
-    console.error("Generazione storia fallita:", errore);
+    return Response.json({ story, source, brand: brand.slug });
+  } catch (problem) {
+    console.error("Generazione storia fallita:", problem);
     return Response.json(
-      { errore: "Non siamo riusciti a scrivere la storia. Riprova tra poco." },
+      { error: "Non siamo riusciti a scrivere la storia. Riprova tra poco." },
       { status: 502 },
     );
   }

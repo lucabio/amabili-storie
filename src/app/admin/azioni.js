@@ -4,28 +4,28 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { utenteAmministratore } from "@/lib/admin/sessione";
+import { adminUser } from "@/lib/admin/session";
 import { BRAND_DEFAULT } from "@/lib/brand/schema";
-import { CAPRICCIO_IDS } from "@/lib/domain/capricci";
-import { creaClientServer } from "@/lib/supabase/server";
+import { WHIM_IDS } from "@/lib/domain/whims";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-const coloreEsadecimale = z
+const hexColor = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, "Serve un colore in formato #rrggbb");
 
-const moduloBrandSchema = z.object({
+const brandFormSchema = z.object({
   id: z.uuid().nullable(),
   slug: z
     .string()
     .trim()
     .min(2)
     .regex(/^[a-z0-9_-]+$/, "Solo minuscole, numeri, trattini e underscore"),
-  nome: z.string().trim().min(1, "Serve il nome del merchant"),
-  attivo: z.boolean(),
-  tema: z.object({
-    accento: coloreEsadecimale,
-    accentoSoft: coloreEsadecimale,
-    scuro: coloreEsadecimale,
+  name: z.string().trim().min(1, "Serve il nome del merchant"),
+  active: z.boolean(),
+  theme: z.object({
+    accento: hexColor,
+    accentoSoft: hexColor,
+    scuro: hexColor,
   }),
   logoUrl: z.union([z.url(), z.literal("")]).nullable(),
   hero: z.object({
@@ -35,103 +35,102 @@ const moduloBrandSchema = z.object({
     sottotitolo: z.string().trim().min(1),
     cta: z.string().trim().min(1),
   }),
-  promptGuida: z.string().trim().nullable(),
-  /** Vuoto = tutti i capricci. */
-  capricci: z.array(z.enum(CAPRICCIO_IDS)).nullable(),
-  mostraPrezzi: z.boolean(),
-  accettaPagamenti: z.boolean(),
+  guidePrompt: z.string().trim().nullable(),
+  /** Empty = all whims. */
+  whims: z.array(z.enum(WHIM_IDS)).nullable(),
+  showPrices: z.boolean(),
+  acceptsPayments: z.boolean(),
 });
 
-function testo(formData, campo) {
-  const valore = formData.get(campo);
-  return typeof valore === "string" ? valore.trim() : "";
+function text(formData, field) {
+  const value = formData.get(field);
+  return typeof value === "string" ? value.trim() : "";
 }
 
-export async function salvaBrand(_statoPrecedente, formData) {
-  const utente = await utenteAmministratore();
-  if (!utente) redirect("/admin/login");
+export async function saveBrand(_previousState, formData) {
+  const user = await adminUser();
+  if (!user) redirect("/admin/login");
 
-  const capricciScelti = formData.getAll("capricci").filter(Boolean);
+  const chosenWhims = formData.getAll("capricci").filter(Boolean);
 
-  const esito = moduloBrandSchema.safeParse({
-    id: testo(formData, "id") || null,
-    slug: testo(formData, "slug"),
-    nome: testo(formData, "nome"),
-    attivo: formData.get("attivo") === "on",
-    tema: {
-      accento: testo(formData, "accento"),
-      accentoSoft: testo(formData, "accentoSoft"),
-      scuro: testo(formData, "scuro"),
+  const parsed = brandFormSchema.safeParse({
+    id: text(formData, "id") || null,
+    slug: text(formData, "slug"),
+    name: text(formData, "nome"),
+    active: formData.get("attivo") === "on",
+    theme: {
+      accento: text(formData, "accento"),
+      accentoSoft: text(formData, "accentoSoft"),
+      scuro: text(formData, "scuro"),
     },
-    logoUrl: testo(formData, "logoUrl") || null,
+    logoUrl: text(formData, "logoUrl") || null,
     hero: {
-      occhiello: testo(formData, "occhiello"),
-      titolo: testo(formData, "titolo"),
-      titoloAccento: testo(formData, "titoloAccento"),
-      sottotitolo: testo(formData, "sottotitolo"),
-      cta: testo(formData, "cta"),
+      occhiello: text(formData, "occhiello"),
+      titolo: text(formData, "titolo"),
+      titoloAccento: text(formData, "titoloAccento"),
+      sottotitolo: text(formData, "sottotitolo"),
+      cta: text(formData, "cta"),
     },
-    promptGuida: testo(formData, "promptGuida") || null,
-    capricci: capricciScelti.length > 0 ? capricciScelti : null,
-    mostraPrezzi: formData.get("mostraPrezzi") === "on",
-    accettaPagamenti: formData.get("accettaPagamenti") === "on",
+    guidePrompt: text(formData, "promptGuida") || null,
+    whims: chosenWhims.length > 0 ? chosenWhims : null,
+    showPrices: formData.get("mostraPrezzi") === "on",
+    acceptsPayments: formData.get("accettaPagamenti") === "on",
   });
 
-  if (!esito.success) {
-    return { errori: z.flattenError(esito.error).fieldErrors };
+  if (!parsed.success) {
+    return { errors: z.flattenError(parsed.error).fieldErrors };
   }
 
-  const dati = esito.data;
-  const supabase = await creaClientServer();
+  const data = parsed.data;
+  const supabase = await createServerSupabase();
 
-  // Il sito principale non si disattiva mai dal backoffice: è la home. La
-  // Server Action è un endpoint raggiungibile direttamente (un bottone
-  // nascosto in UI non basta), quindi il controllo va rifatto qui, guardando
-  // lo slug che sta davvero su Supabase — non quello dichiarato dal form, che
-  // potrebbe essere stato manomesso.
-  let sitoPrincipale = false;
-  if (dati.id) {
-    const { data: rigaEsistente } = await supabase
+  // The main site is never disabled from the backoffice: it is the home page.
+  // The Server Action is an endpoint reachable directly (a button hidden in the
+  // UI is not enough), so the check has to be redone here, looking at the slug
+  // that is really on Supabase — not the one declared by the form, which could
+  // have been tampered with.
+  let isMainSite = false;
+  if (data.id) {
+    const { data: existingRow } = await supabase
       .from("brands")
       .select("slug")
-      .eq("id", dati.id)
+      .eq("id", data.id)
       .maybeSingle();
-    sitoPrincipale = rigaEsistente?.slug === BRAND_DEFAULT.slug;
+    isMainSite = existingRow?.slug === BRAND_DEFAULT.slug;
   }
 
-  const riga = {
-    // Il sito principale non si rinomina. `risolviBrand(null)` cerca la home per
-    // slug: cambiarlo la farebbe ripiegare in silenzio su BRAND_DEFAULT — la home
-    // continuerebbe a funzionare, ma smetterebbe di essere modificabile da qui, e
-    // nessuno capirebbe perché.
-    slug: sitoPrincipale ? BRAND_DEFAULT.slug : dati.slug,
-    nome: dati.nome,
-    attivo: sitoPrincipale ? true : dati.attivo,
-    tema: dati.tema,
-    logo_url: dati.logoUrl || null,
-    hero: dati.hero,
-    prompt_guida: dati.promptGuida,
-    capricci: dati.capricci,
-    // Un listino che nessuno può pagare è incoerente: non scriviamo mai
-    // `mostra_prezzi: true` insieme a `accetta_pagamenti: false`. Questa
-    // Server Action è un endpoint HTTP raggiungibile direttamente (un form
-    // disabilitato in UI non basta), quindi la si corregge qui, allo stesso
-    // modo in cui `brandSchema` la corregge in lettura — due lati della
-    // stessa regola, non due regole diverse.
-    mostra_prezzi: dati.accettaPagamenti && dati.mostraPrezzi,
-    accetta_pagamenti: dati.accettaPagamenti,
+  const row = {
+    // The main site is not renamed. `resolveBrand(null)` looks up the home by
+    // slug: changing it would make it silently fall back to BRAND_DEFAULT — the
+    // home would keep working, but it would stop being editable from here, and
+    // nobody would understand why.
+    slug: isMainSite ? BRAND_DEFAULT.slug : data.slug,
+    nome: data.name,
+    attivo: isMainSite ? true : data.active,
+    tema: data.theme,
+    logo_url: data.logoUrl || null,
+    hero: data.hero,
+    prompt_guida: data.guidePrompt,
+    capricci: data.whims,
+    // A price list nobody can pay is inconsistent: we never write
+    // `mostra_prezzi: true` together with `accetta_pagamenti: false`. This
+    // Server Action is an HTTP endpoint reachable directly (a form disabled in
+    // the UI is not enough), so we correct it here, the same way `brandSchema`
+    // corrects it on read — two sides of the same rule, not two different rules.
+    mostra_prezzi: data.acceptsPayments && data.showPrices,
+    accetta_pagamenti: data.acceptsPayments,
   };
 
-  const { error } = dati.id
-    ? await supabase.from("brands").update(riga).eq("id", dati.id)
-    : await supabase.from("brands").insert(riga);
+  const { error } = data.id
+    ? await supabase.from("brands").update(row).eq("id", data.id)
+    : await supabase.from("brands").insert(row);
 
   if (error) {
-    const messaggio =
+    const message =
       error.code === "23505"
-        ? `Lo slug "${dati.slug}" è già usato da un altro merchant.`
+        ? `Lo slug "${data.slug}" è già usato da un altro merchant.`
         : error.message;
-    return { errori: { generale: [messaggio] } };
+    return { errors: { general: [message] } };
   }
 
   revalidatePath("/admin");
@@ -139,20 +138,19 @@ export async function salvaBrand(_statoPrecedente, formData) {
   redirect("/admin");
 }
 
-export async function eliminaBrand(formData) {
-  const utente = await utenteAmministratore();
-  if (!utente) redirect("/admin/login");
+export async function deleteBrand(formData) {
+  const user = await adminUser();
+  if (!user) redirect("/admin/login");
 
-  const id = testo(formData, "id");
+  const id = text(formData, "id");
   if (!id) return;
 
-  const supabase = await creaClientServer();
+  const supabase = await createServerSupabase();
 
-  // Stesso discorso di salvaBrand: il sito principale non si elimina, e il
-  // controllo va fatto sullo slug che sta su Supabase, non su quanto arriva
-  // dal client.
-  const { data: riga } = await supabase.from("brands").select("slug").eq("id", id).maybeSingle();
-  if (riga?.slug === BRAND_DEFAULT.slug) {
+  // Same story as saveBrand: the main site is not deleted, and the check has to
+  // be done on the slug that is on Supabase, not on what arrives from the client.
+  const { data: row } = await supabase.from("brands").select("slug").eq("id", id).maybeSingle();
+  if (row?.slug === BRAND_DEFAULT.slug) {
     redirect("/admin");
   }
 
@@ -162,8 +160,8 @@ export async function eliminaBrand(formData) {
   redirect("/admin");
 }
 
-export async function esci() {
-  const supabase = await creaClientServer();
+export async function signOut() {
+  const supabase = await createServerSupabase();
   await supabase.auth.signOut();
   redirect("/admin/login");
 }

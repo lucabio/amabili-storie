@@ -3,97 +3,97 @@
 import { redirect } from "next/navigation";
 import { start } from "workflow/api";
 
-import { risolviBrand } from "@/lib/brand/resolve";
-import { ordineSchema } from "@/lib/ordini/schema";
-import { creaClientAdmin } from "@/lib/supabase/server";
-import { generaLibro } from "@/workflows/libro";
+import { resolveBrand } from "@/lib/brand/resolve";
+import { orderSchema } from "@/lib/orders/schema";
+import { createAdminSupabase } from "@/lib/supabase/server";
+import { generateBook } from "@/workflows/book";
 
 /**
- * Il checkout: crea l'ordine e lancia la generazione. Chi decide se un merchant
- * fa pagare è il flag per-merchant `accetta_pagamenti`, gestito dal backoffice —
- * non più una variabile d'ambiente globale.
+ * The checkout: it creates the order and starts the generation. What decides
+ * whether a merchant charges is the per-merchant `accetta_pagamenti` flag,
+ * managed from the backoffice — no longer a global environment variable.
  *
- * Finché Stripe non è configurato (`STRIPE_SECRET_KEY` assente), ogni acquisto è
- * *simulato*: l'ordine nasce con `finto = true`, così tutta la catena
- * (ordine → workflow → coda) è testabile end-to-end senza far pagare nessuno.
- * Il giorno del lancio si cancellano con `delete from ordini where finto`.
+ * Until Stripe is configured (`STRIPE_SECRET_KEY` absent), every purchase is
+ * *simulated*: the order is created with `finto = true`, so the whole chain
+ * (order → workflow → queue) is testable end to end without charging anyone. On
+ * launch day they are deleted with `delete from ordini where finto`.
  *
- * La sicurezza non sta più in una flag da ricordare: appena `STRIPE_SECRET_KEY`
- * esiste, la presenza di Stripe da sola dirotta sul pagamento vero — non si può
- * più regalare per errore un libro a un merchant che vende.
+ * Security no longer sits in a flag to remember: as soon as
+ * `STRIPE_SECRET_KEY` exists, the presence of Stripe alone diverts to the real
+ * payment — you can no longer give a book away by mistake to a merchant that
+ * sells.
  */
-export async function acquista(datiGrezzi) {
-  const esito = ordineSchema.safeParse(datiGrezzi);
-  if (!esito.success) {
-    return { errore: "Dati dell'ordine non validi." };
+export async function buy(rawData) {
+  const parsed = orderSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return { error: "Dati dell'ordine non validi." };
   }
-  const ordine = esito.data;
+  const order = parsed.data;
 
-  // La verità sul brand — e quindi sul prezzo — si legge qui, dal database.
-  // `ordine.parametri.brand` è solo lo slug che dice QUALE brand risolvere:
-  // non ci si fida di nient'altro che il client possa aver dichiarato su di
-  // esso (un "sono gratuito" nel payload non esiste nemmeno in ordineSchema,
-  // e se esistesse verrebbe comunque ignorato). Un ente che non accetta
-  // pagamenti regala il libro: formato fisso "ebook", prezzo azzerato — ma
-  // quella decisione la prende `brand.accettaPagamenti` appena letto dal DB,
-  // mai il formato o il prezzo che il client ha mandato.
-  const brand = await risolviBrand(ordine.parametri.brand);
+  // The truth about the brand — and therefore about the price — is read here,
+  // from the database. `order.params.brand` is only the slug saying WHICH brand
+  // to resolve: nothing else the client may have declared about it is trusted (an
+  // "I am free" in the payload does not even exist in orderSchema, and if it did
+  // it would be ignored anyway). A merchant that does not accept payments gives
+  // the book away: fixed format "ebook", price zeroed — but that decision is
+  // taken by `brand.acceptsPayments` just read from the DB, never by the format
+  // or the price the client sent.
+  const brand = await resolveBrand(order.params.brand);
 
-  // Pagamenti reali = Stripe configurato. È la sola cosa che distingue un
-  // acquisto vero da uno simulato: nessuna flag di ambiente manuale.
-  const pagamentiReali = Boolean(process.env.STRIPE_SECRET_KEY);
+  // Real payments = Stripe configured. It is the only thing that tells a real
+  // purchase from a simulated one: no manual environment flag.
+  const realPayments = Boolean(process.env.STRIPE_SECRET_KEY);
 
-  // Un merchant che vende e ha Stripe attivo dovrebbe passare per il pagamento
-  // con carta — che però non esiste ancora. Meglio un errore gestito che un
-  // libro regalato per sbaglio: qui, un giorno, nascerà la sessione Stripe.
-  if (brand.accettaPagamenti && pagamentiReali) {
-    return { errore: "Il pagamento con carta non è ancora attivo." };
+  // A merchant that sells and has Stripe active should go through the card
+  // payment — which does not exist yet. Better a handled error than a book given
+  // away by mistake: here, one day, the Stripe session will be born.
+  if (brand.acceptsPayments && realPayments) {
+    return { error: "Il pagamento con carta non è ancora attivo." };
   }
 
-  const db = creaClientAdmin();
-  if (!db) return { errore: "Supabase non è configurato." };
+  const db = createAdminSupabase();
+  if (!db) return { error: "Supabase non è configurato." };
 
-  const formato = brand.accettaPagamenti ? ordine.formato : "ebook";
-  const prezzoCents = brand.accettaPagamenti ? ordine.prezzoCents : 0;
+  const format = brand.acceptsPayments ? order.format : "ebook";
+  const priceCents = brand.acceptsPayments ? order.priceCents : 0;
 
-  const { data: riga, error } = await db
+  const { data: row, error } = await db
     .from("ordini")
     .insert({
       brand_id: brand.id ?? null,
-      email: ordine.email,
-      parametri: ordine.parametri,
-      formato,
-      prezzo_cents: prezzoCents,
+      email: order.email,
+      parametri: order.params,
+      formato: format,
+      prezzo_cents: priceCents,
       stato: "pagato",
-      // Simulato finché non c'è Stripe. Quando arriverà, il suo webhook farà
-      // gli stessi passi con `finto: false` — la coda non se ne accorge.
-      finto: !pagamentiReali,
+      // Simulated until Stripe is here. When it arrives, its webhook will take
+      // the same steps with `finto: false` — the queue will not notice.
+      finto: !realPayments,
     })
     .select("id")
     .single();
 
-  if (error) return { errore: `Ordine non creato: ${error.message}` };
+  if (error) return { error: `Ordine non creato: ${error.message}` };
 
-  // Il run_id lo scrive il workflow stesso, nello step che crea la riga "storie"
-  // (creaStoriaInGenerazione): start() ritorna subito, prima che quella riga esista,
-  // quindi un update da qui sarebbe una corsa quasi sempre persa.
+  // The run_id is written by the workflow itself, in the step that creates the
+  // `storie` row (createGeneratingStory): start() returns immediately, before
+  // that row exists, so an update from here would be a race almost always lost.
   try {
-    await start(generaLibro, [riga.id]);
-  } catch (problema) {
-    // Qui non c'è ancora nessuna riga "storie": nessun fantasma nella coda.
-    // Ma l'ordine sì, resta "pagato" per sempre senza che nessuno lo sappia
-    // (la coda del backoffice mostra le storie, non gli ordini). Non possiamo
-    // sistemarlo con una transizione di stato — "ordini.stato" ammette solo
-    // 'pagato'/'rimborsato' (migration 0002), qui non c'è spazio per un
-    // 'fallito' senza toccare lo schema, fuori perimetro per questa funzione.
-    // Il minimo indispensabile: loggarlo in modo cercabile e non redirigere
-    // come se tutto fosse andato bene, così chi ha pagato riprova subito
-    // invece di aspettare un libro che non arriverà mai.
-    console.error(`Avvio della generazione fallito per l'ordine ${riga.id}:`, problema.message);
+    await start(generateBook, [row.id]);
+  } catch (problem) {
+    // There is no `storie` row yet: no ghost in the queue. But the order is
+    // there, and it stays "pagato" forever without anyone knowing (the backoffice
+    // queue shows stories, not orders). We cannot fix it with a state transition
+    // — "ordini.stato" only allows 'pagato'/'rimborsato' (migration 0002), there
+    // is no room here for a 'fallito' without touching the schema, out of scope
+    // for this function. The bare minimum: log it in a searchable way and do not
+    // redirect as if everything went fine, so whoever paid retries right away
+    // instead of waiting for a book that will never come.
+    console.error(`Avvio della generazione fallito per l'ordine ${row.id}:`, problem.message);
     return {
-      errore:
+      error:
         "Il tuo ordine è stato registrato, ma non siamo riusciti ad avviare la generazione del libro. Riprova, o scrivici indicando questo riferimento: " +
-        riga.id,
+        row.id,
     };
   }
 

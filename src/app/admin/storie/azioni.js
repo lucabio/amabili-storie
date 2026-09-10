@@ -3,158 +3,158 @@
 import { revalidatePath } from "next/cache";
 import { start } from "workflow/api";
 
-import { utenteAmministratore } from "@/lib/admin/sessione";
-import { BRAND_DEFAULT, brandDaRiga } from "@/lib/brand/schema";
-import { inviaMail } from "@/lib/mail/invia";
-import { mailStoriaPronta } from "@/lib/mail/modelli";
-import { generaIllustrazione } from "@/lib/storia/illustrazioni";
-import { contenutoStoriaSchema } from "@/lib/storia/schema";
-import { transizionePermessa } from "@/lib/storia/stati";
-import { salvaIllustrazione } from "@/lib/storia/storage";
-import { creaClientAdmin, creaClientServer } from "@/lib/supabase/server";
-import { generaLibro } from "@/workflows/libro";
+import { adminUser } from "@/lib/admin/session";
+import { BRAND_DEFAULT, brandFromRow } from "@/lib/brand/schema";
+import { sendMail } from "@/lib/mail/send";
+import { storyReadyMail } from "@/lib/mail/templates";
+import { generateIllustration } from "@/lib/story/illustrations";
+import { storyContentSchema } from "@/lib/story/schema";
+import { transitionAllowed } from "@/lib/story/states";
+import { saveIllustration } from "@/lib/story/storage";
+import { createAdminSupabase, createServerSupabase } from "@/lib/supabase/server";
+import { generateBook } from "@/workflows/book";
 
-/** Nessuna di queste azioni parte se chi la chiama non è amministratore. */
-async function esigiAmministratore() {
-  const utente = await utenteAmministratore();
-  if (!utente) throw new Error("Non autorizzato.");
-  return utente;
+/** None of these actions runs if the caller is not an admin. */
+async function requireAdmin() {
+  const user = await adminUser();
+  if (!user) throw new Error("Non autorizzato.");
+  return user;
 }
 
-async function leggiStoria(storiaId) {
-  const supabase = await creaClientServer();
+async function readStory(storyId) {
+  const supabase = await createServerSupabase();
   const { data } = await supabase
     .from("storie")
     .select("*, brands (*)")
-    .eq("id", storiaId)
+    .eq("id", storyId)
     .maybeSingle();
   return data;
 }
 
-export async function salvaStoria(storiaId, contenutoGrezzo) {
-  await esigiAmministratore();
+export async function saveStory(storyId, rawContent) {
+  await requireAdmin();
 
-  const storia = await leggiStoria(storiaId);
-  if (!storia) return { errore: "Storia inesistente." };
+  const story = await readStory(storyId);
+  if (!story) return { error: "Storia inesistente." };
 
-  if (storia.stato !== "in_revisione") {
+  if (story.stato !== "in_revisione") {
     return {
-      errore: `Una storia "${storia.stato}" non si può più correggere: se il libro è già partito, la correzione è un libro nuovo, non una modifica.`,
+      error: `Una storia "${story.stato}" non si può più correggere: se il libro è già partito, la correzione è un libro nuovo, non una modifica.`,
     };
   }
 
-  const esito = contenutoStoriaSchema.safeParse(contenutoGrezzo);
-  if (!esito.success) {
-    return { errore: esito.error.issues[0].message };
+  const parsed = storyContentSchema.safeParse(rawContent);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
   }
 
-  const db = creaClientAdmin();
-  const { data: righe, error } = await db
+  const db = createAdminSupabase();
+  const { data: rows, error } = await db
     .from("storie")
-    // `contenuto_originale` non si tocca mai: è la versione dell'AI, e la
-    // differenza con questa è il diario di cosa correggiamo sempre.
-    .update({ contenuto: esito.data })
-    // Vincolare l'UPDATE allo stato appena letto rende la transizione atomica:
-    // due richieste concorrenti non possono superare entrambe il controllo.
-    .eq("id", storiaId)
-    .eq("stato", storia.stato)
+    // `contenuto_originale` is never touched: it is the AI's version, and the
+    // difference with this one is the diary of what we always correct.
+    .update({ contenuto: parsed.data })
+    // Constraining the UPDATE to the state just read makes the transition
+    // atomic: two concurrent requests cannot both pass the check.
+    .eq("id", storyId)
+    .eq("stato", story.stato)
     .select("id");
 
-  if (error) return { errore: error.message };
-  if (!righe || righe.length === 0) {
+  if (error) return { error: error.message };
+  if (!rows || rows.length === 0) {
     return {
-      errore: "Qualcun altro ha già modificato questa storia nel frattempo: ricarica la pagina.",
+      error: "Qualcun altro ha già modificato questa storia nel frattempo: ricarica la pagina.",
     };
   }
 
-  revalidatePath(`/admin/storie/${storiaId}`);
+  revalidatePath(`/admin/storie/${storyId}`);
   return { ok: true };
 }
 
-export async function approvaStoria(storiaId) {
-  const utente = await esigiAmministratore();
+export async function approveStory(storyId) {
+  const user = await requireAdmin();
 
-  const storia = await leggiStoria(storiaId);
-  if (!storia) return { errore: "Storia inesistente." };
+  const story = await readStory(storyId);
+  if (!story) return { error: "Storia inesistente." };
 
-  if (!transizionePermessa(storia.stato, "approvata")) {
-    return { errore: `Una storia "${storia.stato}" non si può approvare.` };
+  if (!transitionAllowed(story.stato, "approvata")) {
+    return { error: `Una storia "${story.stato}" non si può approvare.` };
   }
 
-  const db = creaClientAdmin();
-  const { data: righe, error } = await db
+  const db = createAdminSupabase();
+  const { data: rows, error } = await db
     .from("storie")
     .update({
       stato: "approvata",
-      revisionata_da: utente.id,
+      revisionata_da: user.id,
       revisionata_il: new Date().toISOString(),
     })
-    // Vincolare l'UPDATE allo stato appena letto rende la transizione atomica:
-    // due richieste concorrenti (approva + rifiuta, o due approva) non possono
-    // superare entrambe il controllo — "approvata" è irreversibile.
-    .eq("id", storiaId)
-    .eq("stato", storia.stato)
+    // Constraining the UPDATE to the state just read makes the transition
+    // atomic: two concurrent requests (approve + reject, or two approves) cannot
+    // both pass the check — "approvata" is irreversible.
+    .eq("id", storyId)
+    .eq("stato", story.stato)
     .select("id");
 
-  if (error) return { errore: error.message };
-  if (!righe || righe.length === 0) {
+  if (error) return { error: error.message };
+  if (!rows || rows.length === 0) {
     return {
-      errore: "Qualcun altro ha già deciso su questa storia nel frattempo: ricarica la pagina.",
+      error: "Qualcun altro ha già deciso su questa storia nel frattempo: ricarica la pagina.",
     };
   }
 
-  // La mail non deve poter costare l'approvazione: se Resend è giù, la storia
-  // resta approvata e la mail si rimanda a mano.
+  // The email must not be able to cost the approval: if Resend is down, the
+  // story stays approved and the email is resent by hand.
   try {
-    const brand = brandDaRiga(storia.brands) ?? BRAND_DEFAULT;
-    const { oggetto, html } = mailStoriaPronta({
-      nome: storia.parametri.nome,
+    const brand = brandFromRow(story.brands) ?? BRAND_DEFAULT;
+    const { subject, html } = storyReadyMail({
+      name: story.parametri.nome,
       brand,
-      url: `${process.env.NEXT_PUBLIC_SITO_URL ?? "http://localhost:3000"}/storie/${storiaId}`,
+      url: `${process.env.NEXT_PUBLIC_SITO_URL ?? "http://localhost:3000"}/storie/${storyId}`,
     });
-    await inviaMail({ a: storia.email, oggetto, html });
-  } catch (problema) {
-    console.error("Mail di approvazione non spedita:", problema.message);
+    await sendMail({ to: story.email, subject, html });
+  } catch (problem) {
+    console.error("Mail di approvazione non spedita:", problem.message);
   }
 
   revalidatePath("/admin/storie");
   return { ok: true };
 }
 
-export async function rifiutaStoria(storiaId, nota) {
-  const utente = await esigiAmministratore();
+export async function rejectStory(storyId, note) {
+  const user = await requireAdmin();
 
-  const notaPulita = typeof nota === "string" ? nota.trim() : "";
-  if (!notaPulita) {
-    return { errore: "Serve una nota per rifiutare una storia: fra un mese nessuno ricorderà il motivo." };
+  const cleanNote = typeof note === "string" ? note.trim() : "";
+  if (!cleanNote) {
+    return { error: "Serve una nota per rifiutare una storia: fra un mese nessuno ricorderà il motivo." };
   }
 
-  const storia = await leggiStoria(storiaId);
-  if (!storia) return { errore: "Storia inesistente." };
+  const story = await readStory(storyId);
+  if (!story) return { error: "Storia inesistente." };
 
-  if (!transizionePermessa(storia.stato, "rifiutata")) {
-    return { errore: `Una storia "${storia.stato}" non si può rifiutare.` };
+  if (!transitionAllowed(story.stato, "rifiutata")) {
+    return { error: `Una storia "${story.stato}" non si può rifiutare.` };
   }
 
-  const db = creaClientAdmin();
-  const { data: righe, error } = await db
+  const db = createAdminSupabase();
+  const { data: rows, error } = await db
     .from("storie")
     .update({
       stato: "rifiutata",
-      note_revisione: notaPulita,
-      revisionata_da: utente.id,
+      note_revisione: cleanNote,
+      revisionata_da: user.id,
       revisionata_il: new Date().toISOString(),
     })
-    // Vincolare l'UPDATE allo stato appena letto rende la transizione atomica:
-    // due richieste concorrenti non possono superare entrambe il controllo.
-    .eq("id", storiaId)
-    .eq("stato", storia.stato)
+    // Constraining the UPDATE to the state just read makes the transition
+    // atomic: two concurrent requests cannot both pass the check.
+    .eq("id", storyId)
+    .eq("stato", story.stato)
     .select("id");
 
-  if (error) return { errore: error.message };
-  if (!righe || righe.length === 0) {
+  if (error) return { error: error.message };
+  if (!rows || rows.length === 0) {
     return {
-      errore: "Qualcun altro ha già deciso su questa storia nel frattempo: ricarica la pagina.",
+      error: "Qualcun altro ha già deciso su questa storia nel frattempo: ricarica la pagina.",
     };
   }
 
@@ -162,150 +162,151 @@ export async function rifiutaStoria(storiaId, nota) {
   return { ok: true };
 }
 
-export async function rigeneraStoria(storiaId) {
-  await esigiAmministratore();
+export async function regenerateStory(storyId) {
+  await requireAdmin();
 
-  const storia = await leggiStoria(storiaId);
-  if (!storia) return { errore: "Storia inesistente." };
+  const story = await readStory(storyId);
+  if (!story) return { error: "Storia inesistente." };
 
-  if (!transizionePermessa(storia.stato, "in_generazione")) {
-    return { errore: `Una storia "${storia.stato}" non si può rigenerare.` };
+  if (!transitionAllowed(story.stato, "in_generazione")) {
+    return { error: `Una storia "${story.stato}" non si può rigenerare.` };
   }
 
-  // Si riparte dall'ordine che aveva generato la storia: senza, non c'è nulla
-  // da rilanciare.
-  if (!storia.ordine_id) {
+  // We restart from the order that generated the story: without it there is
+  // nothing to relaunch.
+  if (!story.ordine_id) {
     return {
-      errore: "Questa storia non ha un ordine collegato: non si sa cosa rigenerare.",
+      error: "Questa storia non ha un ordine collegato: non si sa cosa rigenerare.",
     };
   }
 
-  const db = creaClientAdmin();
-  const { data: righe, error } = await db
+  const db = createAdminSupabase();
+  const { data: rows, error } = await db
     .from("storie")
     .update({ stato: "in_generazione", errore: null })
-    // Vincolare l'UPDATE allo stato appena letto rende la transizione atomica:
-    // due click sullo stesso "Rigenera" non possono superare entrambi il
-    // controllo e avviare due workflow per lo stesso ordine.
-    .eq("id", storiaId)
-    .eq("stato", storia.stato)
+    // Constraining the UPDATE to the state just read makes the transition
+    // atomic: two clicks on the same "Rigenera" cannot both pass the check and
+    // start two workflows for the same order.
+    .eq("id", storyId)
+    .eq("stato", story.stato)
     .select("id");
 
-  if (error) return { errore: error.message };
-  if (!righe || righe.length === 0) {
+  if (error) return { error: error.message };
+  if (!rows || rows.length === 0) {
     return {
-      errore: "Qualcun altro ha già avviato la rigenerazione di questa storia nel frattempo: ricarica la pagina.",
+      error: "Qualcun altro ha già avviato la rigenerazione di questa storia nel frattempo: ricarica la pagina.",
     };
   }
 
-  // Il workflow riusa la riga esistente (vedi creaStoriaInGenerazione in
-  // src/workflows/libro.js): la storia mantiene il suo id, quindi il link
-  // nella mail già spedita al genitore continua a puntare qui.
+  // The workflow reuses the existing row (see createGeneratingStory in
+  // src/workflows/book.js): the story keeps its id, so the link in the email
+  // already sent to the parent still points here.
   try {
-    await start(generaLibro, [storia.ordine_id]);
-  } catch (problema) {
-    // start() non è partito: nessun workflow prenderà mai in carico questa
-    // storia, e senza workflow nessuno la segnerà mai "fallita" (è compito
-    // suo, vedi il commento gemello in src/workflows/libro.js). Se non lo
-    // facciamo qui, la riga resta bloccata in "in_generazione" per sempre —
-    // il fantasma che questa funzione esiste per eliminare, e si tornerebbe
-    // a doverla sbloccare con SQL a mano. "fallita" è lo stato giusto: da lì
-    // l'amministratore può rigenerare di nuovo (TRANSIZIONI lo permette), e
-    // la coda mostra subito l'errore leggibile in `errore`.
-    const messaggio = `Avvio della rigenerazione fallito: ${problema.message}`;
+    await start(generateBook, [story.ordine_id]);
+  } catch (problem) {
+    // start() did not fire: no workflow will ever take charge of this story, and
+    // without a workflow nobody will ever mark it "fallita" (that is its job,
+    // see the twin comment in src/workflows/book.js). If we do not do it here,
+    // the row stays stuck in "in_generazione" forever — the ghost this function
+    // exists to remove, and we would be back to unblocking it with SQL by hand.
+    // "fallita" is the right state: from there the admin can regenerate again
+    // (TRANSITIONS allows it), and the queue shows the readable error in
+    // `errore` right away.
+    const message = `Avvio della rigenerazione fallito: ${problem.message}`;
 
-    const { error: erroreRecupero } = await db
+    const { error: recoveryError } = await db
       .from("storie")
-      .update({ stato: "fallita", errore: messaggio })
-      .eq("id", storiaId)
-      // Se nel frattempo il workflow era comunque partito ed è andato avanti,
-      // questo UPDATE non tocca nulla: non si sotterra un libro buono.
+      .update({ stato: "fallita", errore: message })
+      .eq("id", storyId)
+      // If in the meantime the workflow did start and moved on, this UPDATE
+      // touches nothing: we do not bury a good book.
       .eq("stato", "in_generazione");
 
     revalidatePath("/admin/storie");
-    revalidatePath(`/admin/storie/${storiaId}`);
+    revalidatePath(`/admin/storie/${storyId}`);
 
-    // Doppio guasto: né il workflow è partito, né siamo riusciti a segnarlo.
-    // La storia resta in "in_generazione", da cui non si rigenera — cioè
-    // esattamente il fantasma. Non possiamo fare altro che dirlo forte, perché
-    // qui l'unica uscita è una mano umana.
-    if (erroreRecupero) {
+    // Double failure: neither did the workflow start, nor did we manage to mark
+    // it. The story stays in "in_generazione", from which it cannot be
+    // regenerated — exactly the ghost. There is nothing else to do but say it
+    // out loud, because here the only way out is a human hand.
+    if (recoveryError) {
       console.error(
-        `Storia ${storiaId} bloccata in in_generazione: né avviata né segnata fallita (${erroreRecupero.message}).`,
+        `Storia ${storyId} bloccata in in_generazione: né avviata né segnata fallita (${recoveryError.message}).`,
       );
       return {
-        errore: `${messaggio} — e non siamo riusciti a segnarla come fallita: la storia è bloccata, avvisa chi sviluppa.`,
+        error: `${message} — e non siamo riusciti a segnarla come fallita: la storia è bloccata, avvisa chi sviluppa.`,
       };
     }
 
-    return { errore: messaggio };
+    return { error: message };
   }
 
   revalidatePath("/admin/storie");
-  revalidatePath(`/admin/storie/${storiaId}`);
+  revalidatePath(`/admin/storie/${storyId}`);
   return { ok: true };
 }
 
 /**
- * Genera (o rigenera) l'illustrazione di una singola pagina e ne salva l'URL nel
- * contenuto. Solo su una storia `in_revisione`: le figure si rivedono nel
- * backoffice PRIMA dell'approvazione, una pagina alla volta, con retry.
+ * Generates (or regenerates) the illustration of a single page and saves its URL
+ * into the content. Only on an `in_revisione` story: the pictures are reviewed
+ * in the backoffice BEFORE approval, one page at a time, with retry.
  *
- * La `scena` arriva dal client (il testo "La scena da illustrare" che
- * l'amministratore vede, anche se non ancora salvato): così si disegna ciò che
- * ha davanti, non una versione vecchia sul database.
+ * The `scene` comes from the client (the "La scena da illustrare" text the admin
+ * has in front of them, even if not saved yet): so we draw what they see, not an
+ * older version from the database.
  */
-export async function generaIllustrazioneStoria(storiaId, indice, scenaGrezza) {
-  await esigiAmministratore();
+export async function generateStoryIllustration(storyId, index, rawScene) {
+  await requireAdmin();
 
-  const storia = await leggiStoria(storiaId);
-  if (!storia) return { errore: "Storia inesistente." };
-  if (storia.stato !== "in_revisione") {
-    return { errore: `Una storia "${storia.stato}" non si illustra più: si generano prima dell'approvazione.` };
+  const story = await readStory(storyId);
+  if (!story) return { error: "Storia inesistente." };
+  if (story.stato !== "in_revisione") {
+    return { error: `Una storia "${story.stato}" non si illustra più: si generano prima dell'approvazione.` };
   }
 
-  const pagine = storia.contenuto?.pagine;
-  if (!Array.isArray(pagine) || indice < 0 || indice >= pagine.length) {
-    return { errore: "Pagina inesistente." };
+  const pages = story.contenuto?.pagine;
+  if (!Array.isArray(pages) || index < 0 || index >= pages.length) {
+    return { error: "Pagina inesistente." };
   }
 
-  const scena = typeof scenaGrezza === "string" ? scenaGrezza.trim() : "";
-  if (!scena) {
-    return { errore: "Serve la descrizione della scena per generare l'illustrazione." };
+  const scene = typeof rawScene === "string" ? rawScene.trim() : "";
+  if (!scene) {
+    return { error: "Serve la descrizione della scena per generare l'illustrazione." };
   }
 
   let url;
   try {
-    const { bytes, mediaType } = await generaIllustrazione({
-      scena,
-      parametri: storia.parametri,
+    const { bytes, mediaType } = await generateIllustration({
+      scene,
+      params: story.parametri,
     });
-    url = await salvaIllustrazione({ storiaId, indice, bytes, mediaType });
-  } catch (problema) {
-    return { errore: `Illustrazione non generata: ${problema.message}` };
+    url = await saveIllustration({ storyId, index, bytes, mediaType });
+  } catch (problem) {
+    return { error: `Illustrazione non generata: ${problem.message}` };
   }
 
-  // Read-modify-write del JSON: rileggo le pagine appena lette, ci scrivo l'URL
-  // sull'indice giusto, e vincolo l'UPDATE allo stato `in_revisione` (atomico
-  // rispetto ad approvazione/rifiuto). Con un solo revisore alla volta non c'è
-  // corsa fra pagine; se un giorno saranno in due, si passerà a un jsonb_set.
-  const pagineAggiornate = pagine.map((pagina, i) =>
-    i === indice ? { ...pagina, illustrazioneUrl: url } : pagina,
+  // Read-modify-write of the JSON: we reread the pages just read, write the URL
+  // at the right index, and constrain the UPDATE to the `in_revisione` state
+  // (atomic with respect to approval/rejection). With a single reviewer at a
+  // time there is no race between pages; if one day there are two, we will move
+  // to a jsonb_set.
+  const updatedPages = pages.map((page, i) =>
+    i === index ? { ...page, illustrazioneUrl: url } : page,
   );
 
-  const db = creaClientAdmin();
-  const { data: righe, error } = await db
+  const db = createAdminSupabase();
+  const { data: rows, error } = await db
     .from("storie")
-    .update({ contenuto: { ...storia.contenuto, pagine: pagineAggiornate } })
-    .eq("id", storiaId)
+    .update({ contenuto: { ...story.contenuto, pagine: updatedPages } })
+    .eq("id", storyId)
     .eq("stato", "in_revisione")
     .select("id");
 
-  if (error) return { errore: error.message };
-  if (!righe || righe.length === 0) {
-    return { errore: "Qualcun altro ha già deciso su questa storia nel frattempo: ricarica la pagina." };
+  if (error) return { error: error.message };
+  if (!rows || rows.length === 0) {
+    return { error: "Qualcun altro ha già deciso su questa storia nel frattempo: ricarica la pagina." };
   }
 
-  revalidatePath(`/admin/storie/${storiaId}`);
+  revalidatePath(`/admin/storie/${storyId}`);
   return { ok: true, url };
 }

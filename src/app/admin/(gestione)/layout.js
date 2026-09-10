@@ -1,32 +1,32 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { utenteAmministratore } from "@/lib/admin/sessione";
-import { supabaseConfigurato } from "@/lib/supabase/server";
+import { adminUser } from "@/lib/admin/session";
+import { supabaseConfigured } from "@/lib/supabase/server";
 
-const VOCI_NAV = [
-  { href: "/admin", testo: "Merchant" },
-  { href: "/admin/storie", testo: "Storie" },
+const NAV_ITEMS = [
+  { href: "/admin", label: "Merchant" },
+  { href: "/admin/storie", label: "Storie" },
 ];
 
-/** Tutto ciò che sta in questo gruppo richiede una sessione da amministratore. */
-export default async function LayoutGestione({ children }) {
-  // Senza Supabase il layout padre mostra già le istruzioni di setup.
-  if (!supabaseConfigurato()) return null;
+/** Everything in this group requires an admin session. */
+export default async function ManagementLayout({ children }) {
+  // Without Supabase the parent layout already shows the setup instructions.
+  if (!supabaseConfigured()) return null;
 
-  const utente = await utenteAmministratore();
-  if (!utente) redirect("/admin/login");
+  const user = await adminUser();
+  if (!user) redirect("/admin/login");
 
   return (
     <div>
       <nav className="mb-8 flex gap-2">
-        {VOCI_NAV.map((voce) => (
+        {NAV_ITEMS.map((item) => (
           <Link
-            key={voce.href}
-            href={voce.href}
+            key={item.href}
+            href={item.href}
             className="rounded-full border border-bordo bg-white px-4 py-2 text-sm font-bold text-inchiostro-soft"
           >
-            {voce.testo}
+            {item.label}
           </Link>
         ))}
       </nav>

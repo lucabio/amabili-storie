@@ -1,20 +1,23 @@
 # Amabili Storie
 
-Libri illustrati personalizzati che aiutano un bambino a superare un capriccio.
-Next.js 16 (App Router, JavaScript) + Supabase + Vercel AI Gateway. Deploy su Vercel.
+Personalised picture books that help a child get past a whim (a *capriccio*).
+Next.js 16 (App Router, JavaScript) + Supabase + Vercel AI Gateway. Deployed on Vercel.
 
-## Avvio rapido
+The code is English; the product speaks Italian to Italian parents. See `AGENTS.md` for the
+full language rules and the glossary.
+
+## Quick start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Apri <http://localhost:3000>. **Funziona senza configurare niente**: senza Supabase vedi
-il brand di default, e senza chiave AI le storie escono da template scritti a mano. Serve
-a sviluppare l'interfaccia senza dipendere da servizi esterni.
+Open <http://localhost:3000>. **It works without configuring anything**: without Supabase you
+get the default brand, and without an AI key the stories come out of hand-written templates.
+That is what lets you develop the interface without depending on external services.
 
-## Configurazione completa
+## Full configuration
 
 ```bash
 cp .env.example .env.local
@@ -22,102 +25,105 @@ cp .env.example .env.local
 
 ### Supabase
 
-1. Crea il progetto su [supabase.com](https://supabase.com).
-2. SQL Editor → esegui `supabase/migrations/0001_init.sql`.
-3. Facoltativo, per avere un merchant di esempio: esegui anche `supabase/seed.sql`.
-4. Project Settings → API: copia URL, chiave `anon` e chiave `service_role` in `.env.local`.
+1. Create the project on [supabase.com](https://supabase.com).
+2. Apply the migrations with the CLI: `npx supabase db push` (never by hand from the
+   dashboard — the registry drifts).
+3. Optional, to get a sample merchant: run `supabase/seed.sql` too.
+4. Project Settings → API: copy the URL, the `anon` key and the `service_role` key into
+   `.env.local`.
 
-### Diventare amministratore
+### Becoming an admin
 
-Il backoffice non si apre a chiunque si registri: bisogna essere elencati in
-`amministratori`. Crea l'utente da Supabase (Authentication → Add user, con **Auto
-Confirm User**), poi:
+The backoffice does not open up to anyone who signs up: you have to be listed in
+`amministratori`. Create the user from Supabase (Authentication → Add user, with **Auto
+Confirm User**), then:
 
 ```sql
 insert into public.amministratori (utente_id, email)
-select id, email from auth.users where email = 'tua@email.it';
+select id, email from auth.users where email = 'your@email.it';
 ```
 
-Poi entra da `/admin`.
+Then get in from `/admin`.
 
-### Il login del backoffice
+### The backoffice login
 
-Niente password: si entra con un **codice a 6 cifre** che arriva per mail. La stessa
-mail porta anche un **magic link**, come via di riserva — ma quello funziona solo nel
-browser da cui è partita la richiesta (è il flusso PKCE, il verificatore sta in un
-cookie lì). Se leggi la mail sul telefono e lavori sul portatile, usa il codice.
+No password: you get in with a **6-digit code** that arrives by email. The same email also
+carries a **magic link**, as a fallback — but that only works in the browser the request
+started from (it is the PKCE flow, the verifier sits in a cookie there). If you read the
+email on your phone and work on your laptop, use the code.
 
-Tre cose da configurare nella dashboard di Supabase, una volta sola:
+Three things to configure in the Supabase dashboard, once:
 
-1. **SMTP** (Project Settings → Authentication → SMTP): l'SMTP integrato manda poche
-   mail all'ora ed è solo per giocare. Noi usiamo Resend: host `smtp.resend.com`,
-   utente `resend`, password = la API key di Resend. **La chiave sta qui, non nel
-   `.env.local`**: le mail di accesso le spedisce Supabase, non l'app.
-2. **Il template** (Authentication → Emails → *Magic Link*): incolla
-   `supabase/templates/accesso-backoffice.html`. Deve contenere `{{ .Token }}`, altrimenti
-   il codice non arriva e il login non funziona: quello di default manda solo il link.
-3. **Redirect URL** (Authentication → URL Configuration): aggiungi
-   `http://localhost:3000/auth/callback` e `https://dev.amabilistorie.com/auth/callback`,
-   altrimenti il magic link viene rifiutato.
+1. **SMTP** (Project Settings → Authentication → SMTP): the built-in SMTP sends few emails
+   an hour and is only for playing. We use Resend: host `smtp.resend.com`, user `resend`,
+   password = the Resend API key. **The key goes here, not in `.env.local`**: the access
+   emails are sent by Supabase, not by the app.
+2. **The template** (Authentication → Emails → *Magic Link*): paste
+   `supabase/templates/accesso-backoffice.html`. It must contain `{{ .Token }}`, otherwise
+   the code never arrives and the login does not work: the default one only sends the link.
+3. **Redirect URL** (Authentication → URL Configuration): add
+   `http://localhost:3000/auth/callback` and `https://dev.amabilistorie.com/auth/callback`,
+   otherwise the magic link is rejected.
 
-Chiedere un codice per un'email che non esiste non produce nulla e non lo dice: il form
-va avanti lo stesso, così non si può scoprire quali indirizzi sono validi.
+Asking for a code for an email that does not exist produces nothing and does not say so: the
+form moves on anyway, so you cannot find out which addresses are valid.
 
-### Generazione con AI
+### AI generation
 
-Metti `AI_GATEWAY_API_KEY` (Vercel → AI Gateway → API keys) in `.env.local`. Su Vercel
-non serve: il Gateway si autentica da solo via OIDC.
+Put `AI_GATEWAY_API_KEY` (Vercel → AI Gateway → API keys) in `.env.local`. On Vercel it is
+not needed: the Gateway authenticates itself via OIDC.
 
-## Il giro completo
+## The full round trip
 
-Il genitore sceglie un capriccio, personalizza i protagonisti — nome, età, e i **tratti
-opzionali**: capelli, occhi, corporatura, e una descrizione libera, che è il campo che vale
-di più — e riceve un'**anteprima gratuita di 3 pagine**, istantanea.
+The parent picks a whim, customises the characters — name, age, and the **optional traits**:
+hair, eyes, build, and a free-form description, which is the field worth the most — and gets
+a **free 3-page preview**, instantly.
 
-Se compra, nasce un ordine e parte un **workflow durevole** che scrive le 22 pagine, avvisa
-il genitore per mail, e deposita la storia in `/admin/storie` in attesa di revisione: **una
-storia acquistata non arriva a un bambino senza che un umano l'abbia letta**. Lì la
-correggete a mano e la approvate. All'approvazione parte la mail "il libro è pronto", col
-link a `/storie/<uuid>` — dove il genitore legge. L'uuid è la chiave: una storia non
-approvata dà 404.
+If they buy, an order is created and a **durable workflow** starts that writes the 22 pages,
+tells the parent by email, and drops the story into `/admin/storie` waiting for review: **a
+purchased story does not reach a child without a human having read it**. There you correct it
+by hand and approve it. On approval the "your book is ready" email goes out, with a link to
+`/storie/<uuid>` — where the parent reads. The uuid is the key: a story that is not approved
+returns 404.
 
-Una storia fallita o rifiutata si **rigenera** dal backoffice, riusando la stessa riga: così
-il link già in mano al genitore continua a funzionare.
+A failed or rejected story is **regenerated** from the backoffice, reusing the same row: so
+the link already in the parent's hands keeps working.
 
-**Un brand vende o regala.** `accetta_pagamenti` decide se c'è un checkout: l'Hotel Famiglia
-Serena regala le storie ai propri ospiti (niente prezzi, ordine a prezzo zero), il sito
-principale le vende. E anche la home è un brand (`slug = amabili`): si modifica dal
-backoffice, non serve un deploy.
+**A brand sells or gives away.** `accetta_pagamenti` decides whether there is a checkout:
+Hotel Famiglia Serena gives the stories to its guests (no prices, order at zero price), the
+main site sells them. And the home page is a brand too (`slug = amabili`): it is edited from
+the backoffice, no deploy needed.
 
-**Il pagamento non c'è ancora.** Per provare il giro serve `CHECKOUT_FINTO=1` in `.env.local`:
-crea l'ordine e genera il libro senza far pagare nessuno. Gli ordini nati così hanno
-`finto = true`, e si cancellano tutti con `delete from public.ordini where finto`.
+**Payment does not exist yet.** While `STRIPE_SECRET_KEY` is absent every purchase is
+simulated: the order is created with `finto = true`, and the whole chain (order → workflow →
+queue) works without charging anyone. They are all deleted with
+`delete from public.ordini where finto`.
 
-**`RESEND_API_KEY` ora serve davvero all'app**, non solo a Supabase: le mail al genitore le
-manda il portale, non il servizio di autenticazione.
+**`RESEND_API_KEY` is now genuinely needed by the app**, not just by Supabase: the emails to
+the parent are sent by the portal, not by the authentication service.
 
-Se l'AI non è configurata, un libro acquistato **fallisce** invece di ripiegare sui template:
-lo trovate in coda come `fallita`, con l'errore in chiaro. È voluto — un cliente che ha pagato
-non può ricevere in silenzio una storia identica a tutte le altre.
+If the AI is not configured, a purchased book **fails** instead of falling back on the
+templates: you find it in the queue as `fallita`, with the error in plain sight. That is
+deliberate — a customer who paid cannot silently receive a story identical to all the others.
 
-## Come funziona il multi-brand
+## How multi-brand works
 
-Un ente — un hotel, per dire — ha la sua versione del portale:
+A merchant — a hotel, say — has its own version of the portal:
 
 ```
 /?version=famiglia_serena
 ```
 
-Il brand definisce colori, testi dell'hero, capricci offerti, listino sì/no e — la parte
-che conta davvero — il **prompt guida**: il filo comune che ogni storia di quell'ente
-deve seguire (il soggiorno in hotel, la colazione, il cane della struttura…). Si
-configura tutto da `/admin`, senza toccare il codice.
+The brand defines colors, hero copy, whims offered, price list yes/no and — the part that
+really counts — the **guide prompt**: the common thread every story of that merchant has to
+follow (the stay at the hotel, breakfast, the hotel's dog…). It is all configured from
+`/admin`, without touching the code.
 
-## Ambienti
+## Environments
 
 | Branch | URL |
 |---|---|
-| `main` | amabilistorie.com |
 | `dev` | dev.amabilistorie.com |
+| `main` | amabilistorie.com — does not exist yet |
 
-La grafica di riferimento sta nel repo `amabili-storie-demo` (demo.amabilistorie.com).
+The reference design lives in the `amabili-storie-demo` repo (demo.amabilistorie.com).

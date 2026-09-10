@@ -1,35 +1,35 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-const URL_SUPABASE = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const CHIAVE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-/** Finché il progetto Supabase non esiste, l'app deve girare lo stesso. */
-export function supabaseConfigurato() {
-  return Boolean(URL_SUPABASE && CHIAVE_ANON);
+/** Until the Supabase project exists, the app still has to run. */
+export function supabaseConfigured() {
+  return Boolean(SUPABASE_URL && ANON_KEY);
 }
 
 /**
- * Client per Server Component, Route Handler e Server Action: parla come
- * l'utente loggato, quindi le RLS valgono.
- * Ritorna null se Supabase non è ancora configurato.
+ * Client for Server Components, Route Handlers and Server Actions: it speaks as
+ * the logged-in user, so RLS applies.
+ * Returns null if Supabase is not configured yet.
  */
-export async function creaClientServer() {
-  if (!supabaseConfigurato()) return null;
+export async function createServerSupabase() {
+  if (!supabaseConfigured()) return null;
 
   const cookieStore = await cookies();
 
-  return createServerClient(URL_SUPABASE, CHIAVE_ANON, {
+  return createServerClient(SUPABASE_URL, ANON_KEY, {
     cookies: {
       getAll: () => cookieStore.getAll(),
-      setAll: (daImpostare) => {
+      setAll: (cookiesToSet) => {
         try {
-          for (const { name, value, options } of daImpostare) {
+          for (const { name, value, options } of cookiesToSet) {
             cookieStore.set(name, value, options);
           }
         } catch {
-          // Da un Server Component i cookie sono in sola lettura: il refresh
-          // del token lo fa il proxy, qui possiamo ignorare.
+          // From a Server Component cookies are read-only: the proxy refreshes
+          // the token, so we can ignore it here.
         }
       },
     },
@@ -37,14 +37,14 @@ export async function creaClientServer() {
 }
 
 /**
- * Client con service role: bypassa le RLS. Usare SOLO lato server, mai in
- * codice che finisce nel bundle del browser.
+ * Client with the service role: it bypasses RLS. Use ONLY on the server, never
+ * in code that ends up in the browser bundle.
  */
-export function creaClientAdmin() {
-  const chiaveServizio = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!URL_SUPABASE || !chiaveServizio) return null;
+export function createAdminSupabase() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!SUPABASE_URL || !serviceRoleKey) return null;
 
-  return createServerClient(URL_SUPABASE, chiaveServizio, {
+  return createServerClient(SUPABASE_URL, serviceRoleKey, {
     cookies: { getAll: () => [], setAll: () => {} },
   });
 }

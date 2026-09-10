@@ -1,31 +1,29 @@
-import ComeFunziona from "@/components/ComeFunziona";
-import Configuratore from "@/components/Configuratore";
+import BrandTheme from "@/components/BrandTheme";
+import Configurator from "@/components/Configurator";
+import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
-import Metodo from "@/components/Metodo";
-import PiedePagina from "@/components/PiedePagina";
-import Prezzi from "@/components/Prezzi";
-import TemaBrand from "@/components/TemaBrand";
-import { risolviBrand, slugDaSearchParams } from "@/lib/brand/resolve";
-import { CAPRICCI } from "@/lib/domain/capricci";
+import HowItWorks from "@/components/HowItWorks";
+import Method from "@/components/Method";
+import Pricing from "@/components/Pricing";
+import { resolveBrand, slugFromSearchParams } from "@/lib/brand/resolve";
+import { WHIMS } from "@/lib/domain/whims";
 
 export default async function Home({ searchParams }) {
-  // Next 16: searchParams è una Promise.
-  const parametri = await searchParams;
-  const brand = await risolviBrand(slugDaSearchParams(parametri));
+  // Next 16: searchParams is a Promise.
+  const params = await searchParams;
+  const brand = await resolveBrand(slugFromSearchParams(params));
 
-  // Un ente può offrire solo un sottoinsieme di capricci.
-  const capricci = brand.capricci
-    ? CAPRICCI.filter((c) => brand.capricci.includes(c.id))
-    : CAPRICCI;
+  // A merchant can offer only a subset of whims.
+  const whims = brand.whims ? WHIMS.filter((whim) => brand.whims.includes(whim.id)) : WHIMS;
 
   return (
-    <TemaBrand brand={brand}>
+    <BrandTheme brand={brand}>
       <Hero brand={brand} />
-      <ComeFunziona />
-      <Configuratore brand={brand} capricci={capricci} />
-      <Metodo />
-      {brand.mostraPrezzi && <Prezzi />}
-      <PiedePagina brand={brand} />
-    </TemaBrand>
+      <HowItWorks />
+      <Configurator brand={brand} whims={whims} />
+      <Method />
+      {brand.showPrices && <Pricing />}
+      <Footer brand={brand} />
+    </BrandTheme>
   );
 }

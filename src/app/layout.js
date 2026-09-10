@@ -24,7 +24,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    // data-scroll-behavior: da Next 16 lo scroll smooth non è più forzato dal framework.
+    // data-scroll-behavior: since Next 16 smooth scroll is no longer forced by the framework.
     <html lang="it" data-scroll-behavior="smooth" className={`${fredoka.variable} ${figtree.variable}`}>
       <body>{children}</body>
     </html>

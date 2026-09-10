@@ -1,14 +1,14 @@
 import Link from "next/link";
 
-import { esci } from "@/app/admin/azioni";
+import { signOut } from "@/app/admin/azioni";
 import { BRAND_DEFAULT } from "@/lib/brand/schema";
-import { creaClientServer } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-export default async function ElencoMerchant() {
-  const supabase = await creaClientServer();
-  // Senza Supabase il layout padre mostra già le istruzioni di setup. Il
-  // controllo va ripetuto qui: in RSC la pagina viene valutata comunque, anche
-  // se il layout non la renderizza.
+export default async function MerchantList() {
+  const supabase = await createServerSupabase();
+  // Without Supabase the parent layout already shows the setup instructions. The
+  // check has to be repeated here: in RSC the page is evaluated anyway, even if
+  // the layout does not render it.
   if (!supabase) return null;
 
   const { data: brands, error } = await supabase
@@ -27,7 +27,7 @@ export default async function ElencoMerchant() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <form action={esci}>
+          <form action={signOut}>
             <button
               type="submit"
               className="text-sm font-semibold text-inchiostro-soft hover:underline"

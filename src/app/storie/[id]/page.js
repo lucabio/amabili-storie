@@ -2,31 +2,31 @@ import { cache } from "react";
 
 import { notFound } from "next/navigation";
 
-import LettoreStoria from "@/components/LettoreStoria";
-import PiedePagina from "@/components/PiedePagina";
-import TemaBrand from "@/components/TemaBrand";
-import { BRAND_DEFAULT, brandDaRiga } from "@/lib/brand/schema";
-import { contenutoStoriaSchema } from "@/lib/storia/schema";
-import { creaClientAdmin } from "@/lib/supabase/server";
+import BrandTheme from "@/components/BrandTheme";
+import Footer from "@/components/Footer";
+import StoryReader from "@/components/StoryReader";
+import { BRAND_DEFAULT, brandFromRow } from "@/lib/brand/schema";
+import { storyContentSchema } from "@/lib/story/schema";
+import { createAdminSupabase } from "@/lib/supabase/server";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Il link della mail "il libro è pronto" è la sola protezione: chi ha l'uuid
- * legge, chi non ce l'ha non lo indovina (come un link di condivisione
- * Dropbox). Per questo la pagina legge con la service role — le RLS su
- * `storie` permettono la lettura solo agli amministratori — e mostra SOLO le
- * storie `approvata`. Un uuid malformato, inesistente o non ancora approvato
- * devono essere indistinguibili: tutti e tre finiscono in `notFound()`,
- * altrimenti la pagina diventerebbe un oracolo su quali storie esistono.
+ * The link in the "your book is ready" email is the only protection: whoever has
+ * the uuid reads, whoever does not cannot guess it (like a Dropbox share link).
+ * That is why this page reads with the service role — RLS on `storie` only
+ * allows admins to read — and shows ONLY `approvata` stories. A malformed,
+ * non-existent or not-yet-approved uuid must be indistinguishable: all three end
+ * up in `notFound()`, otherwise the page would become an oracle telling which
+ * stories exist.
  *
- * `cache()` dedupe la lettura fra `generateMetadata` e il componente pagina:
- * Next li invoca entrambi per la stessa richiesta.
+ * `cache()` dedupes the read between `generateMetadata` and the page component:
+ * Next calls both for the same request.
  */
-const leggiStoriaApprovata = cache(async (id) => {
+const readApprovedStory = cache(async (id) => {
   if (!UUID_RE.test(id)) return null;
 
-  const db = creaClientAdmin();
+  const db = createAdminSupabase();
   if (!db) return null;
 
   const { data, error } = await db
@@ -44,41 +44,41 @@ const leggiStoriaApprovata = cache(async (id) => {
   return data;
 });
 
-async function storiaValidata(id) {
-  const storia = await leggiStoriaApprovata(id);
-  if (!storia) return null;
+async function validatedStory(id) {
+  const story = await readApprovedStory(id);
+  if (!story) return null;
 
-  const contenuto = contenutoStoriaSchema.safeParse(storia.contenuto);
-  if (!contenuto.success) {
-    console.error(`Contenuto della storia "${id}" non valido:`, contenuto.error.issues);
+  const content = storyContentSchema.safeParse(story.contenuto);
+  if (!content.success) {
+    console.error(`Contenuto della storia "${id}" non valido:`, content.error.issues);
     return null;
   }
 
   return {
-    contenuto: contenuto.data,
-    nome: typeof storia.parametri?.nome === "string" ? storia.parametri.nome : "",
-    brand: brandDaRiga(storia.brands) ?? BRAND_DEFAULT,
+    content: content.data,
+    name: typeof story.parametri?.nome === "string" ? story.parametri.nome : "",
+    brand: brandFromRow(story.brands) ?? BRAND_DEFAULT,
   };
 }
 
 export async function generateMetadata({ params }) {
-  // Next 16: params è una Promise.
+  // Next 16: params is a Promise.
   const { id } = await params;
-  const dati = await storiaValidata(id);
-  if (!dati) return { title: "Storia non trovata — Amabili Storie" };
+  const data = await validatedStory(id);
+  if (!data) return { title: "Storia non trovata — Amabili Storie" };
 
-  return { title: `${dati.contenuto.titolo} — ${dati.brand.nome}` };
+  return { title: `${data.content.titolo} — ${data.brand.name}` };
 }
 
-export default async function PaginaStoria({ params }) {
+export default async function StoryPage({ params }) {
   const { id } = await params;
-  const dati = await storiaValidata(id);
-  if (!dati) notFound();
+  const data = await validatedStory(id);
+  if (!data) notFound();
 
   return (
-    <TemaBrand brand={dati.brand}>
-      <LettoreStoria storia={dati.contenuto} nome={dati.nome} />
-      <PiedePagina brand={dati.brand} />
-    </TemaBrand>
+    <BrandTheme brand={data.brand}>
+      <StoryReader story={data.content} name={data.name} />
+      <Footer brand={data.brand} />
+    </BrandTheme>
   );
 }

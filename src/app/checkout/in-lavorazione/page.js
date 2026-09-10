@@ -5,24 +5,24 @@ export const metadata = {
   title: "La storia sta nascendo — Amabili Storie",
 };
 
-// Stelle sparse nella metà alta del cielo. Posizioni fisse (niente Math.random:
-// romperebbe l'idratazione e non serve la casualità vera).
-const STELLE = [
-  { left: "12%", top: "14%", d: 3, ritardo: 0 },
-  { left: "24%", top: "26%", d: 2, ritardo: 0.8 },
-  { left: "38%", top: "10%", d: 4, ritardo: 1.6 },
-  { left: "52%", top: "20%", d: 2, ritardo: 0.4 },
-  { left: "63%", top: "12%", d: 3, ritardo: 2.1 },
-  { left: "74%", top: "24%", d: 2, ritardo: 1.2 },
-  { left: "86%", top: "16%", d: 3, ritardo: 0.6 },
-  { left: "18%", top: "40%", d: 2, ritardo: 2.4 },
-  { left: "82%", top: "42%", d: 2, ritardo: 1.9 },
-  { left: "46%", top: "34%", d: 2, ritardo: 3 },
-  { left: "9%", top: "58%", d: 2, ritardo: 1.1 },
-  { left: "90%", top: "60%", d: 3, ritardo: 2.6 },
+// Stars scattered across the upper half of the sky. Fixed positions (no
+// Math.random: it would break hydration, and real randomness is not needed).
+const STARS = [
+  { left: "12%", top: "14%", d: 3, delay: 0 },
+  { left: "24%", top: "26%", d: 2, delay: 0.8 },
+  { left: "38%", top: "10%", d: 4, delay: 1.6 },
+  { left: "52%", top: "20%", d: 2, delay: 0.4 },
+  { left: "63%", top: "12%", d: 3, delay: 2.1 },
+  { left: "74%", top: "24%", d: 2, delay: 1.2 },
+  { left: "86%", top: "16%", d: 3, delay: 0.6 },
+  { left: "18%", top: "40%", d: 2, delay: 2.4 },
+  { left: "82%", top: "42%", d: 2, delay: 1.9 },
+  { left: "46%", top: "34%", d: 2, delay: 3 },
+  { left: "9%", top: "58%", d: 2, delay: 1.1 },
+  { left: "90%", top: "60%", d: 3, delay: 2.6 },
 ];
 
-export default function InLavorazione() {
+export default function Processing() {
   return (
     <main className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-scuro px-6 py-16 text-center">
       <style>{`
@@ -37,7 +37,7 @@ export default function InLavorazione() {
         }
       `}</style>
 
-      {/* Chiudi: torna al sito */}
+      {/* Close: back to the site */}
       <Link
         href="/"
         aria-label="Torna al sito"
@@ -46,30 +46,30 @@ export default function InLavorazione() {
         ×
       </Link>
 
-      {/* Cielo stellato */}
+      {/* Starry sky */}
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-        {STELLE.map((stella, i) => (
+        {STARS.map((star, i) => (
           <span
             key={i}
             className="as-stella absolute rounded-full bg-crema"
             style={{
-              left: stella.left,
-              top: stella.top,
-              width: stella.d,
-              height: stella.d,
-              animationDelay: `${stella.ritardo}s`,
+              left: star.left,
+              top: star.top,
+              width: star.d,
+              height: star.d,
+              animationDelay: `${star.delay}s`,
             }}
           />
         ))}
       </div>
 
-      {/* Luna */}
+      {/* Moon */}
       <div className="pointer-events-none absolute top-[10%] right-[14%]" aria-hidden="true">
         <div className="as-alone absolute -inset-6 rounded-full bg-accento-soft/25 blur-2xl" />
         <div className="relative h-16 w-16 rounded-full bg-accento-soft shadow-[inset_-10px_-6px_0_rgba(67,48,42,0.28)]" />
       </div>
 
-      {/* La scena: un bimbo che dorme sereno */}
+      {/* The scene: a child sleeping peacefully */}
       <div className="as-scena relative">
         <div
           className="pointer-events-none absolute -inset-8 rounded-full bg-accento/20 blur-3xl"

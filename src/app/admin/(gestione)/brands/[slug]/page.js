@@ -1,47 +1,47 @@
 import { notFound } from "next/navigation";
 
-import ModuloBrand from "@/components/admin/ModuloBrand";
+import BrandForm from "@/components/admin/BrandForm";
 import { BRAND_DEFAULT } from "@/lib/brand/schema";
-import { creaClientServer } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 
-/** Il form vuoto vive sullo stesso percorso: /admin/brands/nuovo */
-const SLUG_NUOVO = "nuovo";
+/** The empty form lives on the same path: /admin/brands/nuovo */
+const NEW_SLUG = "nuovo";
 
-export default async function ModificaMerchant({ params }) {
-  // Next 16: params è una Promise.
+export default async function EditMerchant({ params }) {
+  // Next 16: params is a Promise.
   const { slug } = await params;
 
-  if (slug === SLUG_NUOVO) {
-    return <ModuloBrand />;
+  if (slug === NEW_SLUG) {
+    return <BrandForm />;
   }
 
-  const supabase = await creaClientServer();
-  // Vedi il commento in (gestione)/page.js: la pagina gira anche quando il
-  // layout non la renderizza, quindi il controllo va ripetuto.
+  const supabase = await createServerSupabase();
+  // See the comment in (gestione)/page.js: the page runs even when the layout
+  // does not render it, so the check has to be repeated.
   if (!supabase) return null;
 
-  const { data: riga } = await supabase
+  const { data: row } = await supabase
     .from("brands")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
 
-  if (!riga) notFound();
+  if (!row) notFound();
 
-  // Il form lavora in camelCase; il DB in snake_case.
+  // The form works in camelCase; the DB in snake_case.
   const brand = {
-    id: riga.id,
-    slug: riga.slug,
-    nome: riga.nome,
-    attivo: riga.attivo,
-    tema: { ...BRAND_DEFAULT.tema, ...(riga.tema ?? {}) },
-    logoUrl: riga.logo_url ?? "",
-    hero: { ...BRAND_DEFAULT.hero, ...(riga.hero ?? {}) },
-    promptGuida: riga.prompt_guida ?? "",
-    capricci: riga.capricci,
-    mostraPrezzi: riga.mostra_prezzi,
-    accettaPagamenti: riga.accetta_pagamenti,
+    id: row.id,
+    slug: row.slug,
+    name: row.nome,
+    active: row.attivo,
+    theme: { ...BRAND_DEFAULT.theme, ...(row.tema ?? {}) },
+    logoUrl: row.logo_url ?? "",
+    hero: { ...BRAND_DEFAULT.hero, ...(row.hero ?? {}) },
+    guidePrompt: row.prompt_guida ?? "",
+    whims: row.capricci,
+    showPrices: row.mostra_prezzi,
+    acceptsPayments: row.accetta_pagamenti,
   };
 
-  return <ModuloBrand brand={brand} />;
+  return <BrandForm brand={brand} />;
 }

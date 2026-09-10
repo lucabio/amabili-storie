@@ -1,33 +1,33 @@
 import { redirect } from "next/navigation";
 
-import ModuloLogin from "@/components/admin/ModuloLogin";
-import { sessioneAdmin } from "@/lib/admin/sessione";
+import LoginForm from "@/components/admin/LoginForm";
+import { adminSession } from "@/lib/admin/session";
 
-const ERRORI = {
+const ERRORS = {
   link: "Il link non è più valido. Chiedi un codice nuovo: funziona sempre.",
   scaduto: "Il link è scaduto. Chiedi un codice nuovo.",
 };
 
-export default async function Login({ searchParams }) {
-  // Next 16: searchParams è una Promise.
-  const parametri = await searchParams;
+export default async function AdminLogin({ searchParams }) {
+  // Next 16: searchParams is a Promise.
+  const params = await searchParams;
 
-  // Qui atterra ogni rimbalzo del backoffice: il layout di (gestione) e le
-  // Server Action mandano tutti su /admin/login quando `utenteAmministratore()`
-  // dice di no. Ma quel "no" ha due significati diversi, e senza distinguerli
-  // chi ha appena inserito il codice giusto rivede il modulo email come se non
-  // fosse successo niente.
-  const { utente, amministratore } = await sessioneAdmin();
+  // Every bounce of the backoffice lands here: the (gestione) layout and the
+  // Server Actions all send to /admin/login when `adminUser()` says no. But that
+  // "no" has two different meanings, and without telling them apart someone who
+  // just entered the right code sees the email form again as if nothing had
+  // happened.
+  const { user, isAdmin } = await adminSession();
 
-  // Sessione valida da amministratore: non c'è niente da fare su questa pagina.
-  if (amministratore) redirect("/admin");
+  // A valid admin session: there is nothing to do on this page.
+  if (isAdmin) redirect("/admin");
 
   return (
-    <ModuloLogin
-      erroreIniziale={
-        utente
-          ? `Hai fatto l'accesso con ${utente.email}, ma questo indirizzo non è fra gli amministratori del backoffice. Chiedi a chi lo gestisce di abilitarlo.`
-          : (ERRORI[parametri?.errore] ?? null)
+    <LoginForm
+      initialError={
+        user
+          ? `Hai fatto l'accesso con ${user.email}, ma questo indirizzo non è fra gli amministratori del backoffice. Chiedi a chi lo gestisce di abilitarlo.`
+          : (ERRORS[params?.errore] ?? null)
       }
     />
   );

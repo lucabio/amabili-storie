@@ -1,15 +1,15 @@
 import Link from "next/link";
 
-import { esci } from "@/app/area/(riservata)/azioni";
-import { creaClientServer } from "@/lib/supabase/server";
+import { signOut } from "@/app/area/(riservata)/azioni";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "Le tue storie — Amabili Storie",
 };
 
-// Lo stato interno (in_revisione, fallita…) non riguarda il genitore: per lui
-// una storia è "Pronta" o "In lavorazione". Le altre sfumature sono cose nostre.
-const STATO_CLIENTE = {
+// The internal state (in_revisione, fallita…) is none of the parent's business:
+// for them a story is "Pronta" or "In lavorazione". The other shades are ours.
+const CUSTOMER_STATE = {
   in_generazione: "In lavorazione",
   in_revisione: "In lavorazione",
   approvata: "Pronta",
@@ -17,24 +17,24 @@ const STATO_CLIENTE = {
   fallita: "In lavorazione",
 };
 
-function dataBreve(iso) {
+function shortDate(iso) {
   if (!iso) return "";
-  const data = new Date(iso);
-  if (Number.isNaN(data.getTime())) return "";
-  return data.toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
 }
 
-export default async function AreaCliente() {
-  const supabase = await creaClientServer();
+export default async function CustomerArea() {
+  const supabase = await createServerSupabase();
 
-  // Le RLS filtrano da sé: si vedono solo le storie con `email = auth.email()`.
+  // RLS filters by itself: only the stories with `email = auth.email()` show up.
   const { data } = supabase
     ? await supabase
         .from("storie")
         .select("id, stato, contenuto, creato_il")
         .order("creato_il", { ascending: false })
     : { data: [] };
-  const storie = data ?? [];
+  const stories = data ?? [];
 
   return (
     <main className="mx-auto max-w-[820px] px-6 py-12">
@@ -45,7 +45,7 @@ export default async function AreaCliente() {
             Ogni libro che hai creato, e a che punto è.
           </p>
         </div>
-        <form action={esci}>
+        <form action={signOut}>
           <button
             type="submit"
             className="rounded-full border border-bordo bg-white px-4 py-2 text-sm font-semibold text-inchiostro-soft"
@@ -55,7 +55,7 @@ export default async function AreaCliente() {
         </form>
       </div>
 
-      {storie.length === 0 ? (
+      {stories.length === 0 ? (
         <div className="mt-10 rounded-card border border-dashed border-bordo bg-crema-chiara p-10 text-center">
           <p className="font-display text-lg font-semibold">Ancora nessuna storia</p>
           <p className="mt-2 font-medium text-inchiostro-soft">
@@ -70,39 +70,39 @@ export default async function AreaCliente() {
         </div>
       ) : (
         <ul className="mt-8 flex flex-col gap-4">
-          {storie.map((storia) => {
-            const pronta = storia.stato === "approvata";
-            const titolo = storia.contenuto?.titolo || "La tua storia";
+          {stories.map((story) => {
+            const ready = story.stato === "approvata";
+            const title = story.contenuto?.titolo || "La tua storia";
             return (
               <li
-                key={storia.id}
+                key={story.id}
                 className="flex flex-wrap items-center gap-4 rounded-card border border-bordo bg-white p-5"
               >
                 <div className="min-w-[200px] flex-1">
-                  <p className="font-display text-lg font-semibold">«{titolo}»</p>
+                  <p className="font-display text-lg font-semibold">«{title}»</p>
                   <p className="mt-1 text-sm font-medium text-inchiostro-tenue">
-                    Creata il {dataBreve(storia.creato_il)}
+                    Creata il {shortDate(story.creato_il)}
                   </p>
                 </div>
 
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${
-                    pronta ? "bg-accento text-crema" : "bg-crema-scura text-inchiostro-soft"
+                    ready ? "bg-accento text-crema" : "bg-crema-scura text-inchiostro-soft"
                   }`}
                 >
-                  {STATO_CLIENTE[storia.stato] ?? "In lavorazione"}
+                  {CUSTOMER_STATE[story.stato] ?? "In lavorazione"}
                 </span>
 
-                {pronta ? (
+                {ready ? (
                   <div className="flex gap-2">
                     <Link
-                      href={`/storie/${storia.id}`}
+                      href={`/storie/${story.id}`}
                       className="lift rounded-full border border-bordo bg-white px-4 py-2 text-sm font-bold text-inchiostro-soft"
                     >
                       Rileggi
                     </Link>
                     <a
-                      href={`/area/storie/${storia.id}/pdf`}
+                      href={`/area/storie/${story.id}/pdf`}
                       className="lift rounded-full bg-accento px-4 py-2 text-sm font-bold text-crema"
                     >
                       Scarica PDF

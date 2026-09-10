@@ -1,58 +1,58 @@
-import { utenteAmministratore } from "@/lib/admin/sessione";
-import { BRAND_DEFAULT, brandDaRiga } from "@/lib/brand/schema";
-import { generaPdfLibro } from "@/lib/storia/pdf";
-import { contenutoStoriaSchema } from "@/lib/storia/schema";
-import { creaClientAdmin } from "@/lib/supabase/server";
+import { adminUser } from "@/lib/admin/session";
+import { BRAND_DEFAULT, brandFromRow } from "@/lib/brand/schema";
+import { generateBookPdf } from "@/lib/story/pdf";
+import { storyContentSchema } from "@/lib/story/schema";
+import { createAdminSupabase } from "@/lib/supabase/server";
 
-// @react-pdf gira solo su Node (font, stream), non sull'edge.
+// @react-pdf only runs on Node (fonts, streams), not on the edge.
 export const runtime = "nodejs";
-// Comporre il PDF e scaricare le immagini costa: oltre i 10s di default.
+// Composing the PDF and downloading the images costs: past the 10s default.
 export const maxDuration = 60;
 
 /**
- * GET /admin/storie/<id>/pdf — scarica il libro in PDF.
+ * GET /admin/storie/<id>/pdf — download the book as a PDF.
  *
- * Solo amministratori: `storie` ha le RLS e nessuna policy di scrittura, e qui
- * si legge con la service role — quindi il gate di autorizzazione è tutto in
- * questo controllo, non in una policy. A differenza di /storie/<uuid> (che
- * mostra solo le storie approvate al genitore), qui si scarica in qualunque
- * stato: serve rivedere il PDF prima di approvare.
+ * Admins only: `storie` has RLS and no write policy, and here we read with the
+ * service role — so the authorization gate is entirely in this check, not in a
+ * policy. Unlike /storie/<uuid> (which only shows approved stories to the
+ * parent), here it downloads in any state: you need to review the PDF before
+ * approving.
  */
 export async function GET(_request, { params }) {
-  const utente = await utenteAmministratore();
-  if (!utente) return new Response("Non autorizzato.", { status: 401 });
+  const user = await adminUser();
+  if (!user) return new Response("Non autorizzato.", { status: 401 });
 
-  // Next 16: params è una Promise.
+  // Next 16: params is a Promise.
   const { id } = await params;
 
-  const db = creaClientAdmin();
+  const db = createAdminSupabase();
   if (!db) return new Response("Supabase non è configurato.", { status: 503 });
 
-  const { data: storia, error } = await db
+  const { data: story, error } = await db
     .from("storie")
     .select("*, brands (*)")
     .eq("id", id)
     .maybeSingle();
 
   if (error) return new Response("Lettura fallita.", { status: 500 });
-  if (!storia) return new Response("Storia inesistente.", { status: 404 });
+  if (!story) return new Response("Storia inesistente.", { status: 404 });
 
-  const contenuto = contenutoStoriaSchema.safeParse(storia.contenuto);
-  if (!contenuto.success) {
+  const content = storyContentSchema.safeParse(story.contenuto);
+  if (!content.success) {
     return new Response("Il contenuto della storia non è valido.", { status: 422 });
   }
 
-  const brand = brandDaRiga(storia.brands) ?? BRAND_DEFAULT;
+  const brand = brandFromRow(story.brands) ?? BRAND_DEFAULT;
 
   let pdf;
   try {
-    pdf = await generaPdfLibro({ contenuto: contenuto.data, brand });
-  } catch (problema) {
-    console.error(`PDF della storia "${id}" non generato:`, problema.message);
+    pdf = await generateBookPdf({ content: content.data, brand });
+  } catch (problem) {
+    console.error(`PDF della storia "${id}" non generato:`, problem.message);
     return new Response("Non siamo riusciti a comporre il PDF.", { status: 500 });
   }
 
-  const nomeFile = `${(contenuto.data.titolo || "storia")
+  const fileName = `${(content.data.titolo || "storia")
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase() || "storia"}.pdf`;
@@ -60,7 +60,7 @@ export async function GET(_request, { params }) {
   return new Response(pdf, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${nomeFile}"`,
+      "Content-Disposition": `attachment; filename="${fileName}"`,
     },
   });
 }

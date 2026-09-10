@@ -6,234 +6,254 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Amabili Storie
 
-Portale che genera libri illustrati personalizzati per bambini. Il genitore sceglie un
-**capriccio** (dormire da solo, via il pannolino, gelosia del fratellino…), personalizza
-i protagonisti, e riceve una storia scritta dall'AI che segue un arco narrativo pensato
-per aiutarlo davvero. Output: eBook, oppure libro cartaceo stampato e spedito da un
-fornitore esterno (ancora da scegliere).
+A portal that generates personalised picture books for children. A parent picks a
+**whim** (sleeping alone, saying goodbye to nappies, jealousy of a new sibling…),
+customises the characters, and receives an AI-written story that follows a narrative arc
+designed to actually help. Output: an eBook, or a printed book shipped by an external
+supplier (still to be chosen).
 
-Progetto di Luca e Silvia.
+Luca and Silvia's project.
 
-## Il modello di business, in una riga
+## The business model, in one line
 
-Oltre al B2C, il portale si vende **white-label agli enti**: l'Hotel Famiglia Serena ha
-la sua versione su `amabilistorie.com/?version=famiglia_serena`, dove ogni storia
-condivide un **filo comune** (il soggiorno in hotel). Quel filo è il campo
-`brands.prompt_guida`, che finisce nel system prompt sopra il Metodo Amabili. È il pezzo
-di dominio più importante del progetto: se tocchi la pipeline dei prompt, stai toccando
-il prodotto venduto.
+Beyond B2C, the portal is sold **white-label to merchants**: Hotel Famiglia Serena has its
+own version at `amabilistorie.com/?version=famiglia_serena`, where every story shares a
+**common thread** (the stay at the hotel). That thread is the `brands.prompt_guida` field,
+which ends up in the system prompt above the Amabili Method. It is the most important piece
+of domain in the project: if you touch the prompt pipeline, you are touching the product
+that is sold.
 
-## Regole di codice, non negoziabili
+## Language rules
 
-- **JavaScript, mai TypeScript.** Niente `.ts`/`.tsx`, niente `tsconfig.json`, niente
-  `@types/*`. È una scelta esplicita di Luca.
-- **Zod per i tipi a runtime.** Dove in TS ci sarebbe un `type`, qui c'è uno schema Zod
-  validato ai confini: API route, Server Action, risposta del modello. Vedi
-  `src/lib/storia/schema.js` e `src/lib/brand/schema.js`.
-  - **Zod 4, non 3**: `.default()` corto-circuita, cioè restituisce il valore così com'è
-    senza farlo passare per lo schema. Su un oggetto, `.default({})` resta `{}` e i
-    default dei campi interni non vengono mai applicati. Quando il default va validato
-    (praticamente sempre, per gli oggetti) usa **`.prefault()`**.
-- **Nomi in italiano** per il dominio (`capriccio`, `storia`, `genera`, `risolviBrand`).
-  Il dominio è italiano, il codice lo segue.
-- **Next.js 16**, non 14. Le differenze che contano:
-  - `params` e `searchParams` sono **Promise**: vanno `await`-ati.
-  - Il middleware si chiama **`proxy.js`** (runtime Node; l'edge non è supportato lì).
-  - `next lint` non esiste più: `npm run lint` chiama `eslint`.
-  - Turbopack è il bundler di default.
-  - Lo scroll smooth non è più forzato dal framework: serve
-    `data-scroll-behavior="smooth"` sull'`<html>`.
+- **The code is English. The product speaks Italian.** Identifiers, file names, comments,
+  DB schema (tables, columns, jsonb keys), migrations, docs and commit messages: English.
+- **Never translated**, because it is what an Italian parent reads: JSX copy, emails
+  (`mail/templates.js`), the PDF text, the Amabili Method (`story/prompt.js`), the fallback
+  templates, whim labels and narrative arcs, `brands.prompt_guida`, and everything written
+  by a merchant. Translating one of these is a product regression, not a refactor.
+- **Stored data values stay Italian** too — they are data, not identifiers: whim ids
+  (`sonno`, `pannolino`), story states (`in_revisione`, `approvata`), order formats
+  (`brossura`, `rilegato`), `famiglia: umani|animali`, `genere: bimbo|bimba`, animal ids.
+  The backoffice maps them to labels (`story/states.js`, `LABELS`).
 
-## Come è fatto
+Glossary (ASD-6, decided 10 Sep 2026): storia → `story`, capriccio → `whim`, ordine →
+`order`, parametri → `params`, contenuto → `content`, anteprima → `preview`, coda →
+`queue`, amministratore → `admin`, impaginazione → `layout`, `fraseAncora` →
+`anchorPhrase`, `guidaGenitori` → `parentGuide`. `brand` stays `brand`.
+
+## Code rules, non-negotiable
+
+- **JavaScript, never TypeScript.** No `.ts`/`.tsx`, no `tsconfig.json`, no `@types/*`.
+  It is an explicit choice of Luca's.
+- **Zod for runtime types.** Where TS would have a `type`, here there is a Zod schema
+  validated at the boundaries: API route, Server Action, model response. See
+  `src/lib/story/schema.js` and `src/lib/brand/schema.js`.
+  - **Zod 4, not 3**: `.default()` short-circuits, i.e. it returns the value as-is without
+    running it through the schema. On an object, `.default({})` stays `{}` and the inner
+    fields' defaults are never applied. When the default has to be validated (basically
+    always, for objects) use **`.prefault()`**.
+- **Next.js 16**, not 14. The differences that matter:
+  - `params` and `searchParams` are **Promises**: they must be `await`-ed.
+  - The middleware is called **`proxy.js`** (Node runtime; the edge is not supported there).
+  - `next lint` no longer exists: `npm run lint` calls `eslint`.
+  - Turbopack is the default bundler.
+  - Smooth scroll is no longer forced by the framework: it needs
+    `data-scroll-behavior="smooth"` on the `<html>`.
+
+## How it is built
 
 ```
 src/
   app/
-    page.js                        Home: risolve il brand da ?version= e monta le sezioni
-    api/storie/anteprima/route.js  POST → le 3 pagine gratuite
-    auth/callback/route.js         Dove atterra il magic link del backoffice
-    checkout/azioni.js             Ordine (simulato finché non c'è Stripe) → lancia il workflow
-    storie/[id]/page.js            Dove il genitore legge il libro approvato (link con uuid)
-    area/                          Area cliente: login OTP, le proprie storie, il PDF dell'eBook
-    admin/storie/[id]/pdf/route.js Scarica il libro in PDF (solo amministratori)
-    admin/                         Backoffice: login OTP, CRUD merchant, coda storie
-  components/                      UI del sito pubblico + admin/ (ModuloBrand, EditorStoria)
+    page.js                        Home: resolves the brand from ?version= and mounts the sections
+    api/storie/anteprima/route.js  POST → the 3 free pages
+    auth/callback/route.js         Where the backoffice magic link lands
+    checkout/azioni.js             Order (simulated until Stripe) → starts the workflow
+    storie/[id]/page.js            Where the parent reads the approved book (uuid link)
+    area/                          Customer area: OTP login, their own stories, the eBook PDF
+    admin/storie/[id]/pdf/route.js Download the book as a PDF (admins only)
+    admin/                         Backoffice: OTP login, merchant CRUD, story queue
+  components/                      Public site UI + admin/ (BrandForm, StoryEditor)
   lib/
-    domain/     capricci.js, animali.js — il catalogo, con l'arco narrativo di ogni capriccio
+    domain/     whims.js, animals.js — the catalogue, with each whim's narrative arc
     brand/      schema.js (Zod + BRAND_DEFAULT), resolve.js (?version= → brand)
-    storia/     schema.js, prompt.js (il Metodo Amabili), genera.js, fallback.js, stati.js,
-                illustrazioni.js (Nano Banana), storage.js (Supabase Storage), pdf.jsx (@react-pdf),
-                layout.js — l'impaginazione in frazioni 0–1, condivisa fra editor e PDF
-    ordini/     schema.js — il listino, e il prezzo che il client non decide
-    mail/       modelli.js (le mail, brandizzate), invia.js (Resend)
-    lead/       azioni.js — chi lascia la mail e non compra
-    supabase/   client server (rispetta le RLS) e browser; creaClientAdmin le bypassa
-    admin/      sessione.js — essere loggati non basta: si dev'essere amministratori
-    cliente/    sessione.js — nell'area cliente basta essere loggati: filtrano le RLS
+    story/      schema.js, prompt.js (the Amabili Method), generate.js, fallback.js,
+                states.js, illustrations.js (Nano Banana), storage.js (Supabase Storage),
+                pdf.jsx (@react-pdf), layout.js — page layout in 0–1 fractions, shared
+                between the editor and the PDF
+    orders/     schema.js — the price list, and the price the client does not decide
+    mail/       templates.js (the emails, branded), send.js (Resend)
+    lead/       actions.js — whoever leaves an email and does not buy
+    supabase/   server client (respects RLS) and browser one; createAdminSupabase bypasses it
+    admin/      session.js — being logged in is not enough: you must be an admin
+    customer/   session.js — in the customer area being logged in is enough: RLS filters
   workflows/
-    libro.js                       generaLibro: la nascita di un libro, durevole
+    book.js                        generateBook: the birth of a book, durable
 supabase/
-  migrations/                      0001 … 0007 — vanno applicate con la CLI, mai a mano
-  templates/                       La mail di accesso: da incollare in dashboard
-  seed.sql                         Hotel Famiglia Serena, per lo sviluppo
-proxy.js                           Rinfresca la sessione Supabase su /admin/* e /area/*
+  migrations/                      0001 … 0007 — apply them with the CLI, never by hand
+  templates/                       The access email: paste it into the dashboard
+  seed.sql                         Hotel Famiglia Serena, for development
+proxy.js                           Refreshes the Supabase session on /admin/* and /area/*
 ```
 
-## Il giro completo, dal clic alla consegna
+## The full round trip, from click to delivery
 
-Il genitore sceglie un capriccio, personalizza i protagonisti — nome, età, e i **tratti
-opzionali** (capelli, occhi, corporatura, e una **descrizione libera**, che è il campo che
-vale di più: è dove scrive *"ha sempre in mano un dinosauro di gomma"*) — e genera
-un'**anteprima gratuita di 3 pagine**, istantanea.
+The parent picks a whim, customises the characters — name, age, and the **optional traits**
+(hair, eyes, build, and a **free-form description**, which is the field worth the most: it
+is where they write *"ha sempre in mano un dinosauro di gomma"*) — and generates a **free
+3-page preview**, instantly.
 
-Se compra, nasce un **ordine** e parte il **workflow**: 22 pagine, la mail *"la storia sta
-nascendo"*, e la storia in **coda di revisione**. Un amministratore la corregge a mano e la
-approva; parte la mail *"il libro è pronto"*, col link a `/storie/<uuid>`. Lì il genitore
-legge: l'uuid è la chiave, e una storia **non approvata dà 404**, indistinguibile da una che
-non esiste.
+If they buy, an **order** is created and the **workflow** starts: 22 pages, the *"the story
+is being born"* email, and the story lands in the **review queue**. An admin corrects it by
+hand and approves it; the *"your book is ready"* email goes out, with a link to
+`/storie/<uuid>`. There the parent reads: the uuid is the key, and a story that is not
+approved returns 404, indistinguishable from one that does not exist.
 
-Una storia `fallita` o `rifiutata` si **rigenera** dal backoffice: il workflow riusa la
-stessa riga, così il link già in mano al genitore continua a funzionare.
+A `fallita` or `rifiutata` story is **regenerated** from the backoffice: the workflow reuses
+the same row, so the link already in the parent's hands keeps working.
 
-## Un brand vende o regala
+## A brand sells or gives away
 
-`brands.accetta_pagamenti` decide se c'è un checkout. L'Hotel Famiglia Serena **regala** le
-storie ai propri ospiti: niente prezzi, niente formati, e l'ordine nasce comunque a prezzo
-zero — perché è così che la storia entra in coda e viene riletta. Il sito principale
-**vende**: tre formati (`ebook`, `brossura`, `rilegato`), e il **prezzo lo decide il
-`LISTINO` lato server**, mai il client.
+`brands.accetta_pagamenti` decides whether there is a checkout. Hotel Famiglia Serena
+**gives** the stories to its guests: no prices, no formats, and the order is created anyway
+at zero price — because that is how the story enters the queue and gets reread. The main
+site **sells**: three formats (`ebook`, `brossura`, `rilegato`), and the **price is decided
+by the server-side `PRICE_LIST`**, never by the client.
 
-`mostra_prezzi` è un'altra cosa: nasconde il listino in vetrina. Un listino che nessuno può
-pagare è incoerente, quindi non si scrive mai `mostra_prezzi` senza `accetta_pagamenti`.
+`mostra_prezzi` is a different thing: it hides the price list in the shop window. A price
+list nobody can pay is inconsistent, so you never write `mostra_prezzi` without
+`accetta_pagamenti`.
 
-**Anche il sito principale è un brand** (`slug = amabili`): la home si modifica dal
-backoffice, non serve un deploy. `BRAND_DEFAULT` resta nel codice come rete di sicurezza,
-per quando Supabase non c'è.
+**The main site is a brand too** (`slug = amabili`): the home page is edited from the
+backoffice, no deploy needed. `BRAND_DEFAULT` stays in the code as a safety net, for when
+Supabase is not there.
 
-## La coda di approvazione
+## The approval queue
 
-Nessuna storia acquistata arriva a un bambino senza che un umano l'abbia letta.
-Il checkout crea un **ordine**, che lancia un **workflow durevole** (`src/workflows/libro.js`):
-scrive le 22 pagine, avvisa il genitore che la storia sta nascendo, e la deposita in
-`in_revisione`. Da lì la coda in `/admin/storie` la mostra a voi: si corregge il testo a
-mano, si approva — e all'approvazione parte la mail "il libro è pronto".
+No purchased story reaches a child without a human having read it. The checkout creates an
+**order**, which starts a **durable workflow** (`src/workflows/book.js`): it writes the 22
+pages, tells the parent the story is being born, and drops it in `in_revisione`. From there
+the queue at `/admin/storie` shows it to you: you fix the text by hand, you approve — and on
+approval the "your book is ready" email goes out.
 
-Due invarianti che non si negoziano:
+Two invariants that are not negotiable:
 
-- **Il libro acquistato non ripiega mai sui template.** Se l'AI non è disponibile, la
-  generazione *fallisce* e la storia va in `fallita` con l'errore leggibile. Il fallback di
-  `fallback.js` resta solo per l'anteprima gratuita e per `npm run dev`: su un libro pagato
-  sarebbe una storia identica a tutte le altre, senza il `prompt_guida` dell'ente, e nessuno
-  se ne accorgerebbe finché non la legge un genitore. Vedi `generaStoria({ consentiFallback })`.
-- **`contenuto_originale` non si tocca.** È la versione uscita dall'AI; `contenuto` è quella
-  che correggete. La differenza fra le due è il diario di *cosa correggete sempre* — cioè
-  cosa c'è da aggiustare nel prompt. Sovrascriverla significa perdere l'unico dato che fa
-  migliorare il Metodo.
+- **A purchased book never falls back on templates.** If the AI is unavailable, generation
+  *fails* and the story goes to `fallita` with a readable error. The fallback in
+  `fallback.js` is only there for the free preview and for `npm run dev`: on a paid book it
+  would be a story identical to all the others, without the merchant's `prompt_guida`, and
+  nobody would notice until a parent read it. See `generateStory({ allowFallback })`.
+- **`contenuto_originale` is never touched.** It is the version that came out of the AI;
+  `contenuto` is the one you correct. The difference between the two is the diary of *what
+  you always correct* — i.e. what needs fixing in the prompt. Overwriting it means losing
+  the only data that makes the Method improve.
 
-**Il tema si propaga via CSS.** `TemaBrand` scrive `--brand-accento` e compagni sul
-wrapper di pagina; le utility Tailwind (`bg-accento`, `text-scuro`) leggono da lì. Una
-versione white-label si ottiene cambiando tre esadecimali nel backoffice, senza toccare
-il codice.
+**The theme propagates via CSS.** `BrandTheme` writes `--brand-accento` and friends on the
+page wrapper; the Tailwind utilities (`bg-accento`, `text-scuro`) read from there. A
+white-label version is three hex codes in the backoffice, without touching the code.
 
-**L'app gira senza credenziali.** Se Supabase non è configurato si serve `BRAND_DEFAULT`;
-se manca la chiave AI le storie escono dai template di `src/lib/storia/fallback.js`. Non
-rompere questa proprietà: è ciò che rende il progetto sviluppabile a mani nude.
+**The app runs without credentials.** If Supabase is not configured, `BRAND_DEFAULT` is
+served; if the AI key is missing, stories come out of the templates in
+`src/lib/story/fallback.js`. Do not break this property: it is what makes the project
+developable bare-handed.
 
-## Ambienti
+## Environments
 
-| Branch | URL | Note |
+| Branch | URL | Notes |
 |---|---|---|
-| `dev` | dev.amabilistorie.com | sviluppo — **l'unico che esiste** |
-| `main` | amabilistorie.com | produzione — **non esiste ancora**: manca il progetto Vercel, manca il Supabase di prod |
-| — | demo.amabilistorie.com | repo separato: `amabili-storie-demo`, solo riferimento grafico |
+| `dev` | dev.amabilistorie.com | development — **the only one that exists** |
+| `main` | amabilistorie.com | production — **does not exist yet**: no Vercel project, no prod Supabase |
+| — | demo.amabilistorie.com | separate repo: `amabili-storie-demo`, graphic reference only |
 
-Si lavora su `dev`; `main` si tocca solo via PR. Database: `amb-str-web-app-dev`, Francoforte
-(i dati riguardano bambini e restano in UE).
+Work happens on `dev`; `main` is only touched via PR. Database: `amb-str-web-app-dev`,
+Frankfurt (the data concerns children and stays in the EU).
 
-**Come si chiama un branch:**
+**How a branch is named:**
 
 ```
-<tipo>/asd-<ref>-<nome-in-inglese>      feature | bug | improvement
+<type>/asd-<ref>-<name-in-english>      feature | bug | improvement
 ```
 
-`feature/asd-6-english-codebase`, `bug/asd-12-shipping-address`. Il `<ref>` è il numero della
-carta sulla **Dev Board** di Notion (`ASD-6`); il nome è corto, in inglese, minuscolo, parole
-separate da trattino. Si parte sempre da `dev`. Ovunque altro — commit, PR, commenti — si cita
-la carta come la scrive Notion: `ASD-6`.
+`feature/asd-6-english-codebase`, `bug/asd-12-shipping-address`. The `<ref>` is the card
+number on the Notion **Dev Board** (`ASD-6`); the name is short, English, lowercase, words
+separated by hyphens. Always branch from `dev`. Everywhere else — commits, PRs, comments —
+the card is cited the way Notion writes it: `ASD-6`.
 
-## Comandi
+## Commands
 
 ```bash
-npm run dev     # http://localhost:3000 — gira anche senza .env.local
+npm run dev     # http://localhost:3000 — runs even without .env.local
 npm run build
 npm run lint
-npm test        # Vitest — i test sono src/**/*.test.js, ambiente node, alias @ → src/
+npm test        # Vitest — tests are src/**/*.test.js, node environment, alias @ → src/
 npm run test:watch
-npx vitest run src/lib/storia/genera.test.js   # un solo file
-npx vitest run -t "nome del test"              # un solo test
+npx vitest run src/lib/story/generate.test.js   # a single file
+npx vitest run -t "test name"                   # a single test
 
-npx supabase db push          # applica le migration che il remoto non ha
-npx supabase migration list   # local e remote devono coincidere
+npx supabase db push          # applies the migrations the remote does not have
+npx supabase migration list   # local and remote must match
 ```
 
-**Le migration si applicano con la CLI, mai a mano dalla dashboard**: il registro si
-disallinea e ogni `db push` successivo fallisce con "already exists" (si rimedia con
-`migration repair --status applied`). E quando una migration cambia un vincolo `check`, si
-**droppa il vincolo prima** di aggiornare i dati: quello vecchio è ancora attivo mentre
-scrivi i valori nuovi, e li rifiuta.
+**Migrations are applied with the CLI, never by hand from the dashboard**: the registry
+drifts and every later `db push` fails with "already exists" (fixed with
+`migration repair --status applied`). And when a migration changes a `check` constraint,
+**drop the constraint first**, then update the data: the old one is still active while you
+write the new values, and it rejects them.
 
-## Le regole che il codice impone, e che è facile violare
+## The rules the code enforces, and that are easy to break
 
-- **Le Server Action sono endpoint HTTP raggiungibili direttamente.** Un bottone disabilitato
-  nel browser **non protegge niente**: ogni regola di prodotto e ogni controllo di
-  autorizzazione vive nel server. Questo errore è già stato commesso tre volte qui dentro.
-- **Il prezzo non arriva mai dal client**, e lo stato su cui si decide **si legge dal
-  database**. Le transizioni sono atomiche: l'`UPDATE` è vincolato allo stato appena letto, e
-  zero righe toccate significa "qualcun altro è arrivato prima".
-- **I dati dei bambini non escono dal browser**: `storie`, `ordini` e `lead` hanno le RLS
-  attive e **nessuna policy di scrittura**. Scrive solo il server con la service role. In
-  lettura le policy si sommano in OR: gli amministratori vedono tutto, il cliente loggato
-  solo `email = auth.email()` (migration `0007`) — l'area cliente non filtra a mano.
-- **Workflow DevKit**: le funzioni `"use workflow"` girano in una VM sandboxata (niente rete,
-  niente moduli Node); solo le `"use step"` hanno Node pieno. Il workflow orchestra, gli step
-  lavorano.
-- Un test verde non dimostra che il prodotto funziona: **guarda l'app girare davvero**. Qui
-  sono passati bug che i test non vedevano — una storia bloccata per sempre in
-  `in_generazione`, una mail persa che uccideva un libro pagato, un tema white-label che non
-  arrivava mai a schermo.
+- **Server Actions are HTTP endpoints reachable directly.** A disabled button in the browser
+  **protects nothing**: every product rule and every authorization check lives on the
+  server. This mistake has already been made three times in here.
+- **The price never comes from the client**, and the state a decision is based on **is read
+  from the database**. Transitions are atomic: the `UPDATE` is constrained to the state just
+  read, and zero rows touched means "someone else got there first".
+- **Children's data does not leave the browser**: `storie`, `ordini` and `lead` have RLS on
+  and **no write policy**. Only the server writes, with the service role. On read the
+  policies OR together: admins see everything, a logged-in customer only
+  `email = auth.email()` (migration `0007`) — the customer area does not filter by hand.
+- **Workflow DevKit**: `"use workflow"` functions run in a sandboxed VM (no network, no Node
+  modules); only `"use step"` functions have full Node. The workflow orchestrates, the steps
+  work.
+- A green test does not prove the product works: **watch the app actually run**. Bugs the
+  tests could not see have shipped here — a story stuck forever in `in_generazione`, a lost
+  email that killed a paid book, a white-label theme that never reached the screen.
 
-## Cosa manca
+## What is missing
 
-Il backlog vero sta su Notion (*Amabili Storie – Document Hub → Product Backlog*). Qui le
-cose che chi tocca il codice deve sapere subito:
+The real backlog lives on Notion (*Amabili Storie – Document Hub → Product Backlog*). Here
+is what whoever touches the code needs to know right away:
 
-1. **Le illustrazioni: c'è la generazione, manca la coerenza forte.** Dal backoffice
-   (`EditorStoria`) ogni pagina ha un tasto "Genera illustrazione" con retry: `illustrazioni.js`
-   chiama Nano Banana via Gateway, `storage.js` salva su Supabase Storage, l'URL finisce in
-   `contenuto.pagine[i].illustrazioneUrl` (e si vede nel lettore e nel PDF). Il prompt usa una
-   **scheda personaggi** fissa (dai tratti del genitore) per tenere l'aspetto costante, ma ogni
-   pagina è ancora generata **in modo indipendente**. Il passo che manca è la coerenza vera:
-   generare un foglio del personaggio e passarlo come **immagine di riferimento** a ogni pagina
-   (Nano Banana accetta immagini in input). Serve la migration `0006` applicata (bucket storage).
-2. **I pagamenti sono simulati finché non c'è Stripe.** Se un merchant fa pagare lo decide il
-   flag per-merchant `accetta_pagamenti` dal backoffice — non più una env globale. Finché
-   `STRIPE_SECRET_KEY` è assente ogni ordine nasce con `finto = true` (`delete from ordini where
-   finto` per pulirli). Quando la chiave c'è, il ramo a pagamento prende il posto del simulato:
-   manca ancora la sessione Stripe vera e il suo webhook, che farà gli stessi passi con
-   `finto = false` — la coda non si tocca.
-3. **Un cartaceo si può ordinare ma nessuno chiede dove spedirlo.** `ordini` non ha una
-   colonna per l'indirizzo. O lo si raccoglie, o si vendono solo eBook.
-4. **La gratuità è un URL pubblico.** Chiunque scriva `?version=famiglia_serena` riceve un
-   libro completo, gratis, a spese nostre in token AI. Serve un codice ospite. E gli endpoint
-   pubblici (`acquista`, `salvaLead`, l'anteprima) non hanno rate limit né antibot.
-5. **Non esiste la produzione**: manca il progetto Supabase di prod, manca quello Vercel, e
-   `main` non porta da nessuna parte.
-6. **Export PDF dell'eBook: c'è** dal backoffice (`/admin/storie/<id>/pdf`) e dall'area
-   cliente (`/area/storie/<id>/pdf`, solo se `approvata`), entrambe con `pdf.jsx`
-   (`@react-pdf/renderer`). Manca l'adapter verso il fornitore di stampa (ancora da scegliere).
-7. **Il backoffice non è mai stato usato a mano.** Coda, editor, approvazione e rigenerazione
-   sono stati verificati leggendo il codice e pilotando le azioni via script, ma nessuno li ha
-   ancora guidati dall'interfaccia.
-8. La home promette *"rigenerazione gratuita se qualcosa non ti convince"*, ma il genitore non
-   ha alcun modo di chiederla: "Rigenera" esiste solo nel backoffice. O gliela si dà, o si
-   toglie la promessa.
+1. **Illustrations: generation exists, strong coherence does not.** From the backoffice
+   (`StoryEditor`) every page has a "Genera illustrazione" button with retry:
+   `illustrations.js` calls Nano Banana via the Gateway, `storage.js` saves to Supabase
+   Storage, the URL ends up in `contenuto.pagine[i].illustrazioneUrl` (and shows up in the
+   reader and the PDF). The prompt uses a fixed **character sheet** (from the parent's
+   traits) to keep the appearance constant, but every page is still generated
+   **independently**. The missing step is real coherence: generate a character sheet image
+   and pass it as a **reference image** to every page (Nano Banana accepts input images).
+   Requires migration `0006` applied (storage bucket).
+2. **Payments are simulated until Stripe is here.** Whether a merchant charges is decided by
+   the per-merchant `accetta_pagamenti` flag from the backoffice — no longer a global env
+   var. While `STRIPE_SECRET_KEY` is absent, every order is created with `finto = true`
+   (`delete from ordini where finto` to clean them up). When the key is there, the paid
+   branch takes the place of the simulated one: the real Stripe session and its webhook are
+   still missing, and they will do the same steps with `finto = false` — the queue does not
+   change.
+3. **A printed book can be ordered but nobody asks where to ship it.** `ordini` has no
+   address column. Either collect it, or sell eBooks only.
+4. **Free is a public URL.** Anyone who types `?version=famiglia_serena` gets a complete
+   book, free, at our expense in AI tokens. A guest code is needed. And the public endpoints
+   (`buy`, `saveLead`, the preview) have no rate limit and no anti-bot.
+5. **Production does not exist**: no prod Supabase project, no Vercel project, and `main`
+   leads nowhere.
+6. **eBook PDF export: it exists** from the backoffice (`/admin/storie/<id>/pdf`) and from
+   the customer area (`/area/storie/<id>/pdf`, only if `approvata`), both via `pdf.jsx`
+   (`@react-pdf/renderer`). The adapter towards the print supplier (still to be chosen) is
+   missing.
+7. **The backoffice has never been used by hand.** Queue, editor, approval and regeneration
+   have been verified by reading the code and driving the actions from scripts, but nobody
+   has yet driven them from the interface.
+8. The home page promises *"rigenerazione gratuita se qualcosa non ti convince"*, but the
+   parent has no way to ask for it: "Rigenera" only exists in the backoffice. Either give it
+   to them, or drop the promise.

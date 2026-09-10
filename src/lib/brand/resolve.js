@@ -1,40 +1,39 @@
-import { BRAND_DEFAULT, brandDaRiga } from "@/lib/brand/schema";
-import { creaClientServer, supabaseConfigurato } from "@/lib/supabase/server";
+import { BRAND_DEFAULT, brandFromRow } from "@/lib/brand/schema";
+import { createServerSupabase, supabaseConfigured } from "@/lib/supabase/server";
 
 /**
- * Risolve il brand a partire dallo slug di `?version=`.
+ * Resolves the brand from the `?version=` slug.
  *
- * Senza `?version=` si cerca comunque il brand `amabili` su Supabase: il sito
- * principale non è più una costante, ma una riga come le altre, modificabile
- * dal backoffice. Un brand sconosciuto, disattivato o malformato non è un
- * errore fatale, e nemmeno lo è Supabase non configurato: si serve
- * `BRAND_DEFAULT`. Un ospite che sbaglia a copiare il link — o che apre il
- * sito prima ancora che il database esista — deve comunque vedere Amabili
- * Storie, non una pagina rotta.
+ * Without `?version=` we still look up the `amabili` brand on Supabase: the
+ * main site is no longer a constant but a row like any other, editable from the
+ * backoffice. An unknown, disabled or malformed brand is not a fatal error, and
+ * neither is Supabase not being configured: we serve `BRAND_DEFAULT`. A guest
+ * who mistypes the link — or who opens the site before the database even
+ * exists — must still see Amabili Storie, not a broken page.
  */
-export async function risolviBrand(slug) {
-  const slugEffettivo = slug || BRAND_DEFAULT.slug;
-  if (!supabaseConfigurato()) return BRAND_DEFAULT;
+export async function resolveBrand(slug) {
+  const effectiveSlug = slug || BRAND_DEFAULT.slug;
+  if (!supabaseConfigured()) return BRAND_DEFAULT;
 
-  const supabase = await creaClientServer();
+  const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("brands")
     .select("*")
-    .eq("slug", slugEffettivo)
+    .eq("slug", effectiveSlug)
     .eq("attivo", true)
     .maybeSingle();
 
   if (error) {
-    console.error(`Lettura brand "${slugEffettivo}" fallita:`, error.message);
+    console.error(`Lettura brand "${effectiveSlug}" fallita:`, error.message);
     return BRAND_DEFAULT;
   }
 
-  return brandDaRiga(data) ?? BRAND_DEFAULT;
+  return brandFromRow(data) ?? BRAND_DEFAULT;
 }
 
-/** Estrae lo slug da `searchParams` (già risolti). Next 16: sono una Promise. */
-export function slugDaSearchParams(searchParams) {
-  const grezzo = searchParams?.version;
-  const valore = Array.isArray(grezzo) ? grezzo[0] : grezzo;
-  return typeof valore === "string" && valore.trim() ? valore.trim() : null;
+/** Extracts the slug from `searchParams` (already resolved). Next 16: it is a Promise. */
+export function slugFromSearchParams(searchParams) {
+  const raw = searchParams?.version;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }

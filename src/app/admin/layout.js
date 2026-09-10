@@ -1,16 +1,16 @@
 import Link from "next/link";
 
-import { supabaseConfigurato } from "@/lib/supabase/server";
+import { supabaseConfigured } from "@/lib/supabase/server";
 
 export const metadata = {
   title: "Backoffice — Amabili Storie",
 };
 
 /**
- * Chrome del backoffice. La protezione vera sta nel layout del gruppo
- * (gestione): la pagina di login deve restare raggiungibile senza sessione.
+ * Backoffice chrome. The real protection lives in the (gestione) group layout:
+ * the login page has to stay reachable without a session.
  */
-export default function LayoutAdmin({ children }) {
+export default function AdminLayout({ children }) {
   return (
     <div className="min-h-screen bg-crema-chiara">
       <header className="border-b border-bordo bg-white">
@@ -25,7 +25,7 @@ export default function LayoutAdmin({ children }) {
       </header>
 
       <main className="mx-auto max-w-[1080px] px-6 py-10">
-        {supabaseConfigurato() ? (
+        {supabaseConfigured() ? (
           children
         ) : (
           <div className="rounded-card border border-dashed border-accento bg-accento/5 p-8">

@@ -1,13 +1,13 @@
 import { createBrowserClient } from "@supabase/ssr";
 
 /**
- * Client per i Client Component (login del backoffice).
- * Ritorna null se Supabase non è ancora configurato.
+ * Client for Client Components (the backoffice login).
+ * Returns null if Supabase is not configured yet.
  */
-export function creaClientBrowser() {
+export function createBrowserSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const chiave = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !chiave) return null;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
 
-  return createBrowserClient(url, chiave);
+  return createBrowserClient(url, key);
 }

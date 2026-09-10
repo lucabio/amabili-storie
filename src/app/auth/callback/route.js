@@ -1,43 +1,43 @@
 import { NextResponse } from "next/server";
 
-import { creaClientServer } from "@/lib/supabase/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 /**
- * Dove atterra il magic link della mail di accesso.
+ * Where the magic link of the access email lands.
  *
- * Supabase rimanda qui con un `code` da scambiare per una sessione. Lo scambio
- * riesce solo nel browser che ha chiesto il codice — è il flusso PKCE, e il
- * verificatore sta in un cookie di quel browser. Chi apre la mail sul telefono
- * e sta lavorando sul portatile finisce qui con un errore: lo rimandiamo al
- * login, dove il codice a 6 cifre funziona comunque.
+ * Supabase sends back here with a `code` to exchange for a session. The exchange
+ * only succeeds in the browser that asked for the code — it is the PKCE flow,
+ * and the verifier sits in a cookie of that browser. Whoever opens the email on
+ * their phone while working on their laptop ends up here with an error: we send
+ * them back to the login, where the 6-digit code works anyway.
  */
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url);
-  const codice = searchParams.get("code");
-  const errore = searchParams.get("error");
+  const code = searchParams.get("code");
+  const failure = searchParams.get("error");
 
-  // Dove tornare dopo l'accesso. Solo path interni (via `next` di
-  // ModuloLoginCliente): mai un redirect verso l'esterno. Il backoffice non
-  // passa `next` e resta su /admin.
-  const prossimo = searchParams.get("next");
-  const destinazione = prossimo && prossimo.startsWith("/") ? prossimo : "/admin";
-  const paginaLogin = destinazione.startsWith("/area") ? "/area/login" : "/admin/login";
+  // Where to return after signing in. Internal paths only (via `next` of
+  // CustomerLoginForm): never a redirect to the outside. The backoffice does not
+  // pass `next` and stays on /admin.
+  const next = searchParams.get("next");
+  const destination = next && next.startsWith("/") ? next : "/admin";
+  const loginPage = destination.startsWith("/area") ? "/area/login" : "/admin/login";
 
-  const alLogin = (motivo) =>
-    NextResponse.redirect(`${origin}${paginaLogin}?errore=${motivo}`);
+  const toLogin = (reason) =>
+    NextResponse.redirect(`${origin}${loginPage}?errore=${reason}`);
 
-  if (errore) {
-    return alLogin(searchParams.get("error_code") === "otp_expired" ? "scaduto" : "link");
+  if (failure) {
+    return toLogin(searchParams.get("error_code") === "otp_expired" ? "scaduto" : "link");
   }
-  if (!codice) return alLogin("link");
+  if (!code) return toLogin("link");
 
-  const supabase = await creaClientServer();
-  if (!supabase) return alLogin("link");
+  const supabase = await createServerSupabase();
+  if (!supabase) return toLogin("link");
 
-  // Qui i cookie si possono scrivere: siamo in un Route Handler, non in un
-  // Server Component. È questa chiamata che deposita la sessione.
-  const { error } = await supabase.auth.exchangeCodeForSession(codice);
-  if (error) return alLogin("link");
+  // Here cookies can be written: we are in a Route Handler, not in a Server
+  // Component. It is this call that deposits the session.
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  if (error) return toLogin("link");
 
-  return NextResponse.redirect(`${origin}${destinazione}`);
+  return NextResponse.redirect(`${origin}${destination}`);
 }

@@ -3,88 +3,88 @@
 import Image from "next/image";
 import { useCallback, useRef, useState } from "react";
 
-import { formattaPrezzo, LISTINO } from "@/lib/ordini/schema";
+import { formatPrice, PRICE_LIST } from "@/lib/orders/schema";
 
-const SCIA = "AMABILI STORIE ";
-const DISTANZA_MINIMA = 45; // px tra una lettera e la successiva
+const TRAIL_TEXT = "AMABILI STORIE ";
+const MIN_DISTANCE = 45; // px between one letter and the next
 
 /**
- * La scia di lettere che segue il mouse nell'hero: è la firma visiva del demo.
- * Disattivata quando l'utente chiede meno animazioni.
+ * The trail of letters that follows the mouse in the hero: it is the visual
+ * signature of the demo. Disabled when the user asks for less motion.
  *
- * Il prefisso `use` è imposto da React: le regole degli hook lo richiedono.
+ * The `use` prefix is imposed by React: the hook rules require it.
  */
-function useSciaDiLettere() {
-  const [lettere, setLettere] = useState([]);
-  const ultima = useRef(null);
-  const indice = useRef(0);
-  const contatore = useRef(0);
+function useLetterTrail() {
+  const [letters, setLetters] = useState([]);
+  const last = useRef(null);
+  const index = useRef(0);
+  const counter = useRef(0);
 
-  const alMovimento = useCallback((evento) => {
+  const onMove = useCallback((event) => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const area = evento.currentTarget.getBoundingClientRect();
-    const x = evento.clientX - area.left;
-    const y = evento.clientY - area.top;
+    const area = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - area.left;
+    const y = event.clientY - area.top;
 
-    if (ultima.current) {
-      const dx = x - ultima.current.x;
-      const dy = y - ultima.current.y;
-      if (dx * dx + dy * dy < DISTANZA_MINIMA * DISTANZA_MINIMA) return;
+    if (last.current) {
+      const dx = x - last.current.x;
+      const dy = y - last.current.y;
+      if (dx * dx + dy * dy < MIN_DISTANCE * MIN_DISTANCE) return;
     }
-    ultima.current = { x, y };
+    last.current = { x, y };
 
-    const carattere = SCIA[indice.current % SCIA.length];
-    indice.current += 1;
-    if (carattere === " ") return;
+    const character = TRAIL_TEXT[index.current % TRAIL_TEXT.length];
+    index.current += 1;
+    if (character === " ") return;
 
-    const id = ++contatore.current;
-    const lettera = {
+    const id = ++counter.current;
+    const letter = {
       id,
-      carattere,
+      character,
       x,
       y,
-      dimensione: 26 + Math.random() * 34,
-      rotazione: `${(Math.random() * 30 - 15).toFixed(0)}deg`,
-      chiara: Math.random() < 0.5,
+      size: 26 + Math.random() * 34,
+      rotation: `${(Math.random() * 30 - 15).toFixed(0)}deg`,
+      light: Math.random() < 0.5,
     };
 
-    setLettere((precedenti) => [...precedenti, lettera]);
+    setLetters((previous) => [...previous, letter]);
     setTimeout(() => {
-      setLettere((precedenti) => precedenti.filter((l) => l.id !== id));
+      setLetters((previous) => previous.filter((l) => l.id !== id));
     }, 1700);
   }, []);
 
-  return { lettere, alMovimento };
+  return { letters, onMove };
 }
 
 export default function Hero({ brand }) {
-  const { lettere, alMovimento } = useSciaDiLettere();
+  const { letters, onMove } = useLetterTrail();
 
   return (
     <header
-      onMouseMove={alMovimento}
+      onMouseMove={onMove}
       className="relative flex min-h-svh snap-start flex-col justify-center overflow-hidden bg-[url('/illustrazioni/doodle-cielo.svg')] bg-[length:min(190px,22vw)] bg-[center_bottom_3%] bg-no-repeat"
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        {lettere.map((lettera) => (
+        {letters.map((letter) => (
           <span
-            key={lettera.id}
+            key={letter.id}
             className="anim-lettera absolute font-display font-semibold opacity-0 select-none"
             style={{
-              left: lettera.x,
-              top: lettera.y,
-              fontSize: lettera.dimensione,
-              color: lettera.chiara ? "var(--color-accento-soft)" : "var(--color-accento)",
-              "--rot": lettera.rotazione,
+              left: letter.x,
+              top: letter.y,
+              fontSize: letter.size,
+              color: letter.light ? "var(--color-accento-soft)" : "var(--color-accento)",
+              "--rot": letter.rotation,
             }}
           >
-            {lettera.carattere}
+            {letter.character}
           </span>
         ))}
       </div>
 
-      {/* Bolle decorative */}
+      {/* Decorative bubbles */}
       <div
         className="pointer-events-none absolute -top-35 -right-30 h-105 w-105 rounded-full bg-accento-soft/30"
         aria-hidden="true"
@@ -114,10 +114,10 @@ export default function Hero({ brand }) {
             >
               {brand.hero.cta}
             </a>
-            {brand.mostraPrezzi && (
+            {brand.showPrices && (
               <span className="text-sm font-semibold text-inchiostro-soft">
-                Anteprima gratuita · eBook {formattaPrezzo(LISTINO.ebook.prezzoCents)} · Cartaceo{" "}
-                {formattaPrezzo(LISTINO.rilegato.prezzoCents)}
+                Anteprima gratuita · eBook {formatPrice(PRICE_LIST.ebook.priceCents)} · Cartaceo{" "}
+                {formatPrice(PRICE_LIST.rilegato.priceCents)}
               </span>
             )}
           </div>
@@ -144,7 +144,7 @@ export default function Hero({ brand }) {
                   priority
                 />
                 <p className="text-[11px] font-bold tracking-[0.22em] text-crema/85 uppercase">
-                  {brand.nome}
+                  {brand.name}
                 </p>
               </div>
             </div>

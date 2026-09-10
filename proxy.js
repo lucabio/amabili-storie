@@ -2,43 +2,43 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
 /**
- * Next 16: quello che prima era `middleware.js` ora si chiama `proxy.js` e gira
- * sul runtime Node (l'edge non è supportato qui).
+ * Next 16: what used to be `middleware.js` is now called `proxy.js` and runs on
+ * the Node runtime (the edge is not supported here).
  *
- * Serve a una cosa sola: rinfrescare il token di sessione di Supabase, perché
- * un Server Component non può scrivere cookie. Senza questo, l'admin verrebbe
- * sloggato alla scadenza del token.
+ * It does one thing only: refresh the Supabase session token, because a Server
+ * Component cannot write cookies. Without this, the admin would be logged out
+ * when the token expires.
  */
 export async function proxy(request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const chiave = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  let risposta = NextResponse.next({ request });
+  let response = NextResponse.next({ request });
 
-  if (!url || !chiave) return risposta;
+  if (!url || !key) return response;
 
-  const supabase = createServerClient(url, chiave, {
+  const supabase = createServerClient(url, key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
-      setAll: (daImpostare) => {
-        for (const { name, value } of daImpostare) {
+      setAll: (cookiesToSet) => {
+        for (const { name, value } of cookiesToSet) {
           request.cookies.set(name, value);
         }
-        risposta = NextResponse.next({ request });
-        for (const { name, value, options } of daImpostare) {
-          risposta.cookies.set(name, value, options);
+        response = NextResponse.next({ request });
+        for (const { name, value, options } of cookiesToSet) {
+          response.cookies.set(name, value, options);
         }
       },
     },
   });
 
-  // Non rimuovere: è la chiamata che rinnova il token e riscrive i cookie.
+  // Do not remove: this is the call that renews the token and rewrites the cookies.
   await supabase.auth.getUser();
 
-  return risposta;
+  return response;
 }
 
 export const config = {
-  // Anche l'area cliente ha una sessione da rinfrescare, non solo il backoffice.
+  // The customer area has a session to refresh too, not just the backoffice.
   matcher: ["/admin/:path*", "/area/:path*"],
 };

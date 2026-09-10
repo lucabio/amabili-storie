@@ -1,0 +1,443 @@
+"use client";
+
+import { useEffect, useState, useTransition } from "react";
+
+import PageCanvas from "@/components/admin/PageCanvas";
+import {
+  approveStory,
+  generateStoryIllustration,
+  rejectStory,
+  regenerateStory,
+  saveStory,
+} from "@/app/admin/storie/azioni";
+import { ALIGNMENTS, FONT_CATALOG, pageLayout } from "@/lib/story/layout";
+import { LABELS, transitionAllowed } from "@/lib/story/states";
+
+const ALIGNMENT_LABELS = { left: "Sx", center: "Ce", right: "Dx" };
+
+export default function StoryEditor({ story }) {
+  const [content, setContent] = useState(story.contenuto);
+  const [note, setNote] = useState("");
+  const [result, setResult] = useState(null);
+  const [drawing, setDrawing] = useState({});
+  const [pageErrors, setPageErrors] = useState({});
+  const [bulk, setBulk] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pending, start] = useTransition();
+
+  const pages = content.pagine ?? [];
+  const total = pages.length;
+  const index = Math.min(currentPage, Math.max(0, total - 1));
+  const page = pages[index];
+  const layout = page ? pageLayout(page) : null;
+
+  const reviewable = story.stato === "in_revisione";
+  const regenerable = transitionAllowed(story.stato, "in_generazione");
+  const bulkRunning = bulk !== null;
+  const missing = pages.filter((p) => !p.illustrazioneUrl).length;
+
+  // You flip pages with the arrow keys — but not while typing in a field, there
+  // the arrows move the caret.
+  useEffect(() => {
+    function onKey(event) {
+      const target = event.target;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (event.key === "ArrowLeft") setCurrentPage((p) => Math.max(0, p - 1));
+      else if (event.key === "ArrowRight") setCurrentPage((p) => Math.min(total - 1, p + 1));
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [total]);
+
+  function updatePage(i, field, value) {
+    setContent((previous) => ({
+      ...previous,
+      pagine: previous.pagine.map((p, j) => (j === i ? { ...p, [field]: value } : p)),
+    }));
+  }
+
+  // Merges a piece of layout (a box or the style) always starting from the whole
+  // defaults, so a page without a layout gains a valid one at the first touch.
+  function updateLayout(i, patch) {
+    setContent((previous) => ({
+      ...previous,
+      pagine: previous.pagine.map((p, j) => {
+        if (j !== i) return p;
+        const base = pageLayout(p);
+        return {
+          ...p,
+          layout: {
+            immagine: { ...base.immagine, ...(patch.immagine ?? {}) },
+            testo: { ...base.testo, ...(patch.testo ?? {}) },
+            stile: { ...base.stile, ...(patch.stile ?? {}) },
+          },
+        };
+      }),
+    }));
+  }
+
+  const updateStyle = (i, patch) => updateLayout(i, { stile: patch });
+
+  async function illustrate(i) {
+    setDrawing((s) => ({ ...s, [i]: true }));
+    setPageErrors((errors) => {
+      const copy = { ...errors };
+      delete copy[i];
+      return copy;
+    });
+    const response = await generateStoryIllustration(story.id, i, pages[i].illustrazione);
+    setDrawing((s) => ({ ...s, [i]: false }));
+    if (response?.ok && response.url) {
+      updatePage(i, "illustrazioneUrl", response.url);
+      return true;
+    }
+    setPageErrors((errors) => ({
+      ...errors,
+      [i]: response?.error ?? "Illustrazione non generata.",
+    }));
+    return false;
+  }
+
+  // Only generates the pages still without a picture, one at a time: sequential
+  // to avoid rate limits, and because every content write is atomic with respect
+  // to the previous one (no clobbering of the JSON).
+  async function illustrateAll() {
+    const todo = pages.map((_, i) => i).filter((i) => !pages[i].illustrazioneUrl);
+    if (todo.length === 0) return;
+    setBulk({ done: 0, total: todo.length });
+    for (let k = 0; k < todo.length; k++) {
+      await illustrate(todo[k]);
+      setBulk({ done: k + 1, total: todo.length });
+    }
+    setBulk(null);
+  }
+
+  function run(action) {
+    start(async () => {
+      const response = await action();
+      setResult(response);
+    });
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="rounded-full bg-accento px-3 py-1 text-xs font-bold text-crema uppercase">
+          {LABELS[story.stato]}
+        </span>
+        <h1 className="font-display text-2xl font-semibold">
+          {story.parametri?.nome} · {story.parametri?.capriccio}
+        </h1>
+        <a
+          href={`/admin/storie/${story.id}/pdf`}
+          className="lift ml-auto rounded-full border border-bordo bg-white px-5 py-2.5 text-sm font-bold text-inchiostro-soft"
+        >
+          Scarica PDF
+        </a>
+      </div>
+
+      {story.stato === "fallita" && story.errore && (
+        <p className="mt-4 rounded-card bg-accento/10 p-4 font-semibold text-accento">
+          La generazione è fallita: {story.errore}
+        </p>
+      )}
+      {story.stato === "rifiutata" && story.note_revisione && (
+        <p className="mt-4 rounded-card bg-accento/10 p-4 font-semibold text-accento">
+          Rifiutata: {story.note_revisione}
+        </p>
+      )}
+
+      {result?.error && (
+        <p className="mt-4 rounded-card bg-accento/10 p-4 font-semibold text-accento">
+          {result.error}
+        </p>
+      )}
+      {result?.ok && (
+        <p className="mt-4 rounded-card bg-accento-soft/20 p-4 font-semibold text-scuro">Fatto.</p>
+      )}
+
+      <label className="mt-8 block">
+        <span className="text-sm font-bold text-inchiostro-soft uppercase">Titolo</span>
+        <input
+          value={content.titolo ?? ""}
+          onChange={(event) => setContent({ ...content, titolo: event.target.value })}
+          disabled={!reviewable}
+          className="mt-2 w-full rounded-[14px] border border-bordo bg-white px-4 py-3 font-display text-lg font-semibold outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
+        />
+      </label>
+
+      {reviewable && (
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={illustrateAll}
+            disabled={bulkRunning || missing === 0}
+            className="lift rounded-full bg-accento px-6 py-3 font-bold text-crema disabled:opacity-40"
+          >
+            {bulkRunning
+              ? `Genero le illustrazioni… ${bulk.done}/${bulk.total}`
+              : missing === 0
+                ? "Tutte le illustrazioni ci sono"
+                : `Genera tutte le illustrazioni (${missing})`}
+          </button>
+          <span className="text-sm font-medium text-inchiostro-tenue">
+            Genera le pagine ancora senza figura. Le singole si rifanno sfogliando qui sotto.
+          </span>
+        </div>
+      )}
+
+      {/* The book, one page at a time: on-screen arrows or ← → from the keyboard. */}
+      {page && (
+        <div className="mt-6 flex items-stretch gap-3">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+            disabled={index === 0}
+            aria-label="Pagina precedente"
+            className="lift shrink-0 self-center rounded-full border border-bordo bg-white px-4 py-6 text-2xl font-bold text-inchiostro-soft disabled:opacity-30"
+          >
+            ‹
+          </button>
+
+          <article className="flex-1 rounded-card border border-bordo bg-white p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm font-bold text-inchiostro-tenue uppercase">
+                Pagina {index + 1} di {total}
+              </span>
+              <span className="text-xs font-medium text-inchiostro-tenue">
+                trascina e ridimensiona · ← → per sfogliare
+              </span>
+            </div>
+
+            <PageCanvas
+              page={page}
+              layout={layout}
+              editable={reviewable}
+              onLayout={(patch) => updateLayout(index, patch)}
+            />
+
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <div className="flex flex-col gap-3">
+                {reviewable && (
+                  <button
+                    type="button"
+                    disabled={drawing[index] || bulkRunning || !page.illustrazione?.trim()}
+                    onClick={() => illustrate(index)}
+                    className="lift rounded-full border border-accento px-5 py-2.5 text-sm font-bold text-accento disabled:opacity-40"
+                  >
+                    {drawing[index]
+                      ? "Sto disegnando…"
+                      : page.illustrazioneUrl
+                        ? "Rigenera illustrazione"
+                        : "Genera illustrazione"}
+                  </button>
+                )}
+                {pageErrors[index] && (
+                  <p className="rounded-[14px] bg-accento/10 px-4 py-3 text-sm font-semibold text-accento">
+                    {pageErrors[index]}
+                  </p>
+                )}
+                <label className="block">
+                  <span className="text-xs font-bold text-inchiostro-tenue uppercase">
+                    La scena da illustrare
+                  </span>
+                  <textarea
+                    value={page.illustrazione}
+                    onChange={(event) =>
+                      updatePage(index, "illustrazione", event.target.value)
+                    }
+                    rows={3}
+                    disabled={!reviewable}
+                    className="mt-1.5 w-full rounded-[14px] border border-bordo px-4 py-2.5 text-sm font-medium outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
+                  />
+                </label>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {reviewable && layout && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={layout.stile.font}
+                      onChange={(event) => updateStyle(index, { font: event.target.value })}
+                      className="rounded-[10px] border border-bordo bg-white px-2.5 py-2 text-sm font-semibold outline-accento"
+                    >
+                      {FONT_CATALOG.map((font) => (
+                        <option key={font.key} value={font.key}>
+                          {font.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="flex items-center gap-1 rounded-[10px] border border-bordo bg-white px-1">
+                      <button
+                        type="button"
+                        aria-label="Riduci dimensione"
+                        onClick={() =>
+                          updateStyle(index, {
+                            dimensione: Math.max(8, layout.stile.dimensione - 1),
+                          })
+                        }
+                        className="px-2 py-1 text-lg font-bold text-inchiostro-soft"
+                      >
+                        −
+                      </button>
+                      <span className="w-6 text-center text-sm font-bold">
+                        {layout.stile.dimensione}
+                      </span>
+                      <button
+                        type="button"
+                        aria-label="Aumenta dimensione"
+                        onClick={() =>
+                          updateStyle(index, {
+                            dimensione: Math.min(60, layout.stile.dimensione + 1),
+                          })
+                        }
+                        className="px-2 py-1 text-lg font-bold text-inchiostro-soft"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <input
+                      type="color"
+                      aria-label="Colore del testo"
+                      value={layout.stile.colore}
+                      onChange={(event) => updateStyle(index, { colore: event.target.value })}
+                      className="h-9 w-10 cursor-pointer rounded-[10px] border border-bordo bg-white"
+                    />
+
+                    <div className="flex items-center gap-1 rounded-[10px] border border-bordo bg-white px-1">
+                      {ALIGNMENTS.map((alignment) => (
+                        <button
+                          key={alignment}
+                          type="button"
+                          onClick={() => updateStyle(index, { allineamento: alignment })}
+                          className={`rounded-[8px] px-2 py-1 text-xs font-bold ${
+                            layout.stile.allineamento === alignment
+                              ? "bg-accento text-crema"
+                              : "text-inchiostro-soft"
+                          }`}
+                        >
+                          {ALIGNMENT_LABELS[alignment]}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => updateStyle(index, { grassetto: !layout.stile.grassetto })}
+                      className={`rounded-[10px] border border-bordo px-3 py-2 text-sm font-black ${
+                        layout.stile.grassetto
+                          ? "bg-accento text-crema"
+                          : "bg-white text-inchiostro-soft"
+                      }`}
+                    >
+                      G
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateStyle(index, { corsivo: !layout.stile.corsivo })}
+                      className={`rounded-[10px] border border-bordo px-3 py-2 text-sm font-semibold italic ${
+                        layout.stile.corsivo
+                          ? "bg-accento text-crema"
+                          : "bg-white text-inchiostro-soft"
+                      }`}
+                    >
+                      C
+                    </button>
+                  </div>
+                )}
+
+                <textarea
+                  value={page.testo}
+                  onChange={(event) => updatePage(index, "testo", event.target.value)}
+                  rows={5}
+                  disabled={!reviewable}
+                  className="w-full rounded-[14px] border border-bordo px-4 py-3 leading-relaxed font-medium outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
+                />
+              </div>
+            </div>
+          </article>
+
+          <button
+            type="button"
+            onClick={() => setCurrentPage((p) => Math.min(total - 1, p + 1))}
+            disabled={index === total - 1}
+            aria-label="Pagina successiva"
+            className="lift shrink-0 self-center rounded-full border border-bordo bg-white px-4 py-6 text-2xl font-bold text-inchiostro-soft disabled:opacity-30"
+          >
+            ›
+          </button>
+        </div>
+      )}
+
+      <label className="mt-8 block">
+        <span className="text-sm font-bold text-inchiostro-soft uppercase">Frase-àncora</span>
+        <input
+          value={content.fraseAncora ?? ""}
+          onChange={(event) => setContent({ ...content, fraseAncora: event.target.value })}
+          disabled={!reviewable}
+          className="mt-2 w-full rounded-[14px] border border-bordo bg-white px-4 py-3 font-semibold outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
+        />
+      </label>
+
+      <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-bordo pt-6">
+        {reviewable && (
+          <>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(() => saveStory(story.id, content))}
+              className="lift rounded-full border border-bordo bg-white px-6 py-3 font-bold disabled:opacity-40"
+            >
+              Salva
+            </button>
+
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(() => approveStory(story.id))}
+              className="lift rounded-full bg-accento px-6 py-3 font-bold text-crema disabled:opacity-40"
+            >
+              Approva e manda la mail
+            </button>
+
+            <input
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="Perché la rifiuti?"
+              className="ml-auto rounded-full border border-bordo bg-white px-4 py-2.5 text-sm font-semibold outline-accento"
+            />
+            <button
+              type="button"
+              disabled={pending || !note.trim()}
+              onClick={() => run(() => rejectStory(story.id, note))}
+              className="lift rounded-full border border-accento px-6 py-3 font-bold text-accento disabled:opacity-40"
+            >
+              Rifiuta
+            </button>
+          </>
+        )}
+
+        {regenerable && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => run(() => regenerateStory(story.id))}
+            className="lift rounded-full bg-accento px-6 py-3 font-bold text-crema disabled:opacity-40"
+          >
+            Rigenera
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

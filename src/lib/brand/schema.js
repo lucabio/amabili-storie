@@ -1,28 +1,29 @@
 import { z } from "zod";
 
-import { CAPRICCIO_IDS } from "@/lib/domain/capricci";
+import { WHIM_IDS } from "@/lib/domain/whims";
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colore esadecimale non valido");
 
 /**
- * Un brand è una versione white-label del portale (es. Hotel Famiglia Serena,
- * raggiungibile da amabilistorie.com/?version=famiglia_serena).
+ * A brand is a white-label version of the portal (e.g. Hotel Famiglia Serena,
+ * reachable at amabilistorie.com/?version=famiglia_serena).
  *
- * `promptGuida` è il pezzo che caratterizza il prodotto: è il filo comune che
- * ogni storia di quell'ente deve seguire (es. "la storia si svolge durante un
- * soggiorno all'Hotel Famiglia Serena, in Val Gardena").
+ * `guidePrompt` is the piece that characterises the product: it is the common
+ * thread every story of that merchant has to follow (e.g. "the story takes
+ * place during a stay at Hotel Famiglia Serena, in Val Gardena").
  */
 export const brandSchema = z.object({
-  /** null per il sito principale: BRAND_DEFAULT non sta su Supabase. */
+  /** null for the main site: BRAND_DEFAULT does not live on Supabase. */
   id: z.uuid().nullable().default(null),
   slug: z.string().min(1),
-  nome: z.string().min(1),
-  attivo: z.boolean().default(true),
+  name: z.string().min(1),
+  active: z.boolean().default(true),
 
-  // prefault, non default: in Zod 4 `.default()` corto-circuita e restituisce il
-  // valore così com'è, senza applicare i default dei campi interni. `{}` resterebbe
-  // `{}`. `.prefault()` lo fa invece passare per lo schema, che è ciò che serve qui.
-  tema: z
+  // prefault, not default: in Zod 4 `.default()` short-circuits and returns the
+  // value as-is, without applying the defaults of the inner fields. `{}` would
+  // stay `{}`. `.prefault()` instead runs it through the schema, which is what
+  // we need here.
+  theme: z
     .object({
       accento: hexColor.default("#e96d4f"),
       accentoSoft: hexColor.default("#f6b27c"),
@@ -46,73 +47,73 @@ export const brandSchema = z.object({
     })
     .prefault({}),
 
-  /** Il filo comune delle storie dell'ente. Va dritto nel system prompt. */
-  promptGuida: z.string().nullable().default(null),
+  /** The common thread of the merchant's stories. Goes straight into the system prompt. */
+  guidePrompt: z.string().nullable().default(null),
 
-  /** Sottoinsieme di capricci offerto dall'ente. null = tutti. */
-  capricci: z.array(z.enum(CAPRICCIO_IDS)).min(1).nullable().default(null),
-
-  /**
-   * Un ente che regala le storie agli ospiti non mostra il listino. Ma non è
-   * indipendente da `accettaPagamenti`: mostrare un listino che nessuno può
-   * pagare è la contraddizione che il `.transform()` qui sotto elimina.
-   */
-  mostraPrezzi: z.boolean().default(true),
+  /** Subset of whims offered by the merchant. null = all of them. */
+  whims: z.array(z.enum(WHIM_IDS)).min(1).nullable().default(null),
 
   /**
-   * false = l'ente regala le storie: niente checkout, niente prezzi, l'ordine
-   * nasce comunque a prezzo zero. Diverso da `mostraPrezzi`, che nasconde solo
-   * il listino in vetrina ma lascia un checkout a pagamento — ma solo se
-   * `accettaPagamenti` resta true. Il contrario (prezzi in vetrina, nessun
-   * modo di pagarli) non è una combinazione legittima.
+   * A merchant that gives stories away to its guests does not show the price
+   * list. But it is not independent from `acceptsPayments`: showing a price
+   * list nobody can pay is the contradiction the `.transform()` below removes.
    */
-  accettaPagamenti: z.boolean().default(true),
+  showPrices: z.boolean().default(true),
+
+  /**
+   * false = the merchant gives the stories away: no checkout, no prices, the
+   * order is still created at zero price. Different from `showPrices`, which
+   * only hides the price list in the shop window but leaves a paid checkout —
+   * and only as long as `acceptsPayments` stays true. The opposite (prices on
+   * display, no way to pay them) is not a legitimate combination.
+   */
+  acceptsPayments: z.boolean().default(true),
 })
   .transform((brand) => ({
     ...brand,
-    // La relazione fra i due campi si impone qui, non altrove: `brandSchema`
-    // è il collo di bottiglia che attraversa OGNI brand, comunque sia nato —
-    // una riga scritta dal backoffice, una riga scritta a mano su Supabase
-    // (Studio o service role, che le RLS non vede), o BRAND_DEFAULT. Un
-    // ente che non accetta pagamenti non mostra mai il listino, qualunque
-    // cosa dica `mostraPrezzi`: non un errore di validazione (che farebbe
-    // ripiegare `brandDaRiga` su BRAND_DEFAULT, nascondendo l'intero brand),
-    // ma una correzione silenziosa, perché il caso incoerente non deve poter
-    // esistere a valle, punto.
-    mostraPrezzi: brand.accettaPagamenti && brand.mostraPrezzi,
+    // The relation between the two fields is enforced here, nowhere else:
+    // `brandSchema` is the bottleneck EVERY brand goes through, however it was
+    // born — a row written from the backoffice, a row written by hand on
+    // Supabase (Studio or service role, which RLS does not see), or
+    // BRAND_DEFAULT. A merchant that does not accept payments never shows the
+    // price list, whatever `showPrices` says: not a validation error (which
+    // would make `brandFromRow` fall back to BRAND_DEFAULT, hiding the whole
+    // brand), but a silent correction, because the inconsistent case must not
+    // be able to exist downstream, full stop.
+    showPrices: brand.acceptsPayments && brand.showPrices,
   }));
 
-/** Il brand di default: amabilistorie.com senza `?version=`. */
+/** The default brand: amabilistorie.com without `?version=`. */
 export const BRAND_DEFAULT = brandSchema.parse({
   slug: "amabili",
-  nome: "Amabili Storie",
+  name: "Amabili Storie",
 });
 
 /**
- * Normalizza una riga della tabella `brands` di Supabase (snake_case) nella
- * forma usata dall'app. Ritorna null se la riga non è valida: meglio servire il
- * brand di default che rompere la pagina di un cliente.
+ * Normalizes a row of the Supabase `brands` table (snake_case) into the shape
+ * the app uses. Returns null if the row is invalid: better to serve the default
+ * brand than to break a customer's page.
  */
-export function brandDaRiga(riga) {
-  if (!riga) return null;
+export function brandFromRow(row) {
+  if (!row) return null;
 
-  const risultato = brandSchema.safeParse({
-    id: riga.id ?? null,
-    slug: riga.slug,
-    nome: riga.nome,
-    attivo: riga.attivo,
-    tema: riga.tema ?? undefined,
-    logoUrl: riga.logo_url ?? null,
-    hero: riga.hero ?? undefined,
-    promptGuida: riga.prompt_guida ?? null,
-    capricci: riga.capricci ?? null,
-    mostraPrezzi: riga.mostra_prezzi,
-    accettaPagamenti: riga.accetta_pagamenti,
+  const result = brandSchema.safeParse({
+    id: row.id ?? null,
+    slug: row.slug,
+    name: row.nome,
+    active: row.attivo,
+    theme: row.tema ?? undefined,
+    logoUrl: row.logo_url ?? null,
+    hero: row.hero ?? undefined,
+    guidePrompt: row.prompt_guida ?? null,
+    whims: row.capricci ?? null,
+    showPrices: row.mostra_prezzi,
+    acceptsPayments: row.accetta_pagamenti,
   });
 
-  if (!risultato.success) {
-    console.error(`Brand "${riga.slug}" non valido:`, risultato.error.issues);
+  if (!result.success) {
+    console.error(`Brand "${row.slug}" non valido:`, result.error.issues);
     return null;
   }
-  return risultato.data;
+  return result.data;
 }
