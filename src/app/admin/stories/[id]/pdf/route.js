@@ -1,43 +1,46 @@
+import { adminUser } from "@/lib/admin/session";
 import { BRAND_DEFAULT, brandFromRow } from "@/lib/brand/schema";
-import { customerUser } from "@/lib/customer/session";
 import { generateBookPdf } from "@/lib/story/pdf";
 import { storyContentSchema } from "@/lib/story/schema";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 
-// @react-pdf only runs on Node.
+// @react-pdf only runs on Node (fonts, streams), not on the edge.
 export const runtime = "nodejs";
+// Composing the PDF and downloading the images costs: past the 10s default.
 export const maxDuration = 60;
 
 /**
- * GET /area/storie/<id>/pdf — the customer downloads the PDF of one of their
- * stories again.
+ * GET /admin/stories/<id>/pdf — download the book as a PDF.
  *
- * Double lock: they must be logged in (customerUser) AND the read goes through
- * RLS with their session, which only returns the stories with their email. On
- * top of that we demand the `approvata` state: a story that is not ready yet is
- * not downloaded.
+ * Admins only: `storie` has RLS and no write policy, and here we read with the
+ * service role — so the authorization gate is entirely in this check, not in a
+ * policy. Unlike /stories/<uuid> (which only shows approved stories to the
+ * parent), here it downloads in any state: you need to review the PDF before
+ * approving.
  */
 export async function GET(_request, { params }) {
-  const user = await customerUser();
+  const user = await adminUser();
   if (!user) return new Response("Non autorizzato.", { status: 401 });
 
   // Next 16: params is a Promise.
   const { id } = await params;
 
-  const supabase = await createServerSupabase();
-  if (!supabase) return new Response("Supabase non è configurato.", { status: 503 });
+  const db = createAdminSupabase();
+  if (!db) return new Response("Supabase non è configurato.", { status: 503 });
 
-  const { data: story } = await supabase
+  const { data: story, error } = await db
     .from("storie")
     .select("*, brands (*)")
     .eq("id", id)
-    .eq("stato", "approvata")
     .maybeSingle();
 
-  if (!story) return new Response("Storia non trovata.", { status: 404 });
+  if (error) return new Response("Lettura fallita.", { status: 500 });
+  if (!story) return new Response("Storia inesistente.", { status: 404 });
 
   const content = storyContentSchema.safeParse(story.contenuto);
-  if (!content.success) return new Response("Il contenuto della storia non è valido.", { status: 422 });
+  if (!content.success) {
+    return new Response("Il contenuto della storia non è valido.", { status: 422 });
+  }
 
   const brand = brandFromRow(story.brands) ?? BRAND_DEFAULT;
 
@@ -45,7 +48,7 @@ export async function GET(_request, { params }) {
   try {
     pdf = await generateBookPdf({ content: content.data, brand });
   } catch (problem) {
-    console.error(`PDF cliente della storia "${id}" non generato:`, problem.message);
+    console.error(`PDF della storia "${id}" non generato:`, problem.message);
     return new Response("Non siamo riusciti a comporre il PDF.", { status: 500 });
   }
 

@@ -3,30 +3,30 @@
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { deleteBrand, saveBrand } from "@/app/admin/azioni";
+import { deleteBrand, saveBrand } from "@/app/admin/actions";
 import { BRAND_DEFAULT } from "@/lib/brand/schema";
 import { WHIMS } from "@/lib/domain/whims";
 
 const fieldClasses =
-  "w-full rounded-[14px] border border-bordo bg-white px-4 py-3 font-semibold text-inchiostro outline-accento";
+  "w-full rounded-[14px] border border-border bg-white px-4 py-3 font-semibold text-ink outline-accent";
 
 function Field({ label, hint, error, children }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-bold">{label}</span>
       {children}
-      {hint && <span className="mt-1.5 block text-xs font-medium text-inchiostro-tenue">{hint}</span>}
-      {error && <span className="mt-1.5 block text-xs font-bold text-accento">{error}</span>}
+      {hint && <span className="mt-1.5 block text-xs font-medium text-ink-muted">{hint}</span>}
+      {error && <span className="mt-1.5 block text-xs font-bold text-accent">{error}</span>}
     </label>
   );
 }
 
 function Section({ title, description, children }) {
   return (
-    <section className="rounded-card border border-bordo bg-white p-6">
+    <section className="rounded-card border border-border bg-white p-6">
       <h2 className="font-display text-lg font-semibold">{title}</h2>
       {description && (
-        <p className="mt-1 mb-5 font-medium text-inchiostro-soft">{description}</p>
+        <p className="mt-1 mb-5 font-medium text-ink-soft">{description}</p>
       )}
       <div className="mt-4 grid gap-4">{children}</div>
     </section>
@@ -54,7 +54,7 @@ export default function BrandForm({ brand }) {
 
   // The main site (amabilistorie.com without ?version=) is the home page: it is
   // not disabled or deleted from the backoffice. The real rule lives on the
-  // server (azioni.js applies it anyway); here it is only UX, so nobody clicks
+  // server (actions.js applies it anyway); here it is only UX, so nobody clicks
   // for nothing.
   const isMainSite = values.slug === BRAND_DEFAULT.slug;
 
@@ -68,24 +68,24 @@ export default function BrandForm({ brand }) {
             {isNew ? "Nuovo merchant" : values.name}
           </h1>
           {!isNew && (
-            <p className="mt-1 font-medium text-inchiostro-soft">
+            <p className="mt-1 font-medium text-ink-soft">
               Anteprima:{" "}
               <Link
                 href={`/?version=${values.slug}`}
-                className="font-bold text-accento hover:underline"
+                className="font-bold text-accent hover:underline"
               >
                 /?version={values.slug}
               </Link>
             </p>
           )}
         </div>
-        <Link href="/admin" className="text-sm font-semibold text-inchiostro-soft hover:underline">
+        <Link href="/admin" className="text-sm font-semibold text-ink-soft hover:underline">
           Torna all&apos;elenco
         </Link>
       </div>
 
       {errors.general && (
-        <p className="rounded-card bg-accento/10 p-4 font-semibold text-accento">
+        <p className="rounded-card bg-accent/10 p-4 font-semibold text-accent">
           {errors.general.join(" ")}
         </p>
       )}
@@ -140,10 +140,10 @@ export default function BrandForm({ brand }) {
                 checked
                 disabled
                 readOnly
-                className="h-4 w-4 accent-[var(--color-accento)]"
+                className="h-4 w-4 accent-[var(--color-accent)]"
               />
               Attivo
-              <span className="text-xs font-medium text-inchiostro-tenue">
+              <span className="text-xs font-medium text-ink-muted">
                 (è la home: non si disattiva)
               </span>
             </label>
@@ -153,7 +153,7 @@ export default function BrandForm({ brand }) {
                 type="checkbox"
                 name="attivo"
                 defaultChecked={values.active}
-                className="h-4 w-4 accent-[var(--color-accento)]"
+                className="h-4 w-4 accent-[var(--color-accent)]"
               />
               Attivo
             </label>
@@ -163,10 +163,10 @@ export default function BrandForm({ brand }) {
               type="checkbox"
               name="mostraPrezzi"
               defaultChecked={values.showPrices}
-              className="h-4 w-4 accent-[var(--color-accento)]"
+              className="h-4 w-4 accent-[var(--color-accent)]"
             />
             Mostra il listino
-            <span className="text-xs font-medium text-inchiostro-tenue">
+            <span className="text-xs font-medium text-ink-muted">
               (nasconde solo i prezzi in vetrina — il checkout resta quello che è. Se
               sotto spegni &quot;Accetta pagamenti&quot;, il listino resta comunque
               nascosto: un prezzo che nessuno può pagare non si mostra)
@@ -177,10 +177,10 @@ export default function BrandForm({ brand }) {
               type="checkbox"
               name="accettaPagamenti"
               defaultChecked={values.acceptsPayments}
-              className="h-4 w-4 accent-[var(--color-accento)]"
+              className="h-4 w-4 accent-[var(--color-accent)]"
             />
             Accetta pagamenti
-            <span className="text-xs font-medium text-inchiostro-tenue">
+            <span className="text-xs font-medium text-ink-muted">
               (spegnilo se l&apos;ente regala le storie: niente checkout, l&apos;ordine nasce
               comunque, a prezzo zero)
             </span>
@@ -215,20 +215,20 @@ export default function BrandForm({ brand }) {
           {WHIMS.map((whim) => (
             <label
               key={whim.id}
-              className="flex items-center gap-2.5 rounded-[14px] border border-bordo px-4 py-3 font-semibold"
+              className="flex items-center gap-2.5 rounded-[14px] border border-border px-4 py-3 font-semibold"
             >
               <input
                 type="checkbox"
                 name="capricci"
                 value={whim.id}
                 defaultChecked={values.whims?.includes(whim.id) ?? false}
-                className="h-4 w-4 accent-[var(--color-accento)]"
+                className="h-4 w-4 accent-[var(--color-accent)]"
               />
               {whim.label}
             </label>
           ))}
         </div>
-        {errors.whims && <p className="text-xs font-bold text-accento">{errors.whims[0]}</p>}
+        {errors.whims && <p className="text-xs font-bold text-accent">{errors.whims[0]}</p>}
       </Section>
 
       <Section title="Colori" description="Tre esadecimali: il resto del sito si adatta da solo.">
@@ -244,9 +244,9 @@ export default function BrandForm({ brand }) {
                   type="color"
                   name={color.field}
                   defaultValue={color.value}
-                  className="h-11 w-14 cursor-pointer rounded-lg border border-bordo bg-white"
+                  className="h-11 w-14 cursor-pointer rounded-lg border border-border bg-white"
                 />
-                <output className="font-mono text-sm font-semibold text-inchiostro-soft">
+                <output className="font-mono text-sm font-semibold text-ink-soft">
                   {color.value}
                 </output>
               </span>
@@ -290,7 +290,7 @@ export default function BrandForm({ brand }) {
         <button
           type="submit"
           disabled={pending}
-          className="lift rounded-full bg-accento px-8 py-4 font-bold text-crema disabled:opacity-40"
+          className="lift rounded-full bg-accent px-8 py-4 font-bold text-cream disabled:opacity-40"
         >
           {pending ? "Salvataggio…" : isNew ? "Crea merchant" : "Salva modifiche"}
         </button>
@@ -300,13 +300,13 @@ export default function BrandForm({ brand }) {
             type="submit"
             formAction={deleteBrand}
             formNoValidate
-            className="lift rounded-full border border-bordo bg-white px-6 py-4 font-bold text-inchiostro-soft"
+            className="lift rounded-full border border-border bg-white px-6 py-4 font-bold text-ink-soft"
           >
             Elimina
           </button>
         )}
         {!isNew && isMainSite && (
-          <span className="text-sm font-medium text-inchiostro-tenue">
+          <span className="text-sm font-medium text-ink-muted">
             È il sito principale: non si elimina.
           </span>
         )}

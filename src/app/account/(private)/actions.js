@@ -8,5 +8,5 @@ import { createServerSupabase } from "@/lib/supabase/server";
 export async function signOut() {
   const supabase = await createServerSupabase();
   if (supabase) await supabase.auth.signOut();
-  redirect("/area/login");
+  redirect("/account/login");
 }

@@ -14,12 +14,12 @@ const FIELDS = [
 ];
 
 const inputClasses =
-  "rounded-[14px] border border-bordo bg-crema px-3.5 py-2.5 text-sm font-semibold text-inchiostro outline-accento";
+  "rounded-[14px] border border-border bg-cream px-3.5 py-2.5 text-sm font-semibold text-ink outline-accent";
 
 export default function CharacterTraits({ title, values, onChange }) {
   return (
-    <div className="rounded-[14px] border border-bordo bg-white p-4">
-      <p className="mb-3 text-sm font-bold text-inchiostro">{title}</p>
+    <div className="rounded-[14px] border border-border bg-white p-4">
+      <p className="mb-3 text-sm font-bold text-ink">{title}</p>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2.5">
         {FIELDS.map(({ key, placeholder }) => (
           <input

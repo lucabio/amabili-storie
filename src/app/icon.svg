@@ -2,7 +2,7 @@
   <!--
     La favicon: la notte stellata della copertina, ridotta all'osso.
     A 16px sopravvive solo ciò che è grande e contrastato — luna e una stella.
-    Niente contorni scuri come nelle illustrazioni: a questa scala impastano.
+    No dark outlines like in the illustrations: at this size they smudge together.
   -->
   <rect width="32" height="32" rx="8" fill="#E96D4F" />
   <path

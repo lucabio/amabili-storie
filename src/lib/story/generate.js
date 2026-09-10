@@ -10,7 +10,7 @@ export const PREVIEW_PAGES = 3;
 /** Pages of the full eBook. */
 export const BOOK_PAGES = 22;
 
-const MODEL = process.env.MODELLO_STORIE ?? "anthropic/claude-sonnet-5";
+const MODEL = process.env.STORY_MODEL ?? "anthropic/claude-sonnet-5";
 
 /** Raised when the AI is needed and the AI is not there. The workflow treats it as fatal. */
 export class AiUnavailable extends Error {

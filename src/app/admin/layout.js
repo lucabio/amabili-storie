@@ -7,18 +7,18 @@ export const metadata = {
 };
 
 /**
- * Backoffice chrome. The real protection lives in the (gestione) group layout:
+ * Backoffice chrome. The real protection lives in the (management) group layout:
  * the login page has to stay reachable without a session.
  */
 export default function AdminLayout({ children }) {
   return (
-    <div className="min-h-screen bg-crema-chiara">
-      <header className="border-b border-bordo bg-white">
+    <div className="min-h-screen bg-cream-light">
+      <header className="border-b border-border bg-white">
         <div className="mx-auto flex max-w-[1080px] items-center justify-between px-6 py-4">
           <Link href="/admin" className="font-display text-lg font-semibold">
-            Amabili Storie <span className="text-inchiostro-tenue">· backoffice</span>
+            Amabili Storie <span className="text-ink-muted">· backoffice</span>
           </Link>
-          <Link href="/" className="text-sm font-semibold text-inchiostro-soft hover:underline">
+          <Link href="/" className="text-sm font-semibold text-ink-soft hover:underline">
             Vai al sito
           </Link>
         </div>
@@ -28,9 +28,9 @@ export default function AdminLayout({ children }) {
         {supabaseConfigured() ? (
           children
         ) : (
-          <div className="rounded-card border border-dashed border-accento bg-accento/5 p-8">
+          <div className="rounded-card border border-dashed border-accent bg-accent/5 p-8">
             <h1 className="font-display text-xl font-semibold">Supabase non è configurato</h1>
-            <p className="mt-3 leading-relaxed font-medium text-inchiostro-soft">
+            <p className="mt-3 leading-relaxed font-medium text-ink-soft">
               Il backoffice ha bisogno di un progetto Supabase. Crea il progetto, applica{" "}
               <code className="rounded bg-white px-1.5 py-0.5">
                 supabase/migrations/0001_init.sql

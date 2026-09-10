@@ -39,7 +39,7 @@ export default function PageCanvas({ page, layout, editable, onLayout }) {
   return (
     <div
       ref={ref}
-      className="relative w-full overflow-hidden rounded-[14px] border border-bordo bg-crema"
+      className="relative w-full overflow-hidden rounded-[14px] border border-border bg-cream"
       style={{ aspectRatio: `${PAGE_PT.width} / ${PAGE_PT.height}` }}
     >
       {canvasWidth > 0 && (
@@ -62,7 +62,7 @@ export default function PageCanvas({ page, layout, editable, onLayout }) {
                 className="pointer-events-none h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-crema-scura text-xs font-medium text-inchiostro-tenue">
+              <div className="flex h-full w-full items-center justify-center bg-cream-dark text-xs font-medium text-ink-muted">
                 Nessuna illustrazione
               </div>
             )}
@@ -131,7 +131,7 @@ function Box({ box, canvasWidth, canvasHeight, editable, minW, minH, onCommit, c
           h: element.offsetHeight / canvasHeight,
         })
       }
-      className={editable ? "outline-2 outline-dashed outline-accento/50 hover:outline-accento" : ""}
+      className={editable ? "outline-2 outline-dashed outline-accent/50 hover:outline-accent" : ""}
     >
       {children}
     </Rnd>

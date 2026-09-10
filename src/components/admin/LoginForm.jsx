@@ -92,7 +92,7 @@ export default function LoginForm({ initialError = null }) {
   return (
     <div className="mx-auto max-w-[420px]">
       <h1 className="font-display text-2xl font-semibold">Entra nel backoffice</h1>
-      <p className="mt-2 font-medium text-inchiostro-soft">
+      <p className="mt-2 font-medium text-ink-soft">
         {step === "email"
           ? "Ti mandiamo un codice via mail. Nessuna password da ricordare."
           : `Se ${email} è di un amministratore, il codice è in arrivo.`}
@@ -108,7 +108,7 @@ export default function LoginForm({ initialError = null }) {
             placeholder="La tua email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="rounded-[14px] border border-bordo bg-white px-4 py-3.5 font-semibold outline-accento"
+            className="rounded-[14px] border border-border bg-white px-4 py-3.5 font-semibold outline-accent"
           />
 
           {error && <ErrorBox text={error} />}
@@ -116,7 +116,7 @@ export default function LoginForm({ initialError = null }) {
           <button
             type="submit"
             disabled={pending}
-            className="lift mt-2 rounded-full bg-accento px-7 py-3.5 font-bold text-crema disabled:opacity-40"
+            className="lift mt-2 rounded-full bg-accent px-7 py-3.5 font-bold text-cream disabled:opacity-40"
           >
             {pending ? "Invio in corso…" : "Mandami il codice"}
           </button>
@@ -134,7 +134,7 @@ export default function LoginForm({ initialError = null }) {
             placeholder="000000"
             value={code}
             onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
-            className="rounded-[14px] border border-bordo bg-white px-4 py-3.5 text-center font-display text-2xl font-semibold tracking-[0.4em] outline-accento"
+            className="rounded-[14px] border border-border bg-white px-4 py-3.5 text-center font-display text-2xl font-semibold tracking-[0.4em] outline-accent"
           />
 
           {error && <ErrorBox text={error} />}
@@ -142,17 +142,17 @@ export default function LoginForm({ initialError = null }) {
           <button
             type="submit"
             disabled={pending || code.length < CODE_LENGTH}
-            className="lift mt-2 rounded-full bg-accento px-7 py-3.5 font-bold text-crema disabled:opacity-40"
+            className="lift mt-2 rounded-full bg-accent px-7 py-3.5 font-bold text-cream disabled:opacity-40"
           >
             {pending ? "Verifica in corso…" : "Entra"}
           </button>
 
-          <p className="mt-2 text-center text-sm font-medium text-inchiostro-soft">
+          <p className="mt-2 text-center text-sm font-medium text-ink-soft">
             Nella mail c&apos;è anche un link per entrare con un clic.{" "}
             <button
               type="button"
               onClick={restart}
-              className="font-semibold text-accento hover:underline"
+              className="font-semibold text-accent hover:underline"
             >
               Usa un&apos;altra email
             </button>
@@ -167,7 +167,7 @@ function ErrorBox({ text }) {
   return (
     <p
       role="alert"
-      className="rounded-[14px] bg-accento/10 p-3 text-sm font-semibold text-accento"
+      className="rounded-[14px] bg-accent/10 p-3 text-sm font-semibold text-accent"
     >
       {text}
     </p>

@@ -6,7 +6,7 @@ import { supabaseConfigured } from "@/lib/supabase/server";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Merchant" },
-  { href: "/admin/storie", label: "Storie" },
+  { href: "/admin/stories", label: "Storie" },
 ];
 
 /** Everything in this group requires an admin session. */
@@ -24,7 +24,7 @@ export default async function ManagementLayout({ children }) {
           <Link
             key={item.href}
             href={item.href}
-            className="rounded-full border border-bordo bg-white px-4 py-2 text-sm font-bold text-inchiostro-soft"
+            className="rounded-full border border-border bg-white px-4 py-2 text-sm font-bold text-ink-soft"
           >
             {item.label}
           </Link>

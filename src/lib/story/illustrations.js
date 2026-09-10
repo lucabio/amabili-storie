@@ -10,7 +10,7 @@ import { buildIllustrationPrompt } from "@/lib/story/prompt";
  * which is the real problem of a picture book.
  */
 const IMAGE_MODEL =
-  process.env.MODELLO_ILLUSTRAZIONI ?? "google/gemini-2.5-flash-image";
+  process.env.ILLUSTRATION_MODEL ?? "google/gemini-2.5-flash-image";
 
 /** Raised when the AI is needed and the AI is not there: an illustration has no fallback. */
 export class AiUnavailable extends Error {

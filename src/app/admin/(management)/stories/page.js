@@ -4,11 +4,11 @@ import { LABELS, STATES } from "@/lib/story/states";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 const STATE_COLORS = {
-  in_generazione: "bg-inchiostro-lieve/25 text-inchiostro",
-  in_revisione: "bg-accento text-crema",
-  approvata: "bg-accento-soft/40 text-scuro",
-  rifiutata: "bg-inchiostro-lieve/25 text-inchiostro-soft",
-  fallita: "bg-accento/15 text-accento",
+  in_generazione: "bg-ink-faint/25 text-ink",
+  in_revisione: "bg-accent text-cream",
+  approvata: "bg-accent-soft/40 text-dark",
+  rifiutata: "bg-ink-faint/25 text-ink-soft",
+  fallita: "bg-accent/15 text-accent",
 };
 
 function howLongAgo(iso) {
@@ -31,8 +31,8 @@ export default async function Queue({ searchParams }) {
     // Oldest at the top: the queue is worked from the bottom.
     .order("creato_il", { ascending: true });
 
-  if (filters?.stato) query = query.eq("stato", filters.stato);
-  if (filters?.merchant === "principale") query = query.is("brand_id", null);
+  if (filters?.state) query = query.eq("stato", filters.state);
+  if (filters?.merchant === "main") query = query.is("brand_id", null);
 
   const { data: stories, error } = await query;
 
@@ -40,7 +40,7 @@ export default async function Queue({ searchParams }) {
   // in a related table, and filtering on it would force an inner join that would
   // throw away the main site's stories (which have no brand).
   const visible =
-    filters?.merchant && filters.merchant !== "principale"
+    filters?.merchant && filters.merchant !== "main"
       ? (stories ?? []).filter((story) => story.brands?.slug === filters.merchant)
       : (stories ?? []);
 
@@ -49,32 +49,32 @@ export default async function Queue({ searchParams }) {
   return (
     <div>
       <h1 className="font-display text-2xl font-semibold">Storie</h1>
-      <p className="mt-1 font-medium text-inchiostro-soft">
+      <p className="mt-1 font-medium text-ink-soft">
         {toReview === 0
           ? "Niente da rivedere. La coda è vuota."
           : `${toReview} ${toReview === 1 ? "storia aspetta" : "storie aspettano"} di essere riviste.`}
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        <Filter active={!filters?.stato} href="/admin/storie" label="Tutte" />
+        <Filter active={!filters?.state} href="/admin/stories" label="Tutte" />
         {STATES.map((state) => (
           <Filter
             key={state}
-            active={filters?.stato === state}
-            href={`/admin/storie?stato=${state}`}
+            active={filters?.state === state}
+            href={`/admin/stories?state=${state}`}
             label={LABELS[state]}
           />
         ))}
       </div>
 
       {error && (
-        <p className="mt-6 rounded-card bg-accento/10 p-4 font-semibold text-accento">
+        <p className="mt-6 rounded-card bg-accent/10 p-4 font-semibold text-accent">
           Non riesco a leggere la coda: {error.message}
         </p>
       )}
 
       {visible.length === 0 && (
-        <p className="mt-8 rounded-card border border-dashed border-bordo p-8 text-center font-medium text-inchiostro-soft">
+        <p className="mt-8 rounded-card border border-dashed border-border p-8 text-center font-medium text-ink-soft">
           Nessuna storia qui.
         </p>
       )}
@@ -83,8 +83,8 @@ export default async function Queue({ searchParams }) {
         {visible.map((story) => (
           <Link
             key={story.id}
-            href={`/admin/storie/${story.id}`}
-            className="lift-card block rounded-card border border-bordo bg-white p-5"
+            href={`/admin/stories/${story.id}`}
+            className="lift-card block rounded-card border border-border bg-white p-5"
           >
             <div className="flex flex-wrap items-center gap-3">
               <span
@@ -95,16 +95,16 @@ export default async function Queue({ searchParams }) {
               <h2 className="font-display text-lg font-semibold">
                 {story.parametri?.nome ?? "senza nome"}
               </h2>
-              <span className="text-sm font-semibold text-inchiostro-tenue">
+              <span className="text-sm font-semibold text-ink-muted">
                 {story.parametri?.capriccio}
               </span>
-              <span className="ml-auto text-sm font-semibold text-inchiostro-tenue">
+              <span className="ml-auto text-sm font-semibold text-ink-muted">
                 {story.brands?.nome ?? "Sito principale"} · {howLongAgo(story.creato_il)}
               </span>
             </div>
 
             {story.errore && (
-              <p className="mt-3 text-sm font-semibold text-accento">{story.errore}</p>
+              <p className="mt-3 text-sm font-semibold text-accent">{story.errore}</p>
             )}
           </Link>
         ))}
@@ -119,8 +119,8 @@ function Filter({ active, href, label }) {
       href={href}
       className={`rounded-full border px-4 py-2 text-sm font-bold ${
         active
-          ? "border-accento bg-accento text-crema"
-          : "border-bordo bg-white text-inchiostro-soft"
+          ? "border-accent bg-accent text-cream"
+          : "border-border bg-white text-ink-soft"
       }`}
     >
       {label}

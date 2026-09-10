@@ -1,6 +1,12 @@
 import { createAdminSupabase } from "@/lib/supabase/server";
 
-/** The illustrations bucket. Created by migration 0006, public read. */
+/**
+ * The illustrations bucket. Created by migration 0006, public read.
+ *
+ * The name stays Italian: it is baked into every public URL already stored in
+ * `contenuto.pagine[].illustrazioneUrl`, and renaming the bucket would break
+ * the images of the stories that already exist.
+ */
 const BUCKET = "illustrazioni";
 
 /**
@@ -17,7 +23,7 @@ export async function saveIllustration({ storyId, index, bytes, mediaType }) {
   if (!db) throw new Error("Supabase non è configurato.");
 
   const extension = mediaType?.split("/")[1] || "png";
-  const path = `${storyId}/pagina-${index}-${Date.now()}.${extension}`;
+  const path = `${storyId}/page-${index}-${Date.now()}.${extension}`;
 
   const { error } = await db.storage
     .from(BUCKET)

@@ -4,7 +4,7 @@ import BrandForm from "@/components/admin/BrandForm";
 import { BRAND_DEFAULT } from "@/lib/brand/schema";
 import { createServerSupabase } from "@/lib/supabase/server";
 
-/** The empty form lives on the same path: /admin/brands/nuovo */
+/** The empty form lives on the same path: /admin/brands/new */
 const NEW_SLUG = "nuovo";
 
 export default async function EditMerchant({ params }) {
@@ -16,7 +16,7 @@ export default async function EditMerchant({ params }) {
   }
 
   const supabase = await createServerSupabase();
-  // See the comment in (gestione)/page.js: the page runs even when the layout
+  // See the comment in (management)/page.js: the page runs even when the layout
   // does not render it, so the check has to be repeated.
   if (!supabase) return null;
 

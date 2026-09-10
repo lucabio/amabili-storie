@@ -9,7 +9,7 @@ import {
   rejectStory,
   regenerateStory,
   saveStory,
-} from "@/app/admin/storie/azioni";
+} from "@/app/admin/stories/actions";
 import { ALIGNMENTS, FONT_CATALOG, pageLayout } from "@/lib/story/layout";
 import { LABELS, transitionAllowed } from "@/lib/story/states";
 
@@ -130,47 +130,47 @@ export default function StoryEditor({ story }) {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
-        <span className="rounded-full bg-accento px-3 py-1 text-xs font-bold text-crema uppercase">
+        <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-cream uppercase">
           {LABELS[story.stato]}
         </span>
         <h1 className="font-display text-2xl font-semibold">
           {story.parametri?.nome} · {story.parametri?.capriccio}
         </h1>
         <a
-          href={`/admin/storie/${story.id}/pdf`}
-          className="lift ml-auto rounded-full border border-bordo bg-white px-5 py-2.5 text-sm font-bold text-inchiostro-soft"
+          href={`/admin/stories/${story.id}/pdf`}
+          className="lift ml-auto rounded-full border border-border bg-white px-5 py-2.5 text-sm font-bold text-ink-soft"
         >
           Scarica PDF
         </a>
       </div>
 
       {story.stato === "fallita" && story.errore && (
-        <p className="mt-4 rounded-card bg-accento/10 p-4 font-semibold text-accento">
+        <p className="mt-4 rounded-card bg-accent/10 p-4 font-semibold text-accent">
           La generazione è fallita: {story.errore}
         </p>
       )}
       {story.stato === "rifiutata" && story.note_revisione && (
-        <p className="mt-4 rounded-card bg-accento/10 p-4 font-semibold text-accento">
+        <p className="mt-4 rounded-card bg-accent/10 p-4 font-semibold text-accent">
           Rifiutata: {story.note_revisione}
         </p>
       )}
 
       {result?.error && (
-        <p className="mt-4 rounded-card bg-accento/10 p-4 font-semibold text-accento">
+        <p className="mt-4 rounded-card bg-accent/10 p-4 font-semibold text-accent">
           {result.error}
         </p>
       )}
       {result?.ok && (
-        <p className="mt-4 rounded-card bg-accento-soft/20 p-4 font-semibold text-scuro">Fatto.</p>
+        <p className="mt-4 rounded-card bg-accent-soft/20 p-4 font-semibold text-dark">Fatto.</p>
       )}
 
       <label className="mt-8 block">
-        <span className="text-sm font-bold text-inchiostro-soft uppercase">Titolo</span>
+        <span className="text-sm font-bold text-ink-soft uppercase">Titolo</span>
         <input
           value={content.titolo ?? ""}
           onChange={(event) => setContent({ ...content, titolo: event.target.value })}
           disabled={!reviewable}
-          className="mt-2 w-full rounded-[14px] border border-bordo bg-white px-4 py-3 font-display text-lg font-semibold outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
+          className="mt-2 w-full rounded-[14px] border border-border bg-white px-4 py-3 font-display text-lg font-semibold outline-accent disabled:bg-cream disabled:text-ink-soft"
         />
       </label>
 
@@ -180,7 +180,7 @@ export default function StoryEditor({ story }) {
             type="button"
             onClick={illustrateAll}
             disabled={bulkRunning || missing === 0}
-            className="lift rounded-full bg-accento px-6 py-3 font-bold text-crema disabled:opacity-40"
+            className="lift rounded-full bg-accent px-6 py-3 font-bold text-cream disabled:opacity-40"
           >
             {bulkRunning
               ? `Genero le illustrazioni… ${bulk.done}/${bulk.total}`
@@ -188,7 +188,7 @@ export default function StoryEditor({ story }) {
                 ? "Tutte le illustrazioni ci sono"
                 : `Genera tutte le illustrazioni (${missing})`}
           </button>
-          <span className="text-sm font-medium text-inchiostro-tenue">
+          <span className="text-sm font-medium text-ink-muted">
             Genera le pagine ancora senza figura. Le singole si rifanno sfogliando qui sotto.
           </span>
         </div>
@@ -202,17 +202,17 @@ export default function StoryEditor({ story }) {
             onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
             disabled={index === 0}
             aria-label="Pagina precedente"
-            className="lift shrink-0 self-center rounded-full border border-bordo bg-white px-4 py-6 text-2xl font-bold text-inchiostro-soft disabled:opacity-30"
+            className="lift shrink-0 self-center rounded-full border border-border bg-white px-4 py-6 text-2xl font-bold text-ink-soft disabled:opacity-30"
           >
             ‹
           </button>
 
-          <article className="flex-1 rounded-card border border-bordo bg-white p-6">
+          <article className="flex-1 rounded-card border border-border bg-white p-6">
             <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm font-bold text-inchiostro-tenue uppercase">
+              <span className="text-sm font-bold text-ink-muted uppercase">
                 Pagina {index + 1} di {total}
               </span>
-              <span className="text-xs font-medium text-inchiostro-tenue">
+              <span className="text-xs font-medium text-ink-muted">
                 trascina e ridimensiona · ← → per sfogliare
               </span>
             </div>
@@ -231,7 +231,7 @@ export default function StoryEditor({ story }) {
                     type="button"
                     disabled={drawing[index] || bulkRunning || !page.illustrazione?.trim()}
                     onClick={() => illustrate(index)}
-                    className="lift rounded-full border border-accento px-5 py-2.5 text-sm font-bold text-accento disabled:opacity-40"
+                    className="lift rounded-full border border-accent px-5 py-2.5 text-sm font-bold text-accent disabled:opacity-40"
                   >
                     {drawing[index]
                       ? "Sto disegnando…"
@@ -241,12 +241,12 @@ export default function StoryEditor({ story }) {
                   </button>
                 )}
                 {pageErrors[index] && (
-                  <p className="rounded-[14px] bg-accento/10 px-4 py-3 text-sm font-semibold text-accento">
+                  <p className="rounded-[14px] bg-accent/10 px-4 py-3 text-sm font-semibold text-accent">
                     {pageErrors[index]}
                   </p>
                 )}
                 <label className="block">
-                  <span className="text-xs font-bold text-inchiostro-tenue uppercase">
+                  <span className="text-xs font-bold text-ink-muted uppercase">
                     La scena da illustrare
                   </span>
                   <textarea
@@ -256,7 +256,7 @@ export default function StoryEditor({ story }) {
                     }
                     rows={3}
                     disabled={!reviewable}
-                    className="mt-1.5 w-full rounded-[14px] border border-bordo px-4 py-2.5 text-sm font-medium outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
+                    className="mt-1.5 w-full rounded-[14px] border border-border px-4 py-2.5 text-sm font-medium outline-accent disabled:bg-cream disabled:text-ink-soft"
                   />
                 </label>
               </div>
@@ -267,7 +267,7 @@ export default function StoryEditor({ story }) {
                     <select
                       value={layout.stile.font}
                       onChange={(event) => updateStyle(index, { font: event.target.value })}
-                      className="rounded-[10px] border border-bordo bg-white px-2.5 py-2 text-sm font-semibold outline-accento"
+                      className="rounded-[10px] border border-border bg-white px-2.5 py-2 text-sm font-semibold outline-accent"
                     >
                       {FONT_CATALOG.map((font) => (
                         <option key={font.key} value={font.key}>
@@ -276,7 +276,7 @@ export default function StoryEditor({ story }) {
                       ))}
                     </select>
 
-                    <div className="flex items-center gap-1 rounded-[10px] border border-bordo bg-white px-1">
+                    <div className="flex items-center gap-1 rounded-[10px] border border-border bg-white px-1">
                       <button
                         type="button"
                         aria-label="Riduci dimensione"
@@ -285,7 +285,7 @@ export default function StoryEditor({ story }) {
                             dimensione: Math.max(8, layout.stile.dimensione - 1),
                           })
                         }
-                        className="px-2 py-1 text-lg font-bold text-inchiostro-soft"
+                        className="px-2 py-1 text-lg font-bold text-ink-soft"
                       >
                         −
                       </button>
@@ -300,7 +300,7 @@ export default function StoryEditor({ story }) {
                             dimensione: Math.min(60, layout.stile.dimensione + 1),
                           })
                         }
-                        className="px-2 py-1 text-lg font-bold text-inchiostro-soft"
+                        className="px-2 py-1 text-lg font-bold text-ink-soft"
                       >
                         +
                       </button>
@@ -311,10 +311,10 @@ export default function StoryEditor({ story }) {
                       aria-label="Colore del testo"
                       value={layout.stile.colore}
                       onChange={(event) => updateStyle(index, { colore: event.target.value })}
-                      className="h-9 w-10 cursor-pointer rounded-[10px] border border-bordo bg-white"
+                      className="h-9 w-10 cursor-pointer rounded-[10px] border border-border bg-white"
                     />
 
-                    <div className="flex items-center gap-1 rounded-[10px] border border-bordo bg-white px-1">
+                    <div className="flex items-center gap-1 rounded-[10px] border border-border bg-white px-1">
                       {ALIGNMENTS.map((alignment) => (
                         <button
                           key={alignment}
@@ -322,8 +322,8 @@ export default function StoryEditor({ story }) {
                           onClick={() => updateStyle(index, { allineamento: alignment })}
                           className={`rounded-[8px] px-2 py-1 text-xs font-bold ${
                             layout.stile.allineamento === alignment
-                              ? "bg-accento text-crema"
-                              : "text-inchiostro-soft"
+                              ? "bg-accent text-cream"
+                              : "text-ink-soft"
                           }`}
                         >
                           {ALIGNMENT_LABELS[alignment]}
@@ -334,10 +334,10 @@ export default function StoryEditor({ story }) {
                     <button
                       type="button"
                       onClick={() => updateStyle(index, { grassetto: !layout.stile.grassetto })}
-                      className={`rounded-[10px] border border-bordo px-3 py-2 text-sm font-black ${
+                      className={`rounded-[10px] border border-border px-3 py-2 text-sm font-black ${
                         layout.stile.grassetto
-                          ? "bg-accento text-crema"
-                          : "bg-white text-inchiostro-soft"
+                          ? "bg-accent text-cream"
+                          : "bg-white text-ink-soft"
                       }`}
                     >
                       G
@@ -345,10 +345,10 @@ export default function StoryEditor({ story }) {
                     <button
                       type="button"
                       onClick={() => updateStyle(index, { corsivo: !layout.stile.corsivo })}
-                      className={`rounded-[10px] border border-bordo px-3 py-2 text-sm font-semibold italic ${
+                      className={`rounded-[10px] border border-border px-3 py-2 text-sm font-semibold italic ${
                         layout.stile.corsivo
-                          ? "bg-accento text-crema"
-                          : "bg-white text-inchiostro-soft"
+                          ? "bg-accent text-cream"
+                          : "bg-white text-ink-soft"
                       }`}
                     >
                       C
@@ -361,7 +361,7 @@ export default function StoryEditor({ story }) {
                   onChange={(event) => updatePage(index, "testo", event.target.value)}
                   rows={5}
                   disabled={!reviewable}
-                  className="w-full rounded-[14px] border border-bordo px-4 py-3 leading-relaxed font-medium outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
+                  className="w-full rounded-[14px] border border-border px-4 py-3 leading-relaxed font-medium outline-accent disabled:bg-cream disabled:text-ink-soft"
                 />
               </div>
             </div>
@@ -372,7 +372,7 @@ export default function StoryEditor({ story }) {
             onClick={() => setCurrentPage((p) => Math.min(total - 1, p + 1))}
             disabled={index === total - 1}
             aria-label="Pagina successiva"
-            className="lift shrink-0 self-center rounded-full border border-bordo bg-white px-4 py-6 text-2xl font-bold text-inchiostro-soft disabled:opacity-30"
+            className="lift shrink-0 self-center rounded-full border border-border bg-white px-4 py-6 text-2xl font-bold text-ink-soft disabled:opacity-30"
           >
             ›
           </button>
@@ -380,23 +380,23 @@ export default function StoryEditor({ story }) {
       )}
 
       <label className="mt-8 block">
-        <span className="text-sm font-bold text-inchiostro-soft uppercase">Frase-àncora</span>
+        <span className="text-sm font-bold text-ink-soft uppercase">Frase-àncora</span>
         <input
           value={content.fraseAncora ?? ""}
           onChange={(event) => setContent({ ...content, fraseAncora: event.target.value })}
           disabled={!reviewable}
-          className="mt-2 w-full rounded-[14px] border border-bordo bg-white px-4 py-3 font-semibold outline-accento disabled:bg-crema disabled:text-inchiostro-soft"
+          className="mt-2 w-full rounded-[14px] border border-border bg-white px-4 py-3 font-semibold outline-accent disabled:bg-cream disabled:text-ink-soft"
         />
       </label>
 
-      <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-bordo pt-6">
+      <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-border pt-6">
         {reviewable && (
           <>
             <button
               type="button"
               disabled={pending}
               onClick={() => run(() => saveStory(story.id, content))}
-              className="lift rounded-full border border-bordo bg-white px-6 py-3 font-bold disabled:opacity-40"
+              className="lift rounded-full border border-border bg-white px-6 py-3 font-bold disabled:opacity-40"
             >
               Salva
             </button>
@@ -405,7 +405,7 @@ export default function StoryEditor({ story }) {
               type="button"
               disabled={pending}
               onClick={() => run(() => approveStory(story.id))}
-              className="lift rounded-full bg-accento px-6 py-3 font-bold text-crema disabled:opacity-40"
+              className="lift rounded-full bg-accent px-6 py-3 font-bold text-cream disabled:opacity-40"
             >
               Approva e manda la mail
             </button>
@@ -414,13 +414,13 @@ export default function StoryEditor({ story }) {
               value={note}
               onChange={(event) => setNote(event.target.value)}
               placeholder="Perché la rifiuti?"
-              className="ml-auto rounded-full border border-bordo bg-white px-4 py-2.5 text-sm font-semibold outline-accento"
+              className="ml-auto rounded-full border border-border bg-white px-4 py-2.5 text-sm font-semibold outline-accent"
             />
             <button
               type="button"
               disabled={pending || !note.trim()}
               onClick={() => run(() => rejectStory(story.id, note))}
-              className="lift rounded-full border border-accento px-6 py-3 font-bold text-accento disabled:opacity-40"
+              className="lift rounded-full border border-accent px-6 py-3 font-bold text-accent disabled:opacity-40"
             >
               Rifiuta
             </button>
@@ -432,7 +432,7 @@ export default function StoryEditor({ story }) {
             type="button"
             disabled={pending}
             onClick={() => run(() => regenerateStory(story.id))}
-            className="lift rounded-full bg-accento px-6 py-3 font-bold text-crema disabled:opacity-40"
+            className="lift rounded-full bg-accent px-6 py-3 font-bold text-cream disabled:opacity-40"
           >
             Rigenera
           </button>

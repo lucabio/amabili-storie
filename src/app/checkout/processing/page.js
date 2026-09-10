@@ -24,16 +24,16 @@ const STARS = [
 
 export default function Processing() {
   return (
-    <main className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-scuro px-6 py-16 text-center">
+    <main className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-dark px-6 py-16 text-center">
       <style>{`
         @keyframes as-twinkle { 0%,100% { opacity:.2; transform:scale(.7) } 50% { opacity:1; transform:scale(1) } }
-        @keyframes as-respira { 0%,100% { transform:scale(1); opacity:.5 } 50% { transform:scale(1.14); opacity:.8 } }
-        @keyframes as-deriva  { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-12px) } }
-        .as-stella { animation: as-twinkle 3.4s ease-in-out infinite; }
-        .as-alone  { animation: as-respira 6s ease-in-out infinite; }
-        .as-scena  { animation: as-deriva 7s ease-in-out infinite; }
+        @keyframes as-breathe { 0%,100% { transform:scale(1); opacity:.5 } 50% { transform:scale(1.14); opacity:.8 } }
+        @keyframes as-drift  { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-12px) } }
+        .as-star { animation: as-twinkle 3.4s ease-in-out infinite; }
+        .as-halo  { animation: as-breathe 6s ease-in-out infinite; }
+        .as-scene  { animation: as-drift 7s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) {
-          .as-stella, .as-alone, .as-scena { animation: none; }
+          .as-star, .as-halo, .as-scene { animation: none; }
         }
       `}</style>
 
@@ -41,7 +41,7 @@ export default function Processing() {
       <Link
         href="/"
         aria-label="Torna al sito"
-        className="lift absolute top-5 right-5 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-crema/20 bg-crema/10 text-xl font-bold text-crema/80 hover:text-crema"
+        className="lift absolute top-5 right-5 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-cream/20 bg-cream/10 text-xl font-bold text-cream/80 hover:text-cream"
       >
         ×
       </Link>
@@ -51,7 +51,7 @@ export default function Processing() {
         {STARS.map((star, i) => (
           <span
             key={i}
-            className="as-stella absolute rounded-full bg-crema"
+            className="as-star absolute rounded-full bg-cream"
             style={{
               left: star.left,
               top: star.top,
@@ -65,18 +65,18 @@ export default function Processing() {
 
       {/* Moon */}
       <div className="pointer-events-none absolute top-[10%] right-[14%]" aria-hidden="true">
-        <div className="as-alone absolute -inset-6 rounded-full bg-accento-soft/25 blur-2xl" />
-        <div className="relative h-16 w-16 rounded-full bg-accento-soft shadow-[inset_-10px_-6px_0_rgba(67,48,42,0.28)]" />
+        <div className="as-halo absolute -inset-6 rounded-full bg-accent-soft/25 blur-2xl" />
+        <div className="relative h-16 w-16 rounded-full bg-accent-soft shadow-[inset_-10px_-6px_0_rgba(67,48,42,0.28)]" />
       </div>
 
       {/* The scene: a child sleeping peacefully */}
-      <div className="as-scena relative">
+      <div className="as-scene relative">
         <div
-          className="pointer-events-none absolute -inset-8 rounded-full bg-accento/20 blur-3xl"
+          className="pointer-events-none absolute -inset-8 rounded-full bg-accent/20 blur-3xl"
           aria-hidden="true"
         />
         <Image
-          src="/illustrazioni/copertina-bimba-notte.svg"
+          src="/illustrations/cover-child-night.svg"
           alt=""
           width={220}
           height={220}
@@ -86,13 +86,13 @@ export default function Processing() {
         />
       </div>
 
-      <p className="mt-10 text-[13px] font-extrabold tracking-[0.18em] text-accento-soft uppercase">
+      <p className="mt-10 text-[13px] font-extrabold tracking-[0.18em] text-accent-soft uppercase">
         Ci pensiamo noi
       </p>
-      <h1 className="mt-3 max-w-[620px] font-display text-[clamp(2rem,5vw,3rem)] leading-tight font-semibold text-crema">
+      <h1 className="mt-3 max-w-[620px] font-display text-[clamp(2rem,5vw,3rem)] leading-tight font-semibold text-cream">
         La storia sta nascendo
       </h1>
-      <p className="mt-5 max-w-[520px] text-lg leading-relaxed font-medium text-pergamena">
+      <p className="mt-5 max-w-[520px] text-lg leading-relaxed font-medium text-parchment">
         Ti abbiamo scritto una mail. Rileggiamo ogni pagina a mano, perché un libro
         che finisce tra le mani di un bambino merita un paio d&apos;occhi umani: ti
         avvisiamo appena è pronta.
@@ -101,11 +101,11 @@ export default function Processing() {
       <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
         <Link
           href="/"
-          className="lift rounded-full bg-accento px-8 py-4 font-bold text-crema shadow-[0_10px_24px_rgba(233,109,79,0.3)]"
+          className="lift rounded-full bg-accent px-8 py-4 font-bold text-cream shadow-[0_10px_24px_rgba(233,109,79,0.3)]"
         >
           Torna al sito
         </Link>
-        <Link href="/area" className="font-semibold text-crema/75 hover:text-crema">
+        <Link href="/account" className="font-semibold text-cream/75 hover:text-cream">
           Segui la tua storia →
         </Link>
       </div>

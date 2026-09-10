@@ -67,7 +67,7 @@ export async function saveStory(storyId, rawContent) {
     };
   }
 
-  revalidatePath(`/admin/storie/${storyId}`);
+  revalidatePath(`/admin/stories/${storyId}`);
   return { ok: true };
 }
 
@@ -110,14 +110,14 @@ export async function approveStory(storyId) {
     const { subject, html } = storyReadyMail({
       name: story.parametri.nome,
       brand,
-      url: `${process.env.NEXT_PUBLIC_SITO_URL ?? "http://localhost:3000"}/storie/${storyId}`,
+      url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/stories/${storyId}`,
     });
     await sendMail({ to: story.email, subject, html });
   } catch (problem) {
     console.error("Mail di approvazione non spedita:", problem.message);
   }
 
-  revalidatePath("/admin/storie");
+  revalidatePath("/admin/stories");
   return { ok: true };
 }
 
@@ -158,7 +158,7 @@ export async function rejectStory(storyId, note) {
     };
   }
 
-  revalidatePath("/admin/storie");
+  revalidatePath("/admin/stories");
   return { ok: true };
 }
 
@@ -222,8 +222,8 @@ export async function regenerateStory(storyId) {
       // touches nothing: we do not bury a good book.
       .eq("stato", "in_generazione");
 
-    revalidatePath("/admin/storie");
-    revalidatePath(`/admin/storie/${storyId}`);
+    revalidatePath("/admin/stories");
+    revalidatePath(`/admin/stories/${storyId}`);
 
     // Double failure: neither did the workflow start, nor did we manage to mark
     // it. The story stays in "in_generazione", from which it cannot be
@@ -241,8 +241,8 @@ export async function regenerateStory(storyId) {
     return { error: message };
   }
 
-  revalidatePath("/admin/storie");
-  revalidatePath(`/admin/storie/${storyId}`);
+  revalidatePath("/admin/stories");
+  revalidatePath(`/admin/stories/${storyId}`);
   return { ok: true };
 }
 
@@ -307,6 +307,6 @@ export async function generateStoryIllustration(storyId, index, rawScene) {
     return { error: "Qualcun altro ha già deciso su questa storia nel frattempo: ricarica la pagina." };
   }
 
-  revalidatePath(`/admin/storie/${storyId}`);
+  revalidatePath(`/admin/stories/${storyId}`);
   return { ok: true, url };
 }

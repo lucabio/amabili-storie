@@ -35,10 +35,10 @@ describe("story ready mail", () => {
     const { html } = storyReadyMail({
       name: "Futura",
       brand: BRAND_DEFAULT,
-      url: "https://amabilistorie.com/storie/abc",
+      url: "https://amabilistorie.com/stories/abc",
     });
 
-    expect(html).toContain("https://amabilistorie.com/storie/abc");
+    expect(html).toContain("https://amabilistorie.com/stories/abc");
   });
 });
 

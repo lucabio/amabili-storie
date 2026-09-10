@@ -104,7 +104,7 @@ async function createGeneratingStory(order) {
     run_id: workflowRunId,
   };
 
-  // A regeneration (src/app/admin/storie/actions.js, regenerateStory) relaunches
+  // A regeneration (src/app/admin/stories/actions.js, regenerateStory) relaunches
   // this same workflow on the order of a "fallita" or "rifiutata" story.
   // `storie.ordine_id` is unique (migration 0003): if a row for this order
   // already exists, we reuse it instead of inserting a second one, so the story

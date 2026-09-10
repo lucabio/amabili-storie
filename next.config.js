@@ -12,8 +12,8 @@ const nextConfig = {
   // (public è servito dalla CDN, non dal filesystem della funzione). La route
   // PDF li legge da process.cwd(): li includo esplicitamente nel tracing.
   outputFileTracingIncludes: {
-    "/admin/storie/[id]/pdf": ["./public/fonts/**"],
-    "/area/storie/[id]/pdf": ["./public/fonts/**"],
+    "/admin/stories/[id]/pdf": ["./public/fonts/**"],
+    "/account/stories/[id]/pdf": ["./public/fonts/**"],
   },
 };
 

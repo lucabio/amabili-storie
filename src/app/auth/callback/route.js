@@ -21,10 +21,10 @@ export async function GET(request) {
   // pass `next` and stays on /admin.
   const next = searchParams.get("next");
   const destination = next && next.startsWith("/") ? next : "/admin";
-  const loginPage = destination.startsWith("/area") ? "/area/login" : "/admin/login";
+  const loginPage = destination.startsWith("/account") ? "/account/login" : "/admin/login";
 
   const toLogin = (reason) =>
-    NextResponse.redirect(`${origin}${loginPage}?errore=${reason}`);
+    NextResponse.redirect(`${origin}${loginPage}?error=${reason}`);
 
   if (failure) {
     return toLogin(searchParams.get("error_code") === "otp_expired" ? "scaduto" : "link");

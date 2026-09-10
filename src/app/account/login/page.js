@@ -11,11 +11,11 @@ const ERRORS = {
 
 export default async function CustomerLogin({ searchParams }) {
   // Next 16: searchParams is a Promise.
-  const { errore } = await searchParams;
+  const { error } = await searchParams;
 
   return (
     <main className="mx-auto flex min-h-svh max-w-[520px] flex-col justify-center px-6 py-16">
-      <CustomerLoginForm initialError={ERRORS[errore] ?? null} />
+      <CustomerLoginForm initialError={ERRORS[error] ?? null} />
     </main>
   );
 }

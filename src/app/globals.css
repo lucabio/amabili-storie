@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
-/* I font impaginabili dell'editor storia. Gli stessi file (public/fonts) sono
- * registrati in @react-pdf (pdf.jsx): ciò che si trascina è ciò che si stampa.
- * Baloo 2 non ha corsivo. */
+/* The layoutable fonts of the story editor. The same files (public/fonts) are
+ * registered in @react-pdf (pdf.jsx): what you drag is what gets printed.
+ * Baloo 2 has no italic. */
 @font-face {
   font-family: "Baloo2 Amabili";
   src: url("/fonts/baloo2-regular.ttf") format("truetype");
@@ -74,57 +74,57 @@
   font-display: swap;
 }
 
-/* Design tokens. I tre colori dell'accento sono i default di Amabili Storie:
- * un brand white-label li sovrascrive a runtime, vedi `.tema-brand` più sotto. */
+/* Design tokens. The three accent colors are the Amabili Storie defaults: a
+ * white-label brand overrides them at runtime, see `.brand-theme` below. */
 @theme {
-  --color-crema: #fff8f0;
-  --color-crema-chiara: #fffdf8;
-  --color-crema-scura: #fbeedd;
-  --color-sabbia: #fff3e3;
-  --color-bordo: #f3e3d3;
-  --color-inchiostro: #43302a;
-  --color-inchiostro-soft: #8c7268;
-  --color-inchiostro-tenue: #b08f7e;
-  --color-inchiostro-lieve: #c4ab9d;
-  --color-pergamena: #e9d5c0;
+  --color-cream: #fff8f0;
+  --color-cream-light: #fffdf8;
+  --color-cream-dark: #fbeedd;
+  --color-sand: #fff3e3;
+  --color-border: #f3e3d3;
+  --color-ink: #43302a;
+  --color-ink-soft: #8c7268;
+  --color-ink-muted: #b08f7e;
+  --color-ink-faint: #c4ab9d;
+  --color-parchment: #e9d5c0;
 
-  --color-accento: #e96d4f;
-  --color-accento-soft: #f6b27c;
-  --color-scuro: #43302a;
+  --color-accent: #e96d4f;
+  --color-accent-soft: #f6b27c;
+  --color-dark: #43302a;
 
   --font-display: var(--font-fredoka), sans-serif;
   --font-sans: var(--font-figtree), sans-serif;
 
   --radius-card: 20px;
-  --radius-pannello: 26px;
+  --radius-panel: 26px;
 }
 
 /*
- * Da dove entrano i colori dell'ente. `TemaBrand` stampa --brand-* sul wrapper
- * di pagina; qui li rimappiamo sui token che le utility Tailwind (bg-accento,
- * text-scuro…) leggono davvero.
+ * Where the merchant colors come in. `BrandTheme` prints --brand-* on the page
+ * wrapper; here we remap them onto the tokens the Tailwind utilities (bg-accent,
+ * text-dark…) actually read.
  *
- * La rimappatura deve stare SUL WRAPPER, non dentro @theme: le custom property
- * si risolvono sull'elemento che le dichiara, e @theme dichiara su :root, dove
- * --brand-* non esiste ancora. Lì `var(--brand-accento, …)` prenderebbe sempre
- * il fallback, e il sottoalbero erediterebbe quel valore già risolto — cioè il
- * tema del brand non arriverebbe mai a schermo.
+ * The remapping has to sit ON THE WRAPPER, not inside @theme: custom properties
+ * resolve on the element that declares them, and @theme declares on :root, where
+ * --brand-* does not exist yet. There `var(--brand-accent, …)` would always take
+ * the fallback, and the subtree would inherit that already-resolved value — i.e.
+ * the brand theme would never reach the screen.
  */
-.tema-brand {
-  --color-accento: var(--brand-accento, #e96d4f);
-  --color-accento-soft: var(--brand-accento-soft, #f6b27c);
-  --color-scuro: var(--brand-scuro, #43302a);
+.brand-theme {
+  --color-accent: var(--brand-accent, #e96d4f);
+  --color-accent-soft: var(--brand-accent-soft, #f6b27c);
+  --color-dark: var(--brand-dark, #43302a);
 }
 
 /*
- * Ogni sezione occupa una schermata e si aggancia allo scroll: una rotellina
- * porta alla sezione dopo, non a metà strada. Le sezioni dichiarano
- * `min-h-svh snap-start`, il piede `snap-end`.
+ * Every section takes a screen and snaps to the scroll: one wheel notch takes
+ * you to the next section, not halfway there. Sections declare
+ * `min-h-svh snap-start`, the footer `snap-end`.
  *
- * Ma lo snap "mandatory" è una scelta da desktop: su mobile intrappola le
- * sezioni più alte del viewport — l'hero col libro restava tagliato a metà,
- * perché il browser rimbalzava sempre a un punto d'aggancio. Lo attiviamo solo
- * dove le sezioni ci stanno davvero: schermo largo e abbastanza alto.
+ * But "mandatory" snap is a desktop choice: on mobile it traps sections taller
+ * than the viewport — the hero with the book stayed cut in half, because the
+ * browser always bounced back to a snap point. We only turn it on where the
+ * sections actually fit: wide enough and tall enough a screen.
  */
 html {
   scroll-behavior: smooth;
@@ -137,14 +137,14 @@ html {
 }
 
 body {
-  background: var(--color-crema);
-  color: var(--color-inchiostro);
+  background: var(--color-cream);
+  color: var(--color-ink);
   font-family: var(--font-sans);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--color-inchiostro-lieve);
+  color: var(--color-ink-faint);
   font-weight: 500;
 }
 
@@ -187,8 +187,8 @@ textarea::placeholder {
 }
 
 /*
- * La scia di lettere dell'hero: sboccia, sale di poco e svanisce, tutto
- * dentro l'animazione. Chi la usa passa la rotazione in --rot.
+ * The hero's letter trail: it blooms, rises a little and fades, all inside the
+ * animation. Whoever uses it passes the rotation in --rot.
  */
 @keyframes letterInk {
   0% {
@@ -216,7 +216,7 @@ textarea::placeholder {
   animation: popIn 0.35s ease both;
 }
 
-@utility anim-lettera {
+@utility anim-letter {
   animation: letterInk 1.6s ease-out forwards;
 }
 

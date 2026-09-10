@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 
-const FROM = process.env.MAIL_MITTENTE ?? "Amabili Storie <onboarding@resend.dev>";
+const FROM = process.env.MAIL_FROM ?? "Amabili Storie <onboarding@resend.dev>";
 
 /**
  * Sends an email. If Resend is not configured nothing breaks: we log and carry

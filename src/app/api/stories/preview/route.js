@@ -5,7 +5,7 @@ import { storyParamsSchema } from "@/lib/story/schema";
 /** Generating a story costs: raise the limit past the 10s default. */
 export const maxDuration = 60;
 
-/** POST /api/storie/anteprima — the 3 free pages of the configurator. */
+/** POST /api/stories/preview — the 3 free pages of the configurator. */
 export async function POST(request) {
   let body;
   try {

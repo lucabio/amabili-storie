@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { signOut } from "@/app/area/(riservata)/azioni";
+import { signOut } from "@/app/account/(private)/actions";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 export const metadata = {
@@ -41,14 +41,14 @@ export default async function CustomerArea() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-semibold">Le tue storie</h1>
-          <p className="mt-1 font-medium text-inchiostro-soft">
+          <p className="mt-1 font-medium text-ink-soft">
             Ogni libro che hai creato, e a che punto è.
           </p>
         </div>
         <form action={signOut}>
           <button
             type="submit"
-            className="rounded-full border border-bordo bg-white px-4 py-2 text-sm font-semibold text-inchiostro-soft"
+            className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-ink-soft"
           >
             Esci
           </button>
@@ -56,14 +56,14 @@ export default async function CustomerArea() {
       </div>
 
       {stories.length === 0 ? (
-        <div className="mt-10 rounded-card border border-dashed border-bordo bg-crema-chiara p-10 text-center">
+        <div className="mt-10 rounded-card border border-dashed border-border bg-cream-light p-10 text-center">
           <p className="font-display text-lg font-semibold">Ancora nessuna storia</p>
-          <p className="mt-2 font-medium text-inchiostro-soft">
+          <p className="mt-2 font-medium text-ink-soft">
             Quando crei un libro con questa email, lo ritrovi qui.
           </p>
           <Link
             href="/"
-            className="lift mt-5 inline-block rounded-full bg-accento px-6 py-3 font-bold text-crema"
+            className="lift mt-5 inline-block rounded-full bg-accent px-6 py-3 font-bold text-cream"
           >
             Crea la prima storia
           </Link>
@@ -76,18 +76,18 @@ export default async function CustomerArea() {
             return (
               <li
                 key={story.id}
-                className="flex flex-wrap items-center gap-4 rounded-card border border-bordo bg-white p-5"
+                className="flex flex-wrap items-center gap-4 rounded-card border border-border bg-white p-5"
               >
                 <div className="min-w-[200px] flex-1">
                   <p className="font-display text-lg font-semibold">«{title}»</p>
-                  <p className="mt-1 text-sm font-medium text-inchiostro-tenue">
+                  <p className="mt-1 text-sm font-medium text-ink-muted">
                     Creata il {shortDate(story.creato_il)}
                   </p>
                 </div>
 
                 <span
                   className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${
-                    ready ? "bg-accento text-crema" : "bg-crema-scura text-inchiostro-soft"
+                    ready ? "bg-accent text-cream" : "bg-cream-dark text-ink-soft"
                   }`}
                 >
                   {CUSTOMER_STATE[story.stato] ?? "In lavorazione"}
@@ -96,20 +96,20 @@ export default async function CustomerArea() {
                 {ready ? (
                   <div className="flex gap-2">
                     <Link
-                      href={`/storie/${story.id}`}
-                      className="lift rounded-full border border-bordo bg-white px-4 py-2 text-sm font-bold text-inchiostro-soft"
+                      href={`/stories/${story.id}`}
+                      className="lift rounded-full border border-border bg-white px-4 py-2 text-sm font-bold text-ink-soft"
                     >
                       Rileggi
                     </Link>
                     <a
-                      href={`/area/storie/${story.id}/pdf`}
-                      className="lift rounded-full bg-accento px-4 py-2 text-sm font-bold text-crema"
+                      href={`/account/stories/${story.id}/pdf`}
+                      className="lift rounded-full bg-accent px-4 py-2 text-sm font-bold text-cream"
                     >
                       Scarica PDF
                     </a>
                   </div>
                 ) : (
-                  <span className="text-sm font-medium text-inchiostro-tenue">
+                  <span className="text-sm font-medium text-ink-muted">
                     Ti avvisiamo appena è pronta
                   </span>
                 )}

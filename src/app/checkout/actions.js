@@ -97,5 +97,5 @@ export async function buy(rawData) {
     };
   }
 
-  redirect("/checkout/in-lavorazione");
+  redirect("/checkout/processing");
 }

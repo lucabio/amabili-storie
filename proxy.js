@@ -40,5 +40,5 @@ export async function proxy(request) {
 
 export const config = {
   // The customer area has a session to refresh too, not just the backoffice.
-  matcher: ["/admin/:path*", "/area/:path*"],
+  matcher: ["/admin/:path*", "/account/:path*"],
 };

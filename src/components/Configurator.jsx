@@ -20,7 +20,7 @@ const EMPTY_TRAITS = {
 const STEP_LABELS = ["Capriccio", "Famiglia", "Protagonisti"];
 
 const inputClasses =
-  "rounded-[14px] border border-bordo bg-crema px-4 py-3.5 font-semibold text-inchiostro outline-accento";
+  "rounded-[14px] border border-border bg-cream px-4 py-3.5 font-semibold text-ink outline-accent";
 
 function Chip({ active, children, ...props }) {
   return (
@@ -28,8 +28,8 @@ function Chip({ active, children, ...props }) {
       type="button"
       className={`lift flex min-h-[52px] items-center gap-2.5 rounded-[14px] border px-4 py-3.5 text-left text-sm font-semibold ${
         active
-          ? "border-accento bg-accento text-crema"
-          : "border-bordo bg-white text-inchiostro"
+          ? "border-accent bg-accent text-cream"
+          : "border-border bg-white text-ink"
       }`}
       {...props}
     >
@@ -42,7 +42,7 @@ function NextButton({ children, ...props }) {
   return (
     <button
       type="button"
-      className="lift rounded-full bg-scuro px-7.5 py-3.5 font-bold text-crema disabled:opacity-40"
+      className="lift rounded-full bg-dark px-7.5 py-3.5 font-bold text-cream disabled:opacity-40"
       {...props}
     >
       {children}
@@ -54,7 +54,7 @@ function BackButton(props) {
   return (
     <button
       type="button"
-      className="lift rounded-full border border-bordo bg-white px-6 py-3.5 font-bold text-inchiostro-soft"
+      className="lift rounded-full border border-border bg-white px-6 py-3.5 font-bold text-ink-soft"
       {...props}
     >
       Indietro
@@ -124,7 +124,7 @@ export default function Configurator({ brand, whims }) {
     setStory(null);
 
     try {
-      const response = await fetch("/api/storie/anteprima", {
+      const response = await fetch("/api/stories/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, brand: brand.slug }),
@@ -138,7 +138,7 @@ export default function Configurator({ brand, whims }) {
       setStory(data.story);
       // Give the browser time to mount the section before scrolling to it.
       requestAnimationFrame(() => {
-        document.getElementById("anteprima")?.scrollIntoView({ behavior: "smooth" });
+        document.getElementById("preview")?.scrollIntoView({ behavior: "smooth" });
       });
     } catch (problem) {
       setError(problem.message);
@@ -150,10 +150,10 @@ export default function Configurator({ brand, whims }) {
   return (
     <>
       <section
-        id="configuratore"
-        className="flex min-h-svh snap-start flex-col justify-center bg-sabbia bg-[url('/illustrazioni/doodle-cielo.svg')] bg-[length:min(180px,22vw)] bg-[right_4%_top_10%] bg-no-repeat px-4 py-[clamp(32px,4vw,56px)]"
+        id="configurator"
+        className="flex min-h-svh snap-start flex-col justify-center bg-sand bg-[url('/illustrations/doodle-sky.svg')] bg-[length:min(180px,22vw)] bg-[right_4%_top_10%] bg-no-repeat px-4 py-[clamp(32px,4vw,56px)]"
       >
-        <div className="mx-auto w-full max-w-[920px] rounded-pannello border border-bordo bg-white p-[clamp(24px,4.5vw,44px)] shadow-[0_24px_60px_-20px_rgba(67,48,42,0.14)]">
+        <div className="mx-auto w-full max-w-[920px] rounded-panel border border-border bg-white p-[clamp(24px,4.5vw,44px)] shadow-[0_24px_60px_-20px_rgba(67,48,42,0.14)]">
           <h2 className="text-center font-display text-[clamp(1.5rem,3vw,1.9rem)] font-semibold">
             Il libro si scrive mentre lo componi
           </h2>
@@ -164,22 +164,22 @@ export default function Configurator({ brand, whims }) {
               <div key={number} className="flex items-center">
                 {index > 0 && (
                   <span
-                    className={`mx-1.5 h-0.5 w-8 ${step > index ? "bg-accento" : "bg-bordo"}`}
+                    className={`mx-1.5 h-0.5 w-8 ${step > index ? "bg-accent" : "bg-border"}`}
                   />
                 )}
                 <span className="flex flex-col items-center gap-1.5">
                   <span
                     className={`flex h-8.5 w-8.5 items-center justify-center rounded-full font-display text-sm font-bold transition-colors ${
                       step >= number
-                        ? "bg-accento text-crema"
-                        : "bg-crema-scura text-inchiostro-tenue"
+                        ? "bg-accent text-cream"
+                        : "bg-cream-dark text-ink-muted"
                     }`}
                   >
                     {number}
                   </span>
                   <span
                     className={`text-[11px] font-bold tracking-[0.06em] uppercase ${
-                      step >= number ? "text-inchiostro" : "text-inchiostro-lieve"
+                      step >= number ? "text-ink" : "text-ink-faint"
                     }`}
                   >
                     {STEP_LABELS[index]}
@@ -210,7 +210,7 @@ export default function Configurator({ brand, whims }) {
                         >
                           <span
                             className={`h-2 w-2 shrink-0 rounded-full ${
-                              active ? "bg-crema" : "bg-accento-soft"
+                              active ? "bg-cream" : "bg-accent-soft"
                             }`}
                           />
                           <span>{whim.label}</span>
@@ -342,8 +342,8 @@ export default function Configurator({ brand, whims }) {
                     />
                   </div>
 
-                  <details className="group mt-5 rounded-[14px] border border-bordo bg-crema/60 p-4">
-                    <summary className="cursor-pointer list-none text-sm font-bold text-inchiostro-soft marker:content-none">
+                  <details className="group mt-5 rounded-[14px] border border-border bg-cream/60 p-4">
+                    <summary className="cursor-pointer list-none text-sm font-bold text-ink-soft marker:content-none">
                       <span className="inline-flex items-center gap-2">
                         <span className="inline-block transition-transform group-open:rotate-90">
                           ›
@@ -351,7 +351,7 @@ export default function Configurator({ brand, whims }) {
                         Aggiungi qualche dettaglio — facoltativo
                       </span>
                     </summary>
-                    <p className="mt-2 mb-4 text-xs font-medium text-inchiostro-tenue">
+                    <p className="mt-2 mb-4 text-xs font-medium text-ink-muted">
                       Capelli, occhi, un oggetto che non lascia mai: più dettagli scrivi, più la
                       storia sembrerà scritta apposta per loro.
                     </p>
@@ -375,11 +375,11 @@ export default function Configurator({ brand, whims }) {
                   </details>
 
                   {brand.acceptsPayments && (
-                    <div className="mt-8 rounded-[18px] border border-dashed border-accento bg-accento/5 p-5.5">
-                      <p className="mb-1.5 text-[1.05rem] font-bold text-accento">
+                    <div className="mt-8 rounded-[18px] border border-dashed border-accent bg-accent/5 p-5.5">
+                      <p className="mb-1.5 text-[1.05rem] font-bold text-accent">
                         Vuoi anche la copia cartacea?
                       </p>
-                      <p className="mb-4 leading-relaxed font-medium text-inchiostro-soft">
+                      <p className="mb-4 leading-relaxed font-medium text-ink-soft">
                         Aggiungi un bellissimo libro illustrato{" "}
                         <strong>stampato e spedito a casa</strong> — perfetto come ricordo della
                         storia.
@@ -387,13 +387,13 @@ export default function Configurator({ brand, whims }) {
                       <div className="flex flex-wrap items-end gap-3">
                         <div className="min-w-[220px] flex-1">
                           <label
-                            htmlFor="formato-cartaceo"
+                            htmlFor="printed-format"
                             className="mb-2 block text-[0.9rem] font-semibold"
                           >
                             Scegli formato:
                           </label>
                           <select
-                            id="formato-cartaceo"
+                            id="printed-format"
                             className={`${inputClasses} w-full bg-white py-2.5 text-sm`}
                             value={printed.format}
                             onChange={(event) =>
@@ -416,8 +416,8 @@ export default function Configurator({ brand, whims }) {
                           onClick={() => setPrinted((p) => ({ ...p, chosen: true }))}
                           className={`lift rounded-full border px-5.5 py-2.5 text-sm font-bold ${
                             printed.chosen === true
-                              ? "border-accento bg-accento text-crema"
-                              : "border-bordo bg-white text-inchiostro-soft"
+                              ? "border-accent bg-accent text-cream"
+                              : "border-border bg-white text-ink-soft"
                           }`}
                         >
                           Sì, aggiungi!
@@ -428,8 +428,8 @@ export default function Configurator({ brand, whims }) {
                           onClick={() => setPrinted((p) => ({ ...p, chosen: false }))}
                           className={`lift rounded-full border px-5.5 py-2.5 text-sm font-bold ${
                             printed.chosen === false
-                              ? "border-accento bg-accento text-crema"
-                              : "border-bordo bg-white text-inchiostro-soft"
+                              ? "border-accent bg-accent text-cream"
+                              : "border-border bg-white text-ink-soft"
                           }`}
                         >
                           Solo eBook
@@ -437,7 +437,7 @@ export default function Configurator({ brand, whims }) {
                       </div>
 
                       {printed.chosen === true && (
-                        <p className="anim-pop mt-4 rounded-[14px] bg-white p-4 text-sm font-semibold text-inchiostro-soft">
+                        <p className="anim-pop mt-4 rounded-[14px] bg-white p-4 text-sm font-semibold text-ink-soft">
                           {/* Template literal, not JSX text over multiple lines: across a
                           JSX expression the space after the closing brace collapses,
                           and "brossura" and "resta" end up glued together. */}
@@ -453,7 +453,7 @@ export default function Configurator({ brand, whims }) {
                       type="button"
                       onClick={generate}
                       disabled={!canGenerate || loading}
-                      className="lift rounded-full bg-accento px-8 py-4 text-[1.05rem] font-bold text-crema shadow-[0_10px_24px_rgba(233,109,79,0.3)] disabled:opacity-40"
+                      className="lift rounded-full bg-accent px-8 py-4 text-[1.05rem] font-bold text-cream shadow-[0_10px_24px_rgba(233,109,79,0.3)] disabled:opacity-40"
                     >
                       {loading ? "Stiamo scrivendo…" : "Genera l'anteprima gratis"}
                     </button>
@@ -464,7 +464,7 @@ export default function Configurator({ brand, whims }) {
 
             <div className="hidden md:block">
               <LiveCover title={coverTitle} initial={initial} brandName={brand.name} />
-              <p className="mt-3 text-center text-xs font-bold text-inchiostro-tenue">
+              <p className="mt-3 text-center text-xs font-bold text-ink-muted">
                 Anteprima copertina dal vivo
               </p>
             </div>
@@ -472,15 +472,15 @@ export default function Configurator({ brand, whims }) {
 
           {loading && (
             <div className="mt-8 flex items-center justify-center gap-3" role="status">
-              <span className="anim-spinny inline-block h-5.5 w-5.5 rounded-full border-3 border-bordo border-t-accento" />
-              <span className="font-semibold text-inchiostro-soft">
+              <span className="anim-spinny inline-block h-5.5 w-5.5 rounded-full border-3 border-border border-t-accento" />
+              <span className="font-semibold text-ink-soft">
                 Stiamo scrivendo la storia di {cleanName || "tuo figlio"}…
               </span>
             </div>
           )}
 
           {error && (
-            <p className="mt-6 rounded-[14px] bg-accento/10 p-4 text-center font-semibold text-accento">
+            <p className="mt-6 rounded-[14px] bg-accent/10 p-4 text-center font-semibold text-accent">
               {error}
             </p>
           )}
@@ -488,7 +488,7 @@ export default function Configurator({ brand, whims }) {
       </section>
 
       {story && (
-        <div id="anteprima">
+        <div id="preview">
           <StoryPreview
             story={story}
             name={cleanName}

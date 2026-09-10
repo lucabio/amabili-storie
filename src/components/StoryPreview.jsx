@@ -3,7 +3,7 @@
 import { unstable_rethrow } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { buy } from "@/app/checkout/azioni";
+import { buy } from "@/app/checkout/actions";
 import { saveLead } from "@/lib/lead/actions";
 import { formatPrice, PRICE_LIST } from "@/lib/orders/schema";
 
@@ -75,17 +75,17 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
   }
 
   return (
-    <section className="relative flex min-h-svh snap-start flex-col justify-center overflow-hidden bg-scuro px-4 py-[clamp(48px,6vw,80px)]">
+    <section className="relative flex min-h-svh snap-start flex-col justify-center overflow-hidden bg-dark px-4 py-[clamp(48px,6vw,80px)]">
       <div
-        className="pointer-events-none absolute -top-40 -right-25 h-100 w-100 rounded-full bg-accento/15"
+        className="pointer-events-none absolute -top-40 -right-25 h-100 w-100 rounded-full bg-accent/15"
         aria-hidden="true"
       />
 
       <div className="relative mx-auto max-w-[1080px]">
-        <h2 className="text-center font-display text-[clamp(1.7rem,3.4vw,2.2rem)] font-semibold text-crema">
+        <h2 className="text-center font-display text-[clamp(1.7rem,3.4vw,2.2rem)] font-semibold text-cream">
           «{story.titolo}»
         </h2>
-        <p className="mt-2 mb-10 text-center font-semibold text-accento-soft">
+        <p className="mt-2 mb-10 text-center font-semibold text-accent-soft">
           Ecco le prime pagine della storia di {name}
           {" — l'eBook completo ha 20–24 pagine illustrate"}
         </p>
@@ -94,34 +94,34 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
           {story.pagine.map((page, index) => (
             <article
               key={index}
-              className="anim-pop flex min-h-[240px] flex-col rounded-[18px] bg-crema p-6.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
+              className="anim-pop flex min-h-[240px] flex-col rounded-[18px] bg-cream p-6.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
             >
-              <span className="mb-3 text-[11px] font-extrabold tracking-[0.16em] text-accento uppercase">
+              <span className="mb-3 text-[11px] font-extrabold tracking-[0.16em] text-accent uppercase">
                 Pagina {index + 1}
               </span>
-              <p className="leading-[1.7] font-medium text-inchiostro">{page.testo}</p>
+              <p className="leading-[1.7] font-medium text-ink">{page.testo}</p>
               <div className="mt-auto flex justify-center gap-1.5 pt-4.5" aria-hidden="true">
-                <span className="h-1.5 w-1.5 rounded-full bg-accento" />
-                <span className="h-1.5 w-1.5 rounded-full bg-accento-soft" />
-                <span className="h-1.5 w-1.5 rounded-full bg-pergamena" />
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                <span className="h-1.5 w-1.5 rounded-full bg-accent-soft" />
+                <span className="h-1.5 w-1.5 rounded-full bg-parchment" />
               </div>
             </article>
           ))}
         </div>
 
         {story.fraseAncora && (
-          <p className="mx-auto mt-8 max-w-[640px] text-center font-display text-[1.15rem] text-accento-soft">
+          <p className="mx-auto mt-8 max-w-[640px] text-center font-display text-[1.15rem] text-accent-soft">
             La frase-àncora da riusare nella vita reale: «{story.fraseAncora}»
           </p>
         )}
 
-        <div className="mx-auto mt-10 max-w-[540px] rounded-[22px] border border-dashed border-accento-soft/60 bg-crema/8 p-7 text-center">
+        <div className="mx-auto mt-10 max-w-[540px] rounded-[22px] border border-dashed border-accent-soft/60 bg-cream/8 p-7 text-center">
           {bought ? (
             <div className="anim-pop">
-              <p className="font-display text-[1.3rem] font-semibold text-accento-soft">
+              <p className="font-display text-[1.3rem] font-semibold text-accent-soft">
                 Il libro di {name} è in lavorazione!
               </p>
-              <p className="mt-2.5 leading-relaxed font-medium text-pergamena">
+              <p className="mt-2.5 leading-relaxed font-medium text-parchment">
                 Ti abbiamo scritto una mail. La rileggiamo con cura prima che arrivi: ti
                 avvisiamo appena è pronta.
               </p>
@@ -130,10 +130,10 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
             <div>
               {brand.acceptsPayments ? (
                 <>
-                  <p className="font-display text-[1.3rem] font-semibold text-crema">
+                  <p className="font-display text-[1.3rem] font-semibold text-cream">
                     Porta a casa la storia intera
                   </p>
-                  <p className="mt-2.5 leading-relaxed font-medium text-pergamena">
+                  <p className="mt-2.5 leading-relaxed font-medium text-parchment">
                     20–24 pagine illustrate, la stessa cura che hai appena letto, rilette da
                     un occhio umano prima di arrivarti.
                   </p>
@@ -142,7 +142,7 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
                     {FORMAT_OPTIONS.map((option) => (
                       <label
                         key={option.format}
-                        className="flex cursor-pointer items-center gap-3 rounded-[14px] bg-crema px-4.5 py-3 font-semibold text-inchiostro"
+                        className="flex cursor-pointer items-center gap-3 rounded-[14px] bg-cream px-4.5 py-3 font-semibold text-ink"
                       >
                         <input
                           type="radio"
@@ -150,10 +150,10 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
                           value={option.format}
                           checked={format === option.format}
                           onChange={() => setFormat(option.format)}
-                          className="accent-accento"
+                          className="accent-accent"
                         />
                         <span className="flex-1">{option.label}</span>
-                        <span className="font-display text-accento">
+                        <span className="font-display text-accent">
                           {formatPrice(PRICE_LIST[option.format].priceCents)}
                         </span>
                       </label>
@@ -162,10 +162,10 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
                 </>
               ) : (
                 <>
-                  <p className="font-display text-[1.3rem] font-semibold text-crema">
+                  <p className="font-display text-[1.3rem] font-semibold text-cream">
                     Il libro completo di {name}, in regalo
                   </p>
-                  <p className="mt-2.5 leading-relaxed font-medium text-pergamena">
+                  <p className="mt-2.5 leading-relaxed font-medium text-parchment">
                     Lascia la tua email: scriviamo le altre pagine, le rileggiamo con cura, e
                     te le mandiamo — gratis, un pensiero di {brand.name}.
                   </p>
@@ -179,12 +179,12 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="La tua email"
-                  className="min-w-[200px] flex-1 rounded-full bg-crema px-5.5 py-3.5 font-semibold text-inchiostro"
+                  className="min-w-[200px] flex-1 rounded-full bg-cream px-5.5 py-3.5 font-semibold text-ink"
                 />
                 <button
                   type="submit"
                   disabled={!emailValid || pending}
-                  className="lift rounded-full bg-accento px-7 py-3.5 font-bold text-crema disabled:opacity-40"
+                  className="lift rounded-full bg-accent px-7 py-3.5 font-bold text-cream disabled:opacity-40"
                 >
                   {pending
                     ? "Un attimo…"
@@ -195,10 +195,10 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
               </form>
 
               {error && (
-                <p className="mt-3.5 text-sm font-semibold text-accento-soft">{error}</p>
+                <p className="mt-3.5 text-sm font-semibold text-accent-soft">{error}</p>
               )}
 
-              <p className="mt-3.5 text-xs font-semibold text-inchiostro-tenue">
+              <p className="mt-3.5 text-xs font-semibold text-ink-muted">
                 Niente spam, promesso.
                 {brand.acceptsPayments && " Pagamento sicuro, ricevi il libro via email."}
               </p>
