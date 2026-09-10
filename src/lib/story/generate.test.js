@@ -4,16 +4,16 @@ import { BRAND_DEFAULT } from "@/lib/brand/schema";
 import { AiUnavailable, generateStory, PREVIEW_PAGES } from "@/lib/story/generate";
 
 const PARAMS = {
-  capriccio: "sonno",
-  capriccioLibero: "",
-  famiglia: "umani",
-  animale: null,
-  nome: "Futura",
-  genere: "bimba",
-  eta: 4,
-  mamma: "",
-  papa: "",
-  dettaglio: "",
+  whim: "sonno",
+  customWhim: "",
+  family: "umani",
+  animal: null,
+  name: "Futura",
+  gender: "bimba",
+  age: 4,
+  mother: "",
+  father: "",
+  detail: "",
   brand: "amabili",
 };
 
@@ -31,7 +31,7 @@ describe("generateStory without AI configured", () => {
     });
 
     expect(source).toBe("fallback");
-    expect(story.pagine).toHaveLength(PREVIEW_PAGES);
+    expect(story.pages).toHaveLength(PREVIEW_PAGES);
   });
 
   it("the purchased book fails instead: whoever paid cannot receive a template", async () => {

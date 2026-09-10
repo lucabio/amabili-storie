@@ -83,15 +83,15 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
 
       <div className="relative mx-auto max-w-[1080px]">
         <h2 className="text-center font-display text-[clamp(1.7rem,3.4vw,2.2rem)] font-semibold text-cream">
-          «{story.titolo}»
+          «{story.title}»
         </h2>
         <p className="mt-2 mb-10 text-center font-semibold text-accent-soft">
-          Ecco le prime pagine della storia di {name}
+          Ecco le prime pages della storia di {name}
           {" — l'eBook completo ha 20–24 pagine illustrate"}
         </p>
 
         <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-5">
-          {story.pagine.map((page, index) => (
+          {story.pages.map((page, index) => (
             <article
               key={index}
               className="anim-pop flex min-h-[240px] flex-col rounded-[18px] bg-cream p-6.5 shadow-[0_18px_40px_rgba(0,0,0,0.28)]"
@@ -99,7 +99,7 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
               <span className="mb-3 text-[11px] font-extrabold tracking-[0.16em] text-accent uppercase">
                 Pagina {index + 1}
               </span>
-              <p className="leading-[1.7] font-medium text-ink">{page.testo}</p>
+              <p className="leading-[1.7] font-medium text-ink">{page.text}</p>
               <div className="mt-auto flex justify-center gap-1.5 pt-4.5" aria-hidden="true">
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                 <span className="h-1.5 w-1.5 rounded-full bg-accent-soft" />
@@ -109,9 +109,9 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
           ))}
         </div>
 
-        {story.fraseAncora && (
+        {story.anchorPhrase && (
           <p className="mx-auto mt-8 max-w-[640px] text-center font-display text-[1.15rem] text-accent-soft">
-            La frase-àncora da riusare nella vita reale: «{story.fraseAncora}»
+            La frase-àncora da riusare nella vita reale: «{story.anchorPhrase}»
           </p>
         )}
 
@@ -134,7 +134,7 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
                     Porta a casa la storia intera
                   </p>
                   <p className="mt-2.5 leading-relaxed font-medium text-parchment">
-                    20–24 pagine illustrate, la stessa cura che hai appena letto, rilette da
+                    20–24 pages illustrate, la stessa cura che hai appena letto, rilette da
                     un occhio umano prima di arrivarti.
                   </p>
 
@@ -146,7 +146,7 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
                       >
                         <input
                           type="radio"
-                          name="formato"
+                          name="format"
                           value={option.format}
                           checked={format === option.format}
                           onChange={() => setFormat(option.format)}
@@ -166,7 +166,7 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
                     Il libro completo di {name}, in regalo
                   </p>
                   <p className="mt-2.5 leading-relaxed font-medium text-parchment">
-                    Lascia la tua email: scriviamo le altre pagine, le rileggiamo con cura, e
+                    Lascia la tua email: scriviamo le altre pages, le rileggiamo con cura, e
                     te le mandiamo — gratis, un pensiero di {brand.name}.
                   </p>
                 </>

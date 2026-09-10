@@ -97,14 +97,14 @@ export default function Hero({ brand }) {
       <div className="relative mx-auto grid w-full max-w-[1080px] grid-cols-[repeat(auto-fit,minmax(300px,1fr))] items-center gap-12 px-6 py-[clamp(48px,7vw,88px)]">
         <div className="anim-rise">
           <p className="mb-4 text-[13px] font-extrabold tracking-[0.16em] text-accent uppercase">
-            {brand.hero.occhiello}
+            {brand.hero.eyebrow}
           </p>
           <h1 className="max-w-[560px] font-display text-[clamp(2.2rem,5.4vw,3.8rem)] leading-[1.08] font-semibold">
-            {brand.hero.titolo}{" "}
-            <span className="text-accent">{brand.hero.titoloAccento}</span>
+            {brand.hero.title}{" "}
+            <span className="text-accent">{brand.hero.titleAccent}</span>
           </h1>
           <p className="mt-5 max-w-[480px] text-lg leading-relaxed font-medium text-ink-soft">
-            {brand.hero.sottotitolo}
+            {brand.hero.subtitle}
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">

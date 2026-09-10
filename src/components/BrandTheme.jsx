@@ -9,9 +9,9 @@
  */
 export default function BrandTheme({ brand, children }) {
   const style = {
-    "--brand-accent": brand.theme.accento,
-    "--brand-accent-soft": brand.theme.accentoSoft,
-    "--brand-dark": brand.theme.scuro,
+    "--brand-accent": brand.theme.accent,
+    "--brand-accent-soft": brand.theme.accentSoft,
+    "--brand-dark": brand.theme.dark,
   };
 
   return (

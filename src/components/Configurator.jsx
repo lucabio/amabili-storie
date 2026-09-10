@@ -10,11 +10,11 @@ import { composeTitle } from "@/lib/domain/whims";
 import { formatPrice, PRICE_LIST } from "@/lib/orders/schema";
 
 const EMPTY_TRAITS = {
-  capelli: "",
-  coloreCapelli: "",
-  coloreOcchi: "",
-  corporatura: "",
-  descrizione: "",
+  hair: "",
+  hairColor: "",
+  eyeColor: "",
+  build: "",
+  description: "",
 };
 
 const STEP_LABELS = ["Capriccio", "Famiglia", "Protagonisti"];
@@ -65,20 +65,20 @@ function BackButton(props) {
 export default function Configurator({ brand, whims }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    capriccio: null,
-    capriccioLibero: "",
-    famiglia: null,
-    animale: null,
-    nome: "",
-    genere: "bimbo",
-    eta: "4",
-    mamma: "",
-    papa: "",
-    dettaglio: "",
-    tratti: {
-      bambino: { ...EMPTY_TRAITS },
-      mamma: { ...EMPTY_TRAITS },
-      papa: { ...EMPTY_TRAITS },
+    whim: null,
+    customWhim: "",
+    family: null,
+    animal: null,
+    name: "",
+    gender: "bimbo",
+    age: "4",
+    mother: "",
+    father: "",
+    detail: "",
+    traits: {
+      child: { ...EMPTY_TRAITS },
+      mother: { ...EMPTY_TRAITS },
+      father: { ...EMPTY_TRAITS },
     },
   });
   const [printed, setPrinted] = useState({ chosen: null, format: "brossura" });
@@ -92,14 +92,14 @@ export default function Configurator({ brand, whims }) {
   const updateTrait = (character, field) => (event) =>
     setForm((previous) => ({
       ...previous,
-      tratti: {
-        ...previous.tratti,
-        [character]: { ...previous.tratti[character], [field]: event.target.value },
+      traits: {
+        ...previous.traits,
+        [character]: { ...previous.traits[character], [field]: event.target.value },
       },
     }));
 
-  const chosenWhim = whims.find((whim) => whim.id === form.capriccio);
-  const cleanName = form.nome.trim();
+  const chosenWhim = whims.find((whim) => whim.id === form.whim);
+  const cleanName = form.name.trim();
 
   // The "Solo eBook" button is not decorative: it is the default choice, and
   // "Sì, aggiungi!" moves it to the format picked in the dropdown. This is only
@@ -110,10 +110,10 @@ export default function Configurator({ brand, whims }) {
   const initial = (cleanName[0] || "A").toUpperCase();
 
   const step1Done =
-    Boolean(form.capriccio) &&
-    (form.capriccio !== "altro" || form.capriccioLibero.trim().length > 0);
+    Boolean(form.whim) &&
+    (form.whim !== "altro" || form.customWhim.trim().length > 0);
   const step2Done =
-    Boolean(form.famiglia) && (form.famiglia !== "animali" || Boolean(form.animale));
+    Boolean(form.family) && (form.family !== "animali" || Boolean(form.animal));
   const canGenerate = step1Done && step2Done && cleanName.length > 0;
 
   async function generate() {
@@ -193,10 +193,10 @@ export default function Configurator({ brand, whims }) {
             <div>
               {step === 1 && (
                 <div className="anim-pop">
-                  <p className="mb-4 text-[1.1rem] font-bold">Quale capriccio vuoi risolvere?</p>
+                  <p className="mb-4 text-[1.1rem] font-bold">Quale whim vuoi risolvere?</p>
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2.5">
                     {whims.map((whim) => {
-                      const active = form.capriccio === whim.id;
+                      const active = form.whim === whim.id;
                       return (
                         <Chip
                           key={whim.id}
@@ -204,7 +204,7 @@ export default function Configurator({ brand, whims }) {
                           onClick={() =>
                             setForm((previous) => ({
                               ...previous,
-                              capriccio: whim.id,
+                              whim: whim.id,
                             }))
                           }
                         >
@@ -219,11 +219,11 @@ export default function Configurator({ brand, whims }) {
                     })}
                   </div>
 
-                  {form.capriccio === "altro" && (
+                  {form.whim === "altro" && (
                     <input
                       className={`${inputClasses} mt-3.5 w-full`}
                       placeholder="Raccontacelo tu: es. non vuole lavarsi i denti…"
-                      value={form.capriccioLibero}
+                      value={form.customWhim}
                       onChange={update("capriccioLibero")}
                     />
                   )}
@@ -239,13 +239,13 @@ export default function Configurator({ brand, whims }) {
               {step === 2 && (
                 <div className="anim-pop">
                   <p className="mb-4 text-[1.1rem] font-bold">
-                    Come vuoi rappresentare la famiglia?
+                    Come vuoi rappresentare la family?
                   </p>
                   <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-2.5">
                     <Chip
-                      active={form.famiglia === "umani"}
+                      active={form.family === "umani"}
                       onClick={() =>
-                        setForm((p) => ({ ...p, famiglia: "umani", animale: null }))
+                        setForm((p) => ({ ...p, family: "umani", animal: null }))
                       }
                     >
                       <span className="block">
@@ -254,8 +254,8 @@ export default function Configurator({ brand, whims }) {
                       </span>
                     </Chip>
                     <Chip
-                      active={form.famiglia === "animali"}
-                      onClick={() => setForm((p) => ({ ...p, famiglia: "animali" }))}
+                      active={form.family === "animali"}
+                      onClick={() => setForm((p) => ({ ...p, family: "animali" }))}
                     >
                       <span className="block">
                         <span className="block font-display text-[1.05rem]">
@@ -266,13 +266,13 @@ export default function Configurator({ brand, whims }) {
                     </Chip>
                   </div>
 
-                  {form.famiglia === "animali" && (
+                  {form.family === "animali" && (
                     <div className="mb-4 grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2">
                       {ANIMALS.map((animal) => (
                         <Chip
                           key={animal.id}
-                          active={form.animale === animal.id}
-                          onClick={() => setForm((p) => ({ ...p, animale: animal.id }))}
+                          active={form.animal === animal.id}
+                          onClick={() => setForm((p) => ({ ...p, animal: animal.id }))}
                         >
                           {animal.plural}
                         </Chip>
@@ -296,14 +296,14 @@ export default function Configurator({ brand, whims }) {
                     <input
                       className={inputClasses}
                       placeholder="Nome del bambino/a *"
-                      value={form.nome}
-                      onChange={update("nome")}
+                      value={form.name}
+                      onChange={update("name")}
                     />
                     <div className="flex gap-2">
                       <select
                         className={`${inputClasses} flex-1`}
-                        value={form.genere}
-                        onChange={update("genere")}
+                        value={form.gender}
+                        onChange={update("gender")}
                         aria-label="Genere"
                       >
                         <option value="bimbo">Bimbo</option>
@@ -311,8 +311,8 @@ export default function Configurator({ brand, whims }) {
                       </select>
                       <select
                         className={`${inputClasses} flex-1`}
-                        value={form.eta}
-                        onChange={update("eta")}
+                        value={form.age}
+                        onChange={update("age")}
                         aria-label="Età"
                       >
                         {[2, 3, 4, 5, 6, 7].map((years) => (
@@ -325,20 +325,20 @@ export default function Configurator({ brand, whims }) {
                     <input
                       className={inputClasses}
                       placeholder="Nome della mamma"
-                      value={form.mamma}
-                      onChange={update("mamma")}
+                      value={form.mother}
+                      onChange={update("mother")}
                     />
                     <input
                       className={inputClasses}
                       placeholder="Nome del papà"
-                      value={form.papa}
-                      onChange={update("papa")}
+                      value={form.father}
+                      onChange={update("father")}
                     />
                     <input
                       className={`${inputClasses} col-span-full`}
                       placeholder="Cosa adora? (es. la pasta al pesto, i dinosauri…)"
-                      value={form.dettaglio}
-                      onChange={update("dettaglio")}
+                      value={form.detail}
+                      onChange={update("detail")}
                     />
                   </div>
 
@@ -348,7 +348,7 @@ export default function Configurator({ brand, whims }) {
                         <span className="inline-block transition-transform group-open:rotate-90">
                           ›
                         </span>
-                        Aggiungi qualche dettaglio — facoltativo
+                        Aggiungi qualche detail — facoltativo
                       </span>
                     </summary>
                     <p className="mt-2 mb-4 text-xs font-medium text-ink-muted">
@@ -358,18 +358,18 @@ export default function Configurator({ brand, whims }) {
                     <div className="grid gap-3">
                       <CharacterTraits
                         title={`Aspetto di ${cleanName || "chi vive la storia"}`}
-                        values={form.tratti.bambino}
-                        onChange={(field) => updateTrait("bambino", field)}
+                        values={form.traits.child}
+                        onChange={(field) => updateTrait("child", field)}
                       />
                       <CharacterTraits
                         title="Aspetto della mamma"
-                        values={form.tratti.mamma}
-                        onChange={(field) => updateTrait("mamma", field)}
+                        values={form.traits.mother}
+                        onChange={(field) => updateTrait("mother", field)}
                       />
                       <CharacterTraits
                         title="Aspetto del papà"
-                        values={form.tratti.papa}
-                        onChange={(field) => updateTrait("papa", field)}
+                        values={form.traits.father}
+                        onChange={(field) => updateTrait("father", field)}
                       />
                     </div>
                   </details>
@@ -390,7 +390,7 @@ export default function Configurator({ brand, whims }) {
                             htmlFor="printed-format"
                             className="mb-2 block text-[0.9rem] font-semibold"
                           >
-                            Scegli formato:
+                            Scegli format:
                           </label>
                           <select
                             id="printed-format"

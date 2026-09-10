@@ -24,8 +24,8 @@ function escapeHtml(value) {
 }
 
 function shell({ brand, title, body, button }) {
-  const accent = escapeHtml(brand.theme.accento);
-  const dark = escapeHtml(brand.theme.scuro);
+  const accent = escapeHtml(brand.theme.accent);
+  const dark = escapeHtml(brand.theme.dark);
   const brandName = escapeHtml(brand.name);
 
   return `<!doctype html>

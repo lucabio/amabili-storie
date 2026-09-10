@@ -23,16 +23,16 @@ const brandFormSchema = z.object({
   name: z.string().trim().min(1, "Serve il nome del merchant"),
   active: z.boolean(),
   theme: z.object({
-    accento: hexColor,
-    accentoSoft: hexColor,
-    scuro: hexColor,
+    accent: hexColor,
+    accentSoft: hexColor,
+    dark: hexColor,
   }),
   logoUrl: z.union([z.url(), z.literal("")]).nullable(),
   hero: z.object({
-    occhiello: z.string().trim().min(1),
-    titolo: z.string().trim().min(1),
-    titoloAccento: z.string().trim().min(1),
-    sottotitolo: z.string().trim().min(1),
+    eyebrow: z.string().trim().min(1),
+    title: z.string().trim().min(1),
+    titleAccent: z.string().trim().min(1),
+    subtitle: z.string().trim().min(1),
     cta: z.string().trim().min(1),
   }),
   guidePrompt: z.string().trim().nullable(),
@@ -51,30 +51,30 @@ export async function saveBrand(_previousState, formData) {
   const user = await adminUser();
   if (!user) redirect("/admin/login");
 
-  const chosenWhims = formData.getAll("capricci").filter(Boolean);
+  const chosenWhims = formData.getAll("whims").filter(Boolean);
 
   const parsed = brandFormSchema.safeParse({
     id: text(formData, "id") || null,
     slug: text(formData, "slug"),
-    name: text(formData, "nome"),
-    active: formData.get("attivo") === "on",
+    name: text(formData, "name"),
+    active: formData.get("active") === "on",
     theme: {
-      accento: text(formData, "accento"),
-      accentoSoft: text(formData, "accentoSoft"),
-      scuro: text(formData, "scuro"),
+      accent: text(formData, "accent"),
+      accentSoft: text(formData, "accentSoft"),
+      dark: text(formData, "dark"),
     },
     logoUrl: text(formData, "logoUrl") || null,
     hero: {
-      occhiello: text(formData, "occhiello"),
-      titolo: text(formData, "titolo"),
-      titoloAccento: text(formData, "titoloAccento"),
-      sottotitolo: text(formData, "sottotitolo"),
+      eyebrow: text(formData, "eyebrow"),
+      title: text(formData, "title"),
+      titleAccent: text(formData, "titleAccent"),
+      subtitle: text(formData, "subtitle"),
       cta: text(formData, "cta"),
     },
-    guidePrompt: text(formData, "promptGuida") || null,
+    guidePrompt: text(formData, "guidePrompt") || null,
     whims: chosenWhims.length > 0 ? chosenWhims : null,
-    showPrices: formData.get("mostraPrezzi") === "on",
-    acceptsPayments: formData.get("accettaPagamenti") === "on",
+    showPrices: formData.get("showPrices") === "on",
+    acceptsPayments: formData.get("acceptsPayments") === "on",
   });
 
   if (!parsed.success) {
@@ -105,20 +105,20 @@ export async function saveBrand(_previousState, formData) {
     // home would keep working, but it would stop being editable from here, and
     // nobody would understand why.
     slug: isMainSite ? BRAND_DEFAULT.slug : data.slug,
-    nome: data.name,
-    attivo: isMainSite ? true : data.active,
-    tema: data.theme,
+    name: data.name,
+    active: isMainSite ? true : data.active,
+    theme: data.theme,
     logo_url: data.logoUrl || null,
     hero: data.hero,
-    prompt_guida: data.guidePrompt,
-    capricci: data.whims,
+    guide_prompt: data.guidePrompt,
+    whims: data.whims,
     // A price list nobody can pay is inconsistent: we never write
     // `mostra_prezzi: true` together with `accetta_pagamenti: false`. This
     // Server Action is an HTTP endpoint reachable directly (a form disabled in
     // the UI is not enough), so we correct it here, the same way `brandSchema`
     // corrects it on read — two sides of the same rule, not two different rules.
-    mostra_prezzi: data.acceptsPayments && data.showPrices,
-    accetta_pagamenti: data.acceptsPayments,
+    show_prices: data.acceptsPayments && data.showPrices,
+    accepts_payments: data.acceptsPayments,
   };
 
   const { error } = data.id

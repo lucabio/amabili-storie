@@ -55,7 +55,7 @@ async function loadOrder(orderId) {
   if (!db) throw new FatalError("Supabase non è configurato.");
 
   const { data: order, error } = await db
-    .from("ordini")
+    .from("orders")
     .select("*")
     .eq("id", orderId)
     .maybeSingle();
@@ -90,17 +90,17 @@ async function createGeneratingStory(order) {
   const db = createAdminSupabase();
 
   const row = {
-    ordine_id: order.id,
+    order_id: order.id,
     brand_id: order.brand_id,
     email: order.email,
-    parametri: order.parametri,
-    contenuto: {},
-    fonte: "ai",
-    stato: "in_generazione",
-    errore: null,
-    note_revisione: null,
-    revisionata_da: null,
-    revisionata_il: null,
+    params: order.params,
+    content: {},
+    source: "ai",
+    state: "in_generazione",
+    error: null,
+    review_notes: null,
+    reviewed_by: null,
+    reviewed_at: null,
     run_id: workflowRunId,
   };
 
@@ -111,20 +111,20 @@ async function createGeneratingStory(order) {
   // keeps its id — and that id is what the link in the email already sent to the
   // parent points to, back when the story had reached approval or rejection.
   const { data: existing, error: readError } = await db
-    .from("storie")
+    .from("stories")
     .select("id")
-    .eq("ordine_id", order.id)
+    .eq("order_id", order.id)
     .maybeSingle();
 
   if (readError) throw new Error(`Lettura storia esistente fallita: ${readError.message}`);
 
   if (existing) {
-    const { error } = await db.from("storie").update(row).eq("id", existing.id);
+    const { error } = await db.from("stories").update(row).eq("id", existing.id);
     if (error) throw new Error(`Aggiornamento storia fallito: ${error.message}`);
     return existing.id;
   }
 
-  const { data, error } = await db.from("storie").insert(row).select("id").single();
+  const { data, error } = await db.from("stories").insert(row).select("id").single();
 
   if (error) throw new Error(`Creazione storia fallita: ${error.message}`);
   return data.id;
@@ -134,7 +134,7 @@ async function notifyStoryStarted(order, brand) {
   "use step";
 
   const { subject, html } = storyInProgressMail({
-    name: order.parametri.nome,
+    name: order.params.name,
     brand,
   });
 
@@ -147,7 +147,7 @@ async function writeText(order, brand) {
   try {
     // allowFallback: false — whoever paid does not get a template.
     const { story } = await generateStory({
-      params: order.parametri,
+      params: order.params,
       brand,
       pageCount: BOOK_PAGES,
       allowFallback: false,
@@ -165,13 +165,13 @@ async function depositInQueue(storyId, content) {
 
   const db = createAdminSupabase();
   const { error } = await db
-    .from("storie")
+    .from("stories")
     .update({
-      contenuto: content,
+      content: content,
       // Written once and never touched again: it is the AI's version, the one to
       // compare the manual corrections against.
-      contenuto_originale: content,
-      stato: "in_revisione",
+      original_content: content,
+      state: "in_revisione",
     })
     .eq("id", storyId);
 
@@ -188,8 +188,8 @@ async function markFailed(storyId, message) {
   try {
     const db = createAdminSupabase();
     await db
-      .from("storie")
-      .update({ stato: "fallita", errore: message })
+      .from("stories")
+      .update({ state: "fallita", error: message })
       .eq("id", storyId);
   } catch {
     // Deliberately ignored: see the comment above.

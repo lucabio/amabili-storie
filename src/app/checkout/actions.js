@@ -58,17 +58,17 @@ export async function buy(rawData) {
   const priceCents = brand.acceptsPayments ? order.priceCents : 0;
 
   const { data: row, error } = await db
-    .from("ordini")
+    .from("orders")
     .insert({
       brand_id: brand.id ?? null,
       email: order.email,
-      parametri: order.params,
-      formato: format,
-      prezzo_cents: priceCents,
-      stato: "pagato",
+      params: order.params,
+      format: format,
+      price_cents: priceCents,
+      state: "pagato",
       // Simulated until Stripe is here. When it arrives, its webhook will take
       // the same steps with `finto: false` — the queue will not notice.
-      finto: !realPayments,
+      fake: !realPayments,
     })
     .select("id")
     .single();

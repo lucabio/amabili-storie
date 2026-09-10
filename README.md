@@ -35,11 +35,11 @@ cp .env.example .env.local
 ### Becoming an admin
 
 The backoffice does not open up to anyone who signs up: you have to be listed in
-`amministratori`. Create the user from Supabase (Authentication → Add user, with **Auto
+`admins`. Create the user from Supabase (Authentication → Add user, with **Auto
 Confirm User**), then:
 
 ```sql
-insert into public.amministratori (utente_id, email)
+insert into public.admins (user_id, email)
 select id, email from auth.users where email = 'your@email.it';
 ```
 
@@ -80,24 +80,24 @@ hair, eyes, build, and a free-form description, which is the field worth the mos
 a **free 3-page preview**, instantly.
 
 If they buy, an order is created and a **durable workflow** starts that writes the 22 pages,
-tells the parent by email, and drops the story into `/admin/storie` waiting for review: **a
+tells the parent by email, and drops the story into `/admin/stories` waiting for review: **a
 purchased story does not reach a child without a human having read it**. There you correct it
 by hand and approve it. On approval the "your book is ready" email goes out, with a link to
-`/storie/<uuid>` — where the parent reads. The uuid is the key: a story that is not approved
+`/stories/<uuid>` — where the parent reads. The uuid is the key: a story that is not approved
 returns 404.
 
 A failed or rejected story is **regenerated** from the backoffice, reusing the same row: so
 the link already in the parent's hands keeps working.
 
-**A brand sells or gives away.** `accetta_pagamenti` decides whether there is a checkout:
+**A brand sells or gives away.** `accepts_payments` decides whether there is a checkout:
 Hotel Famiglia Serena gives the stories to its guests (no prices, order at zero price), the
 main site sells them. And the home page is a brand too (`slug = amabili`): it is edited from
 the backoffice, no deploy needed.
 
 **Payment does not exist yet.** While `STRIPE_SECRET_KEY` is absent every purchase is
-simulated: the order is created with `finto = true`, and the whole chain (order → workflow →
+simulated: the order is created with `fake = true`, and the whole chain (order → workflow →
 queue) works without charging anyone. They are all deleted with
-`delete from public.ordini where finto`.
+`delete from public.orders where fake`.
 
 **`RESEND_API_KEY` is now genuinely needed by the app**, not just by Supabase: the emails to
 the parent are sent by the portal, not by the authentication service.

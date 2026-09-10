@@ -30,9 +30,9 @@ export default async function CustomerArea() {
   // RLS filters by itself: only the stories with `email = auth.email()` show up.
   const { data } = supabase
     ? await supabase
-        .from("storie")
-        .select("id, stato, contenuto, creato_il")
-        .order("creato_il", { ascending: false })
+        .from("stories")
+        .select("id, state, content, created_at")
+        .order("created_at", { ascending: false })
     : { data: [] };
   const stories = data ?? [];
 
@@ -40,7 +40,7 @@ export default async function CustomerArea() {
     <main className="mx-auto max-w-[820px] px-6 py-12">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold">Le tue storie</h1>
+          <h1 className="font-display text-2xl font-semibold">Le tue stories</h1>
           <p className="mt-1 font-medium text-ink-soft">
             Ogni libro che hai creato, e a che punto è.
           </p>
@@ -71,8 +71,8 @@ export default async function CustomerArea() {
       ) : (
         <ul className="mt-8 flex flex-col gap-4">
           {stories.map((story) => {
-            const ready = story.stato === "approvata";
-            const title = story.contenuto?.titolo || "La tua storia";
+            const ready = story.state === "approvata";
+            const title = story.content?.title || "La tua storia";
             return (
               <li
                 key={story.id}
@@ -81,7 +81,7 @@ export default async function CustomerArea() {
                 <div className="min-w-[200px] flex-1">
                   <p className="font-display text-lg font-semibold">«{title}»</p>
                   <p className="mt-1 text-sm font-medium text-ink-muted">
-                    Creata il {shortDate(story.creato_il)}
+                    Creata il {shortDate(story.created_at)}
                   </p>
                 </div>
 
@@ -90,7 +90,7 @@ export default async function CustomerArea() {
                     ready ? "bg-accent text-cream" : "bg-cream-dark text-ink-soft"
                   }`}
                 >
-                  {CUSTOMER_STATE[story.stato] ?? "In lavorazione"}
+                  {CUSTOMER_STATE[story.state] ?? "In lavorazione"}
                 </span>
 
                 {ready ? (

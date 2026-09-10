@@ -11,53 +11,53 @@ import { ALIGNMENTS, FONT_KEYS } from "@/lib/story/layout";
  * writes "ha sempre in mano un dinosauro di gomma".
  */
 const characterTraitsSchema = z.object({
-  capelli: z.string().trim().max(60).default(""),
-  coloreCapelli: z.string().trim().max(60).default(""),
-  coloreOcchi: z.string().trim().max(60).default(""),
-  corporatura: z.string().trim().max(60).default(""),
-  descrizione: z.string().trim().max(200).default(""),
+  hair: z.string().trim().max(60).default(""),
+  hairColor: z.string().trim().max(60).default(""),
+  eyeColor: z.string().trim().max(60).default(""),
+  build: z.string().trim().max(60).default(""),
+  description: z.string().trim().max(200).default(""),
 });
 
 /** What the wizard sends to the server. Validated at the API boundary. */
 export const storyParamsSchema = z
   .object({
-    capriccio: whimIdSchema,
-    /** Required only when capriccio === "altro". */
-    capriccioLibero: z.string().trim().max(300).default(""),
+    whim: whimIdSchema,
+    /** Required only when whim === "altro". */
+    customWhim: z.string().trim().max(300).default(""),
 
-    famiglia: z.enum(["umani", "animali"]),
-    animale: animalIdSchema.nullish().default(null),
+    family: z.enum(["umani", "animali"]),
+    animal: animalIdSchema.nullish().default(null),
 
-    nome: z.string().trim().min(1, "Serve il nome del bambino").max(40),
-    genere: z.enum(["bimbo", "bimba"]),
-    eta: z.coerce.number().int().min(2).max(7),
+    name: z.string().trim().min(1, "Serve il nome del bambino").max(40),
+    gender: z.enum(["bimbo", "bimba"]),
+    age: z.coerce.number().int().min(2).max(7),
 
-    mamma: z.string().trim().max(40).default(""),
-    papa: z.string().trim().max(40).default(""),
-    dettaglio: z.string().trim().max(300).default(""),
+    mother: z.string().trim().max(40).default(""),
+    father: z.string().trim().max(40).default(""),
+    detail: z.string().trim().max(300).default(""),
 
     // prefault, not default: in Zod 4 `.default()` short-circuits and would
     // return the value as-is (e.g. `{}` would stay `{}` instead of applying the
     // defaults of the three characters). `.prefault()` runs it through the
     // inner schema.
-    tratti: z
+    traits: z
       .object({
-        bambino: characterTraitsSchema.prefault({}),
-        mamma: characterTraitsSchema.prefault({}),
-        papa: characterTraitsSchema.prefault({}),
+        child: characterTraitsSchema.prefault({}),
+        mother: characterTraitsSchema.prefault({}),
+        father: characterTraitsSchema.prefault({}),
       })
       .prefault({}),
 
     /** Brand slug: decides which guide prompt is applied to the story. */
     brand: z.string().trim().default("amabili"),
   })
-  .refine((params) => params.famiglia !== "animali" || Boolean(params.animale), {
+  .refine((params) => params.family !== "animali" || Boolean(params.animal), {
     message: "Scegli che animali sono",
-    path: ["animale"],
+    path: ["animal"],
   })
-  .refine((params) => params.capriccio !== "altro" || params.capriccioLibero.length > 0, {
+  .refine((params) => params.whim !== "altro" || params.customWhim.length > 0, {
     message: "Raccontaci qual è il capriccio",
-    path: ["capriccioLibero"],
+    path: ["customWhim"],
   });
 
 /**
@@ -66,18 +66,18 @@ export const storyParamsSchema = z
  */
 export function generatedStorySchema(pageCount) {
   return z.object({
-    titolo: z
+    title: z
       .string()
       .describe("Titolo del libro, evocativo, che contiene il nome del bambino."),
-    pagine: z
+    pages: z
       .array(
         z.object({
-          testo: z
+          text: z
             .string()
             .describe(
               "Il testo della pagina: 2-4 frasi, lette ad alta voce da un genitore.",
             ),
-          illustrazione: z
+          illustration: z
             .string()
             .describe(
               "Descrizione della scena da illustrare, in una frase. Nessun testo nell'immagine.",
@@ -86,12 +86,12 @@ export function generatedStorySchema(pageCount) {
       )
       .length(pageCount)
       .describe(`Esattamente ${pageCount} pagine, che seguono l'arco narrativo.`),
-    fraseAncora: z
+    anchorPhrase: z
       .string()
       .describe(
         "La frase-àncora: una frase breve, detta da un personaggio nella storia, che i genitori possono riusare nella vita reale.",
       ),
-    guidaGenitori: z
+    parentGuide: z
       .array(z.string())
       .min(2)
       .max(4)
@@ -110,18 +110,18 @@ const boxSchema = z.object({
 /** The text style of a page (block-level: it applies to the whole text). */
 const textStyleSchema = z.object({
   font: z.enum(FONT_KEYS).default("baloo2"),
-  dimensione: z.number().min(8).max(60).default(16),
-  colore: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colore non valido").default("#2b211d"),
-  allineamento: z.enum(ALIGNMENTS).default("center"),
-  grassetto: z.boolean().default(false),
-  corsivo: z.boolean().default(false),
+  size: z.number().min(8).max(60).default(16),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colore non valido").default("#2b211d"),
+  align: z.enum(ALIGNMENTS).default("center"),
+  bold: z.boolean().default(false),
+  italic: z.boolean().default(false),
 });
 
 /** The layout of one page. Absent = the defaults are used (DEFAULT_LAYOUT). */
 const pageLayoutSchema = z.object({
-  immagine: boxSchema.prefault({}),
-  testo: boxSchema.prefault({}),
-  stile: textStyleSchema.prefault({}),
+  image: boxSchema.prefault({}),
+  text: boxSchema.prefault({}),
+  style: textStyleSchema.prefault({}),
 });
 
 /**
@@ -131,22 +131,22 @@ const pageLayoutSchema = z.object({
  * book.
  */
 export const storyContentSchema = z.object({
-  titolo: z.string().trim().min(1, "Il titolo non può essere vuoto"),
-  pagine: z
+  title: z.string().trim().min(1, "Il titolo non può essere vuoto"),
+  pages: z
     .array(
       z.object({
-        testo: z.string().trim().min(1, "Una pagina non può essere vuota"),
-        illustrazione: z.string().trim().min(1, "Serve la descrizione della scena"),
+        text: z.string().trim().min(1, "Una pagina non può essere vuota"),
+        illustration: z.string().trim().min(1, "Serve la descrizione della scena"),
         // The image generated from the backoffice, if there is one.
         // `illustrazione` stays the scene description (the prompt); this is the
         // drawn result.
-        illustrazioneUrl: z.url().nullish(),
+        illustrationUrl: z.url().nullish(),
         // Layout: where image and text sit, and with what style. Absent on old
         // stories: we fall back to the defaults.
         layout: pageLayoutSchema.nullish(),
       }),
     )
     .min(1),
-  fraseAncora: z.string().trim().min(1, "La frase-àncora è il cuore del metodo"),
-  guidaGenitori: z.array(z.string().trim().min(1)).min(2).max(4),
+  anchorPhrase: z.string().trim().min(1, "La frase-àncora è il cuore del metodo"),
+  parentGuide: z.array(z.string().trim().min(1)).min(2).max(4),
 });

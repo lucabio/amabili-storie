@@ -25,9 +25,9 @@ export const brandSchema = z.object({
   // we need here.
   theme: z
     .object({
-      accento: hexColor.default("#e96d4f"),
-      accentoSoft: hexColor.default("#f6b27c"),
-      scuro: hexColor.default("#43302a"),
+      accent: hexColor.default("#e96d4f"),
+      accentSoft: hexColor.default("#f6b27c"),
+      dark: hexColor.default("#43302a"),
     })
     .prefault({}),
 
@@ -35,10 +35,10 @@ export const brandSchema = z.object({
 
   hero: z
     .object({
-      occhiello: z.string().default("Amabili Storie"),
-      titolo: z.string().default("Il libro personalizzato che risolve"),
-      titoloAccento: z.string().default("il capriccio di stasera"),
-      sottotitolo: z
+      eyebrow: z.string().default("Amabili Storie"),
+      title: z.string().default("Il libro personalizzato che risolve"),
+      titleAccent: z.string().default("il capriccio di stasera"),
+      subtitle: z
         .string()
         .default(
           "Tuo figlio diventa il protagonista di una storia illustrata, creata in pochi minuti, che lo aiuta davvero: dormire da solo, salutare il pannolino, accogliere il fratellino…",
@@ -100,15 +100,15 @@ export function brandFromRow(row) {
   const result = brandSchema.safeParse({
     id: row.id ?? null,
     slug: row.slug,
-    name: row.nome,
-    active: row.attivo,
-    theme: row.tema ?? undefined,
+    name: row.name,
+    active: row.active,
+    theme: row.theme ?? undefined,
     logoUrl: row.logo_url ?? null,
     hero: row.hero ?? undefined,
-    guidePrompt: row.prompt_guida ?? null,
-    whims: row.capricci ?? null,
-    showPrices: row.mostra_prezzi,
-    acceptsPayments: row.accetta_pagamenti,
+    guidePrompt: row.guide_prompt ?? null,
+    whims: row.whims ?? null,
+    showPrices: row.show_prices,
+    acceptsPayments: row.accepts_payments,
   });
 
   if (!result.success) {

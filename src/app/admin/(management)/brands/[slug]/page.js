@@ -32,15 +32,15 @@ export default async function EditMerchant({ params }) {
   const brand = {
     id: row.id,
     slug: row.slug,
-    name: row.nome,
-    active: row.attivo,
-    theme: { ...BRAND_DEFAULT.theme, ...(row.tema ?? {}) },
+    name: row.name,
+    active: row.active,
+    theme: { ...BRAND_DEFAULT.theme, ...(row.theme ?? {}) },
     logoUrl: row.logo_url ?? "",
     hero: { ...BRAND_DEFAULT.hero, ...(row.hero ?? {}) },
-    guidePrompt: row.prompt_guida ?? "",
-    whims: row.capricci,
-    showPrices: row.mostra_prezzi,
-    acceptsPayments: row.accetta_pagamenti,
+    guidePrompt: row.guide_prompt ?? "",
+    whims: row.whims,
+    showPrices: row.show_prices,
+    acceptsPayments: row.accepts_payments,
   };
 
   return <BrandForm brand={brand} />;

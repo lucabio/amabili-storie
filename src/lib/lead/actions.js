@@ -35,7 +35,7 @@ export async function saveLead(rawData) {
 
   const brand = await resolveBrand(result.data.brand);
 
-  const { error } = await db.from("lead").upsert(
+  const { error } = await db.from("leads").upsert(
     {
       email: result.data.email,
       brand_id: brand.id ?? null,

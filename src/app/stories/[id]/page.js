@@ -30,10 +30,10 @@ const readApprovedStory = cache(async (id) => {
   if (!db) return null;
 
   const { data, error } = await db
-    .from("storie")
+    .from("stories")
     .select("*, brands (*)")
     .eq("id", id)
-    .eq("stato", "approvata")
+    .eq("state", "approvata")
     .maybeSingle();
 
   if (error) {
@@ -48,7 +48,7 @@ async function validatedStory(id) {
   const story = await readApprovedStory(id);
   if (!story) return null;
 
-  const content = storyContentSchema.safeParse(story.contenuto);
+  const content = storyContentSchema.safeParse(story.content);
   if (!content.success) {
     console.error(`Contenuto della storia "${id}" non valido:`, content.error.issues);
     return null;
@@ -56,7 +56,7 @@ async function validatedStory(id) {
 
   return {
     content: content.data,
-    name: typeof story.parametri?.nome === "string" ? story.parametri.nome : "",
+    name: typeof story.params?.name === "string" ? story.params.name : "",
     brand: brandFromRow(story.brands) ?? BRAND_DEFAULT,
   };
 }
@@ -67,7 +67,7 @@ export async function generateMetadata({ params }) {
   const data = await validatedStory(id);
   if (!data) return { title: "Storia non trovata — Amabili Storie" };
 
-  return { title: `${data.content.titolo} — ${data.brand.name}` };
+  return { title: `${data.content.title} — ${data.brand.name}` };
 }
 
 export default async function StoryPage({ params }) {

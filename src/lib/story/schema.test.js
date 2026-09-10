@@ -5,11 +5,11 @@ import { buildPrompt } from "@/lib/story/prompt";
 import { storyParamsSchema } from "@/lib/story/schema";
 
 const BASE = {
-  capriccio: "sonno",
-  famiglia: "umani",
-  nome: "Futura",
-  genere: "bimba",
-  eta: 4,
+  whim: "sonno",
+  family: "umani",
+  name: "Futura",
+  gender: "bimba",
+  age: 4,
 };
 
 /** Today's prompt, built from the same domain pieces `buildPrompt` uses. */
@@ -29,10 +29,10 @@ describe("storyParamsSchema — traits", () => {
   it("they are all optional: leaving them empty does not break validation", () => {
     const params = storyParamsSchema.parse(BASE);
 
-    expect(params.tratti).toEqual({
-      bambino: { capelli: "", coloreCapelli: "", coloreOcchi: "", corporatura: "", descrizione: "" },
-      mamma: { capelli: "", coloreCapelli: "", coloreOcchi: "", corporatura: "", descrizione: "" },
-      papa: { capelli: "", coloreCapelli: "", coloreOcchi: "", corporatura: "", descrizione: "" },
+    expect(params.traits).toEqual({
+      child: { hair: "", hairColor: "", eyeColor: "", build: "", description: "" },
+      mother: { hair: "", hairColor: "", eyeColor: "", build: "", description: "" },
+      father: { hair: "", hairColor: "", eyeColor: "", build: "", description: "" },
     });
   });
 
@@ -41,33 +41,33 @@ describe("storyParamsSchema — traits", () => {
     // five keys of each character back, not a half-filled object.
     const params = storyParamsSchema.parse({
       ...BASE,
-      tratti: { bambino: { capelli: "ricci" } },
+      traits: { child: { hair: "ricci" } },
     });
 
-    expect(params.tratti.bambino).toEqual({
-      capelli: "ricci",
-      coloreCapelli: "",
-      coloreOcchi: "",
-      corporatura: "",
-      descrizione: "",
+    expect(params.traits.child).toEqual({
+      hair: "ricci",
+      hairColor: "",
+      eyeColor: "",
+      build: "",
+      description: "",
     });
-    expect(params.tratti.mamma).toEqual({
-      capelli: "",
-      coloreCapelli: "",
-      coloreOcchi: "",
-      corporatura: "",
-      descrizione: "",
+    expect(params.traits.mother).toEqual({
+      hair: "",
+      hairColor: "",
+      eyeColor: "",
+      build: "",
+      description: "",
     });
   });
 
   it("accepts the free-form description up to 200 characters", () => {
-    const descrizione = "a".repeat(200);
+    const description = "a".repeat(200);
     const params = storyParamsSchema.parse({
       ...BASE,
-      tratti: { bambino: { descrizione } },
+      traits: { child: { description } },
     });
 
-    expect(params.tratti.bambino.descrizione).toBe(descrizione);
+    expect(params.traits.child.description).toBe(description);
   });
 });
 
@@ -82,7 +82,7 @@ describe("buildPrompt — the traits", () => {
     const withoutTraits = storyParamsSchema.parse(BASE);
     const withEmptyTraits = storyParamsSchema.parse({
       ...BASE,
-      tratti: { bambino: {}, mamma: {}, papa: {} },
+      traits: { child: {}, mother: {}, father: {} },
     });
 
     expect(buildPrompt(withEmptyTraits, 3)).toBe(buildPrompt(withoutTraits, 3));
@@ -91,11 +91,11 @@ describe("buildPrompt — the traits", () => {
   it("a filled-in trait shows up in the prompt, with the right label", () => {
     const params = storyParamsSchema.parse({
       ...BASE,
-      tratti: {
-        bambino: {
-          capelli: "ricci",
-          coloreOcchi: "verdi",
-          descrizione: "ha sempre in mano un dinosauro di gomma",
+      traits: {
+        child: {
+          hair: "ricci",
+          eyeColor: "verdi",
+          description: "ha sempre in mano un dinosauro di gomma",
         },
       },
     });
@@ -111,7 +111,7 @@ describe("buildPrompt — the traits", () => {
   it("the empty fields of a partially filled character do not end up in the prompt", () => {
     const params = storyParamsSchema.parse({
       ...BASE,
-      tratti: { bambino: { capelli: "lisci" } },
+      traits: { child: { hair: "lisci" } },
     });
 
     const prompt = buildPrompt(params, 3);
@@ -125,16 +125,16 @@ describe("buildPrompt — the traits", () => {
   it("the mother's and father's traits use the name if filled in, otherwise the role", () => {
     const withNames = storyParamsSchema.parse({
       ...BASE,
-      mamma: "Silvia",
-      papa: "Luca",
-      tratti: { mamma: { capelli: "corti" }, papa: { capelli: "lunghi" } },
+      mother: "Silvia",
+      father: "Luca",
+      traits: { mother: { hair: "corti" }, father: { hair: "lunghi" } },
     });
     expect(buildPrompt(withNames, 3)).toContain("Aspetto di Silvia: capelli: corti.");
     expect(buildPrompt(withNames, 3)).toContain("Aspetto di Luca: capelli: lunghi.");
 
     const withoutNames = storyParamsSchema.parse({
       ...BASE,
-      tratti: { mamma: { capelli: "corti" }, papa: { capelli: "lunghi" } },
+      traits: { mother: { hair: "corti" }, father: { hair: "lunghi" } },
     });
     expect(buildPrompt(withoutNames, 3)).toContain("Aspetto della mamma: capelli: corti.");
     expect(buildPrompt(withoutNames, 3)).toContain("Aspetto del papà: capelli: lunghi.");

@@ -97,7 +97,7 @@ export default function BrandForm({ brand }) {
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Nome" error={errors.name?.[0]}>
             <input
-              name="nome"
+              name="name"
               required
               defaultValue={values.name}
               placeholder="Hotel Famiglia Serena"
@@ -134,7 +134,7 @@ export default function BrandForm({ brand }) {
         <div className="flex flex-wrap gap-6">
           {isMainSite ? (
             <label className="flex items-center gap-2 font-semibold opacity-60">
-              <input type="hidden" name="attivo" value="on" />
+              <input type="hidden" name="active" value="on" />
               <input
                 type="checkbox"
                 checked
@@ -151,7 +151,7 @@ export default function BrandForm({ brand }) {
             <label className="flex items-center gap-2 font-semibold">
               <input
                 type="checkbox"
-                name="attivo"
+                name="active"
                 defaultChecked={values.active}
                 className="h-4 w-4 accent-[var(--color-accent)]"
               />
@@ -161,7 +161,7 @@ export default function BrandForm({ brand }) {
           <label className="flex items-center gap-2 font-semibold">
             <input
               type="checkbox"
-              name="mostraPrezzi"
+              name="showPrices"
               defaultChecked={values.showPrices}
               className="h-4 w-4 accent-[var(--color-accent)]"
             />
@@ -175,13 +175,13 @@ export default function BrandForm({ brand }) {
           <label className="flex items-center gap-2 font-semibold">
             <input
               type="checkbox"
-              name="accettaPagamenti"
+              name="acceptsPayments"
               defaultChecked={values.acceptsPayments}
               className="h-4 w-4 accent-[var(--color-accent)]"
             />
             Accetta pagamenti
             <span className="text-xs font-medium text-ink-muted">
-              (spegnilo se l&apos;ente regala le storie: niente checkout, l&apos;ordine nasce
+              (spegnilo se l&apos;ente regala le stories: niente checkout, l&apos;ordine nasce
               comunque, a prezzo zero)
             </span>
           </label>
@@ -198,7 +198,7 @@ export default function BrandForm({ brand }) {
           error={errors.guidePrompt?.[0]}
         >
           <textarea
-            name="promptGuida"
+            name="guidePrompt"
             rows={7}
             defaultValue={values.guidePrompt}
             placeholder="La storia si svolge durante il soggiorno all'Hotel…"
@@ -219,7 +219,7 @@ export default function BrandForm({ brand }) {
             >
               <input
                 type="checkbox"
-                name="capricci"
+                name="whims"
                 value={whim.id}
                 defaultChecked={values.whims?.includes(whim.id) ?? false}
                 className="h-4 w-4 accent-[var(--color-accent)]"
@@ -234,9 +234,9 @@ export default function BrandForm({ brand }) {
       <Section title="Colori" description="Tre esadecimali: il resto del sito si adatta da solo.">
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            { field: "accento", label: "Accento", value: values.theme.accento },
-            { field: "accentoSoft", label: "Accento chiaro", value: values.theme.accentoSoft },
-            { field: "scuro", label: "Scuro", value: values.theme.scuro },
+            { field: "accent", label: "Accento", value: values.theme.accent },
+            { field: "accentSoft", label: "Accento chiaro", value: values.theme.accentSoft },
+            { field: "dark", label: "Scuro", value: values.theme.dark },
           ].map((color) => (
             <Field key={color.field} label={color.label} error={errors.theme?.[0]}>
               <span className="flex items-center gap-2">
@@ -258,29 +258,29 @@ export default function BrandForm({ brand }) {
       <Section title="Testi dell'hero" description="Quello che l'ospite legge appena apre la pagina.">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Occhiello" error={errors.hero?.[0]}>
-            <input name="occhiello" required defaultValue={values.hero.occhiello} className={fieldClasses} />
+            <input name="eyebrow" required defaultValue={values.hero.eyebrow} className={fieldClasses} />
           </Field>
           <Field label="Testo del bottone">
             <input name="cta" required defaultValue={values.hero.cta} className={fieldClasses} />
           </Field>
           <Field label="Titolo">
-            <input name="titolo" required defaultValue={values.hero.titolo} className={fieldClasses} />
+            <input name="title" required defaultValue={values.hero.title} className={fieldClasses} />
           </Field>
           <Field label="Titolo — parte colorata">
             <input
-              name="titoloAccento"
+              name="titleAccent"
               required
-              defaultValue={values.hero.titoloAccento}
+              defaultValue={values.hero.titleAccent}
               className={fieldClasses}
             />
           </Field>
         </div>
         <Field label="Sottotitolo">
           <textarea
-            name="sottotitolo"
+            name="subtitle"
             required
             rows={3}
-            defaultValue={values.hero.sottotitolo}
+            defaultValue={values.hero.subtitle}
             className={`${fieldClasses} font-medium`}
           />
         </Field>

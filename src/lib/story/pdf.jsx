@@ -119,26 +119,26 @@ const styles = StyleSheet.create({
 });
 
 function BookPage({ page, index, accentSoft }) {
-  const { immagine, testo, stile } = pageLayout(page);
-  const meta = fontById(stile.font);
-  const italic = stile.corsivo && meta.italic;
+  const { image, text, style } = pageLayout(page);
+  const meta = fontById(style.font);
+  const italic = style.italic && meta.italic;
 
   return (
     <Page size="A5" orientation="landscape" style={styles.page}>
       <View
         style={{
           position: "absolute",
-          left: pct(immagine.x),
-          top: pct(immagine.y),
-          width: pct(immagine.w),
-          height: pct(immagine.h),
+          left: pct(image.x),
+          top: pct(image.y),
+          width: pct(image.w),
+          height: pct(image.h),
         }}
       >
-        {page.illustrazioneUrl ? (
+        {page.illustrationUrl ? (
           // @react-pdf Image, not an HTML <img>: the alt-text rule does not apply.
           // eslint-disable-next-line jsx-a11y/alt-text
           <Image
-            src={page.illustrazioneUrl}
+            src={page.illustrationUrl}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
@@ -149,25 +149,25 @@ function BookPage({ page, index, accentSoft }) {
       <View
         style={{
           position: "absolute",
-          left: pct(testo.x),
-          top: pct(testo.y),
-          width: pct(testo.w),
-          height: pct(testo.h),
+          left: pct(text.x),
+          top: pct(text.y),
+          width: pct(text.w),
+          height: pct(text.h),
           justifyContent: "center",
         }}
       >
         <Text
           style={{
             fontFamily: meta.pdfFamily,
-            fontSize: stile.dimensione,
-            color: stile.colore,
-            textAlign: stile.allineamento,
-            fontWeight: stile.grassetto ? "bold" : "normal",
+            fontSize: style.size,
+            color: style.color,
+            textAlign: style.align,
+            fontWeight: style.bold ? "bold" : "normal",
             fontStyle: italic ? "italic" : "normal",
             lineHeight: 1.4,
           }}
         >
-          {page.testo}
+          {page.text}
         </Text>
       </View>
 
@@ -177,28 +177,28 @@ function BookPage({ page, index, accentSoft }) {
 }
 
 function BookPdf({ content, brand }) {
-  const accent = brand?.theme?.accento ?? "#e96d4f";
-  const accentSoft = brand?.theme?.accentoSoft ?? "#f6b27c";
+  const accent = brand?.theme?.accent ?? "#e96d4f";
+  const accentSoft = brand?.theme?.accentSoft ?? "#f6b27c";
 
   return (
-    <Document title={content.titolo} author={brand?.name ?? "Amabili Storie"}>
+    <Document title={content.title} author={brand?.name ?? "Amabili Storie"}>
       <Page size="A5" orientation="landscape" style={styles.cover}>
         <Text style={styles.eyebrow}>{brand?.name ?? "Amabili Storie"}</Text>
-        <Text style={styles.title}>«{content.titolo}»</Text>
+        <Text style={styles.title}>«{content.title}»</Text>
       </Page>
 
-      {content.pagine.map((page, index) => (
+      {content.pages.map((page, index) => (
         <BookPage key={index} page={page} index={index} accentSoft={accentSoft} />
       ))}
 
       <Page size="A5" orientation="landscape" style={styles.closing}>
-        {content.fraseAncora ? (
-          <Text style={[styles.anchor, { color: accent }]}>«{content.fraseAncora}»</Text>
+        {content.anchorPhrase ? (
+          <Text style={[styles.anchor, { color: accent }]}>«{content.anchorPhrase}»</Text>
         ) : null}
-        {content.guidaGenitori?.length > 0 ? (
+        {content.parentGuide?.length > 0 ? (
           <View>
             <Text style={styles.guideTitle}>Guida per i genitori</Text>
-            {content.guidaGenitori.map((tip, index) => (
+            {content.parentGuide.map((tip, index) => (
               <Text key={index} style={styles.tip}>
                 •  {tip}
               </Text>

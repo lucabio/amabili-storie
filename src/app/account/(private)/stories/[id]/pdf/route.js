@@ -28,15 +28,15 @@ export async function GET(_request, { params }) {
   if (!supabase) return new Response("Supabase non è configurato.", { status: 503 });
 
   const { data: story } = await supabase
-    .from("storie")
+    .from("stories")
     .select("*, brands (*)")
     .eq("id", id)
-    .eq("stato", "approvata")
+    .eq("state", "approvata")
     .maybeSingle();
 
   if (!story) return new Response("Storia non trovata.", { status: 404 });
 
-  const content = storyContentSchema.safeParse(story.contenuto);
+  const content = storyContentSchema.safeParse(story.content);
   if (!content.success) return new Response("Il contenuto della storia non è valido.", { status: 422 });
 
   const brand = brandFromRow(story.brands) ?? BRAND_DEFAULT;
@@ -49,7 +49,7 @@ export async function GET(_request, { params }) {
     return new Response("Non siamo riusciti a comporre il PDF.", { status: 500 });
   }
 
-  const fileName = `${(content.data.titolo || "storia")
+  const fileName = `${(content.data.title || "storia")
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase() || "storia"}.pdf`;

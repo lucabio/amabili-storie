@@ -20,9 +20,9 @@ export async function adminSession() {
   if (!user) return { user: null, isAdmin: false };
 
   const { data } = await supabase
-    .from("amministratori")
-    .select("utente_id")
-    .eq("utente_id", user.id)
+    .from("admins")
+    .select("user_id")
+    .eq("user_id", user.id)
     .maybeSingle();
 
   return { user, isAdmin: Boolean(data) };

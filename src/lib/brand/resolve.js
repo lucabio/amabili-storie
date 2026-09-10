@@ -20,7 +20,7 @@ export async function resolveBrand(slug) {
     .from("brands")
     .select("*")
     .eq("slug", effectiveSlug)
-    .eq("attivo", true)
+    .eq("active", true)
     .maybeSingle();
 
   if (error) {

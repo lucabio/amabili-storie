@@ -16,7 +16,7 @@ export default function Pricing() {
             <h3 className="mt-4.5 font-display text-[1.35rem] font-semibold">Anteprima</h3>
             <p className="my-2 font-display text-[2.4rem] font-semibold">Gratis</p>
             <p className="leading-relaxed font-medium text-ink-soft">
-              Copertina + 3 pagine della storia personalizzata. Nessuna carta richiesta.
+              Copertina + 3 pages della storia personalizzata. Nessuna carta richiesta.
             </p>
           </div>
 
@@ -29,7 +29,7 @@ export default function Pricing() {
               {formatPrice(PRICE_LIST.ebook.priceCents)}
             </p>
             <p className="leading-relaxed font-medium text-parchment">
-              20-24 pagine illustrate in PDF, consegna immediata via email. Rigenerazione
+              20-24 pages illustrate in PDF, consegna immediata via email. Rigenerazione
               gratuita se qualcosa non ti convince.
             </p>
           </div>

@@ -18,7 +18,7 @@ Luca and Silvia's project.
 
 Beyond B2C, the portal is sold **white-label to merchants**: Hotel Famiglia Serena has its
 own version at `amabilistorie.com/?version=famiglia_serena`, where every story shares a
-**common thread** (the stay at the hotel). That thread is the `brands.prompt_guida` field,
+**common thread** (the stay at the hotel). That thread is the `brands.guide_prompt` field,
 which ends up in the system prompt above the Amabili Method. It is the most important piece
 of domain in the project: if you touch the prompt pipeline, you are touching the product
 that is sold.
@@ -29,7 +29,7 @@ that is sold.
   DB schema (tables, columns, jsonb keys), migrations, docs and commit messages: English.
 - **Never translated**, because it is what an Italian parent reads: JSX copy, emails
   (`mail/templates.js`), the PDF text, the Amabili Method (`story/prompt.js`), the fallback
-  templates, whim labels and narrative arcs, `brands.prompt_guida`, and everything written
+  templates, whim labels and narrative arcs, `brands.guide_prompt`, and everything written
   by a merchant. Translating one of these is a product regression, not a refactor.
 - **Stored data values stay Italian** too — they are data, not identifiers: whim ids
   (`sonno`, `pannolino`), story states (`in_revisione`, `approvata`), order formats
@@ -66,12 +66,12 @@ Glossary (ASD-6, decided 10 Sep 2026): storia → `story`, capriccio → `whim`,
 src/
   app/
     page.js                        Home: resolves the brand from ?version= and mounts the sections
-    api/storie/anteprima/route.js  POST → the 3 free pages
+    api/stories/preview/route.js   POST → the 3 free pages
     auth/callback/route.js         Where the backoffice magic link lands
-    checkout/azioni.js             Order (simulated until Stripe) → starts the workflow
-    storie/[id]/page.js            Where the parent reads the approved book (uuid link)
-    area/                          Customer area: OTP login, their own stories, the eBook PDF
-    admin/storie/[id]/pdf/route.js Download the book as a PDF (admins only)
+    checkout/actions.js            Order (simulated until Stripe) → starts the workflow
+    stories/[id]/page.js           Where the parent reads the approved book (uuid link)
+    account/                       Customer area: OTP login, their own stories, the eBook PDF
+    admin/stories/[id]/pdf/route.js Download the book as a PDF (admins only)
     admin/                         Backoffice: OTP login, merchant CRUD, story queue
   components/                      Public site UI + admin/ (BrandForm, StoryEditor)
   lib/
@@ -90,10 +90,10 @@ src/
   workflows/
     book.js                        generateBook: the birth of a book, durable
 supabase/
-  migrations/                      0001 … 0007 — apply them with the CLI, never by hand
+  migrations/                      0001 … 0008 — apply them with the CLI, never by hand
   templates/                       The access email: paste it into the dashboard
   seed.sql                         Hotel Famiglia Serena, for development
-proxy.js                           Refreshes the Supabase session on /admin/* and /area/*
+proxy.js                           Refreshes the Supabase session on /admin/* and /account/*
 ```
 
 ## The full round trip, from click to delivery
@@ -106,7 +106,7 @@ is where they write *"ha sempre in mano un dinosauro di gomma"*) — and generat
 If they buy, an **order** is created and the **workflow** starts: 22 pages, the *"the story
 is being born"* email, and the story lands in the **review queue**. An admin corrects it by
 hand and approves it; the *"your book is ready"* email goes out, with a link to
-`/storie/<uuid>`. There the parent reads: the uuid is the key, and a story that is not
+`/stories/<uuid>`. There the parent reads: the uuid is the key, and a story that is not
 approved returns 404, indistinguishable from one that does not exist.
 
 A `fallita` or `rifiutata` story is **regenerated** from the backoffice: the workflow reuses
@@ -114,15 +114,15 @@ the same row, so the link already in the parent's hands keeps working.
 
 ## A brand sells or gives away
 
-`brands.accetta_pagamenti` decides whether there is a checkout. Hotel Famiglia Serena
+`brands.accepts_payments` decides whether there is a checkout. Hotel Famiglia Serena
 **gives** the stories to its guests: no prices, no formats, and the order is created anyway
 at zero price — because that is how the story enters the queue and gets reread. The main
 site **sells**: three formats (`ebook`, `brossura`, `rilegato`), and the **price is decided
 by the server-side `PRICE_LIST`**, never by the client.
 
-`mostra_prezzi` is a different thing: it hides the price list in the shop window. A price
-list nobody can pay is inconsistent, so you never write `mostra_prezzi` without
-`accetta_pagamenti`.
+`show_prices` is a different thing: it hides the price list in the shop window. A price
+list nobody can pay is inconsistent, so you never write `show_prices` without
+`accepts_payments`.
 
 **The main site is a brand too** (`slug = amabili`): the home page is edited from the
 backoffice, no deploy needed. `BRAND_DEFAULT` stays in the code as a safety net, for when
@@ -133,7 +133,7 @@ Supabase is not there.
 No purchased story reaches a child without a human having read it. The checkout creates an
 **order**, which starts a **durable workflow** (`src/workflows/book.js`): it writes the 22
 pages, tells the parent the story is being born, and drops it in `in_revisione`. From there
-the queue at `/admin/storie` shows it to you: you fix the text by hand, you approve — and on
+the queue at `/admin/stories` shows it to you: you fix the text by hand, you approve — and on
 approval the "your book is ready" email goes out.
 
 Two invariants that are not negotiable:
@@ -141,15 +141,15 @@ Two invariants that are not negotiable:
 - **A purchased book never falls back on templates.** If the AI is unavailable, generation
   *fails* and the story goes to `fallita` with a readable error. The fallback in
   `fallback.js` is only there for the free preview and for `npm run dev`: on a paid book it
-  would be a story identical to all the others, without the merchant's `prompt_guida`, and
+  would be a story identical to all the others, without the merchant's `guide_prompt`, and
   nobody would notice until a parent read it. See `generateStory({ allowFallback })`.
-- **`contenuto_originale` is never touched.** It is the version that came out of the AI;
-  `contenuto` is the one you correct. The difference between the two is the diary of *what
+- **`original_content` is never touched.** It is the version that came out of the AI;
+  `content` is the one you correct. The difference between the two is the diary of *what
   you always correct* — i.e. what needs fixing in the prompt. Overwriting it means losing
   the only data that makes the Method improve.
 
-**The theme propagates via CSS.** `BrandTheme` writes `--brand-accento` and friends on the
-page wrapper; the Tailwind utilities (`bg-accento`, `text-scuro`) read from there. A
+**The theme propagates via CSS.** `BrandTheme` writes `--brand-accent` and friends on the
+page wrapper; the Tailwind utilities (`bg-accent`, `text-dark`) read from there. A
 white-label version is three hex codes in the backoffice, without touching the code.
 
 **The app runs without credentials.** If Supabase is not configured, `BRAND_DEFAULT` is
@@ -208,7 +208,7 @@ write the new values, and it rejects them.
 - **The price never comes from the client**, and the state a decision is based on **is read
   from the database**. Transitions are atomic: the `UPDATE` is constrained to the state just
   read, and zero rows touched means "someone else got there first".
-- **Children's data does not leave the browser**: `storie`, `ordini` and `lead` have RLS on
+- **Children's data does not leave the browser**: `stories`, `orders` and `leads` have RLS on
   and **no write policy**. Only the server writes, with the service role. On read the
   policies OR together: admins see everything, a logged-in customer only
   `email = auth.email()` (migration `0007`) — the customer area does not filter by hand.
@@ -227,28 +227,28 @@ is what whoever touches the code needs to know right away:
 1. **Illustrations: generation exists, strong coherence does not.** From the backoffice
    (`StoryEditor`) every page has a "Genera illustrazione" button with retry:
    `illustrations.js` calls Nano Banana via the Gateway, `storage.js` saves to Supabase
-   Storage, the URL ends up in `contenuto.pagine[i].illustrazioneUrl` (and shows up in the
+   Storage, the URL ends up in `content.pages[i].illustrationUrl` (and shows up in the
    reader and the PDF). The prompt uses a fixed **character sheet** (from the parent's
    traits) to keep the appearance constant, but every page is still generated
    **independently**. The missing step is real coherence: generate a character sheet image
    and pass it as a **reference image** to every page (Nano Banana accepts input images).
    Requires migration `0006` applied (storage bucket).
 2. **Payments are simulated until Stripe is here.** Whether a merchant charges is decided by
-   the per-merchant `accetta_pagamenti` flag from the backoffice — no longer a global env
-   var. While `STRIPE_SECRET_KEY` is absent, every order is created with `finto = true`
-   (`delete from ordini where finto` to clean them up). When the key is there, the paid
+   the per-merchant `accepts_payments` flag from the backoffice — no longer a global env
+   var. While `STRIPE_SECRET_KEY` is absent, every order is created with `fake = true`
+   (`delete from orders where fake` to clean them up). When the key is there, the paid
    branch takes the place of the simulated one: the real Stripe session and its webhook are
-   still missing, and they will do the same steps with `finto = false` — the queue does not
+   still missing, and they will do the same steps with `fake = false` — the queue does not
    change.
-3. **A printed book can be ordered but nobody asks where to ship it.** `ordini` has no
+3. **A printed book can be ordered but nobody asks where to ship it.** `orders` has no
    address column. Either collect it, or sell eBooks only.
 4. **Free is a public URL.** Anyone who types `?version=famiglia_serena` gets a complete
    book, free, at our expense in AI tokens. A guest code is needed. And the public endpoints
    (`buy`, `saveLead`, the preview) have no rate limit and no anti-bot.
 5. **Production does not exist**: no prod Supabase project, no Vercel project, and `main`
    leads nowhere.
-6. **eBook PDF export: it exists** from the backoffice (`/admin/storie/<id>/pdf`) and from
-   the customer area (`/area/storie/<id>/pdf`, only if `approvata`), both via `pdf.jsx`
+6. **eBook PDF export: it exists** from the backoffice (`/admin/stories/<id>/pdf`) and from
+   the customer area (`/account/stories/<id>/pdf`, only if `approvata`), both via `pdf.jsx`
    (`@react-pdf/renderer`). The adapter towards the print supplier (still to be chosen) is
    missing.
 7. **The backoffice has never been used by hand.** Queue, editor, approval and regeneration

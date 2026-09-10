@@ -40,7 +40,7 @@ describe("adminSession", () => {
 
   it("whoever is listed among the admins gets in", async () => {
     fake.user = SILVIA;
-    fake.adminRow = { utente_id: SILVIA.id };
+    fake.adminRow = { user_id: SILVIA.id };
 
     expect(await adminSession()).toEqual({ user: SILVIA, isAdmin: true });
     expect(await adminUser()).toBe(SILVIA);
@@ -49,7 +49,7 @@ describe("adminSession", () => {
   it("without Supabase configured nobody gets in", async () => {
     fake.configured = false;
     fake.user = SILVIA;
-    fake.adminRow = { utente_id: SILVIA.id };
+    fake.adminRow = { user_id: SILVIA.id };
 
     expect(await adminSession()).toEqual({ user: null, isAdmin: false });
   });

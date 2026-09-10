@@ -16,7 +16,7 @@ import { LABELS, transitionAllowed } from "@/lib/story/states";
 const ALIGNMENT_LABELS = { left: "Sx", center: "Ce", right: "Dx" };
 
 export default function StoryEditor({ story }) {
-  const [content, setContent] = useState(story.contenuto);
+  const [content, setContent] = useState(story.content);
   const [note, setNote] = useState("");
   const [result, setResult] = useState(null);
   const [drawing, setDrawing] = useState({});
@@ -25,16 +25,16 @@ export default function StoryEditor({ story }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [pending, start] = useTransition();
 
-  const pages = content.pagine ?? [];
+  const pages = content.pages ?? [];
   const total = pages.length;
   const index = Math.min(currentPage, Math.max(0, total - 1));
   const page = pages[index];
   const layout = page ? pageLayout(page) : null;
 
-  const reviewable = story.stato === "in_revisione";
-  const regenerable = transitionAllowed(story.stato, "in_generazione");
+  const reviewable = story.state === "in_revisione";
+  const regenerable = transitionAllowed(story.state, "in_generazione");
   const bulkRunning = bulk !== null;
-  const missing = pages.filter((p) => !p.illustrazioneUrl).length;
+  const missing = pages.filter((p) => !p.illustrationUrl).length;
 
   // You flip pages with the arrow keys — but not while typing in a field, there
   // the arrows move the caret.
@@ -60,7 +60,7 @@ export default function StoryEditor({ story }) {
   function updatePage(i, field, value) {
     setContent((previous) => ({
       ...previous,
-      pagine: previous.pagine.map((p, j) => (j === i ? { ...p, [field]: value } : p)),
+      pages: previous.pages.map((p, j) => (j === i ? { ...p, [field]: value } : p)),
     }));
   }
 
@@ -69,22 +69,22 @@ export default function StoryEditor({ story }) {
   function updateLayout(i, patch) {
     setContent((previous) => ({
       ...previous,
-      pagine: previous.pagine.map((p, j) => {
+      pages: previous.pages.map((p, j) => {
         if (j !== i) return p;
         const base = pageLayout(p);
         return {
           ...p,
           layout: {
-            immagine: { ...base.immagine, ...(patch.immagine ?? {}) },
-            testo: { ...base.testo, ...(patch.testo ?? {}) },
-            stile: { ...base.stile, ...(patch.stile ?? {}) },
+            image: { ...base.image, ...(patch.image ?? {}) },
+            text: { ...base.text, ...(patch.text ?? {}) },
+            style: { ...base.style, ...(patch.style ?? {}) },
           },
         };
       }),
     }));
   }
 
-  const updateStyle = (i, patch) => updateLayout(i, { stile: patch });
+  const updateStyle = (i, patch) => updateLayout(i, { style: patch });
 
   async function illustrate(i) {
     setDrawing((s) => ({ ...s, [i]: true }));
@@ -93,7 +93,7 @@ export default function StoryEditor({ story }) {
       delete copy[i];
       return copy;
     });
-    const response = await generateStoryIllustration(story.id, i, pages[i].illustrazione);
+    const response = await generateStoryIllustration(story.id, i, pages[i].illustration);
     setDrawing((s) => ({ ...s, [i]: false }));
     if (response?.ok && response.url) {
       updatePage(i, "illustrazioneUrl", response.url);
@@ -110,7 +110,7 @@ export default function StoryEditor({ story }) {
   // to avoid rate limits, and because every content write is atomic with respect
   // to the previous one (no clobbering of the JSON).
   async function illustrateAll() {
-    const todo = pages.map((_, i) => i).filter((i) => !pages[i].illustrazioneUrl);
+    const todo = pages.map((_, i) => i).filter((i) => !pages[i].illustrationUrl);
     if (todo.length === 0) return;
     setBulk({ done: 0, total: todo.length });
     for (let k = 0; k < todo.length; k++) {
@@ -131,10 +131,10 @@ export default function StoryEditor({ story }) {
     <div>
       <div className="flex flex-wrap items-center gap-3">
         <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-cream uppercase">
-          {LABELS[story.stato]}
+          {LABELS[story.state]}
         </span>
         <h1 className="font-display text-2xl font-semibold">
-          {story.parametri?.nome} · {story.parametri?.capriccio}
+          {story.params?.name} · {story.params?.whim}
         </h1>
         <a
           href={`/admin/stories/${story.id}/pdf`}
@@ -144,14 +144,14 @@ export default function StoryEditor({ story }) {
         </a>
       </div>
 
-      {story.stato === "fallita" && story.errore && (
+      {story.state === "fallita" && story.error && (
         <p className="mt-4 rounded-card bg-accent/10 p-4 font-semibold text-accent">
-          La generazione è fallita: {story.errore}
+          La generazione è fallita: {story.error}
         </p>
       )}
-      {story.stato === "rifiutata" && story.note_revisione && (
+      {story.state === "rifiutata" && story.review_notes && (
         <p className="mt-4 rounded-card bg-accent/10 p-4 font-semibold text-accent">
-          Rifiutata: {story.note_revisione}
+          Rifiutata: {story.review_notes}
         </p>
       )}
 
@@ -167,8 +167,8 @@ export default function StoryEditor({ story }) {
       <label className="mt-8 block">
         <span className="text-sm font-bold text-ink-soft uppercase">Titolo</span>
         <input
-          value={content.titolo ?? ""}
-          onChange={(event) => setContent({ ...content, titolo: event.target.value })}
+          value={content.title ?? ""}
+          onChange={(event) => setContent({ ...content, title: event.target.value })}
           disabled={!reviewable}
           className="mt-2 w-full rounded-[14px] border border-border bg-white px-4 py-3 font-display text-lg font-semibold outline-accent disabled:bg-cream disabled:text-ink-soft"
         />
@@ -189,7 +189,7 @@ export default function StoryEditor({ story }) {
                 : `Genera tutte le illustrazioni (${missing})`}
           </button>
           <span className="text-sm font-medium text-ink-muted">
-            Genera le pagine ancora senza figura. Le singole si rifanno sfogliando qui sotto.
+            Genera le pages ancora senza figura. Le singole si rifanno sfogliando qui sotto.
           </span>
         </div>
       )}
@@ -229,13 +229,13 @@ export default function StoryEditor({ story }) {
                 {reviewable && (
                   <button
                     type="button"
-                    disabled={drawing[index] || bulkRunning || !page.illustrazione?.trim()}
+                    disabled={drawing[index] || bulkRunning || !page.illustration?.trim()}
                     onClick={() => illustrate(index)}
                     className="lift rounded-full border border-accent px-5 py-2.5 text-sm font-bold text-accent disabled:opacity-40"
                   >
                     {drawing[index]
                       ? "Sto disegnando…"
-                      : page.illustrazioneUrl
+                      : page.illustrationUrl
                         ? "Rigenera illustrazione"
                         : "Genera illustrazione"}
                   </button>
@@ -250,7 +250,7 @@ export default function StoryEditor({ story }) {
                     La scena da illustrare
                   </span>
                   <textarea
-                    value={page.illustrazione}
+                    value={page.illustration}
                     onChange={(event) =>
                       updatePage(index, "illustrazione", event.target.value)
                     }
@@ -265,7 +265,7 @@ export default function StoryEditor({ story }) {
                 {reviewable && layout && (
                   <div className="flex flex-wrap items-center gap-2">
                     <select
-                      value={layout.stile.font}
+                      value={layout.style.font}
                       onChange={(event) => updateStyle(index, { font: event.target.value })}
                       className="rounded-[10px] border border-border bg-white px-2.5 py-2 text-sm font-semibold outline-accent"
                     >
@@ -282,7 +282,7 @@ export default function StoryEditor({ story }) {
                         aria-label="Riduci dimensione"
                         onClick={() =>
                           updateStyle(index, {
-                            dimensione: Math.max(8, layout.stile.dimensione - 1),
+                            size: Math.max(8, layout.style.size - 1),
                           })
                         }
                         className="px-2 py-1 text-lg font-bold text-ink-soft"
@@ -290,14 +290,14 @@ export default function StoryEditor({ story }) {
                         −
                       </button>
                       <span className="w-6 text-center text-sm font-bold">
-                        {layout.stile.dimensione}
+                        {layout.style.size}
                       </span>
                       <button
                         type="button"
                         aria-label="Aumenta dimensione"
                         onClick={() =>
                           updateStyle(index, {
-                            dimensione: Math.min(60, layout.stile.dimensione + 1),
+                            size: Math.min(60, layout.style.size + 1),
                           })
                         }
                         className="px-2 py-1 text-lg font-bold text-ink-soft"
@@ -309,8 +309,8 @@ export default function StoryEditor({ story }) {
                     <input
                       type="color"
                       aria-label="Colore del testo"
-                      value={layout.stile.colore}
-                      onChange={(event) => updateStyle(index, { colore: event.target.value })}
+                      value={layout.style.color}
+                      onChange={(event) => updateStyle(index, { color: event.target.value })}
                       className="h-9 w-10 cursor-pointer rounded-[10px] border border-border bg-white"
                     />
 
@@ -319,9 +319,9 @@ export default function StoryEditor({ story }) {
                         <button
                           key={alignment}
                           type="button"
-                          onClick={() => updateStyle(index, { allineamento: alignment })}
+                          onClick={() => updateStyle(index, { align: alignment })}
                           className={`rounded-[8px] px-2 py-1 text-xs font-bold ${
-                            layout.stile.allineamento === alignment
+                            layout.style.align === alignment
                               ? "bg-accent text-cream"
                               : "text-ink-soft"
                           }`}
@@ -333,9 +333,9 @@ export default function StoryEditor({ story }) {
 
                     <button
                       type="button"
-                      onClick={() => updateStyle(index, { grassetto: !layout.stile.grassetto })}
+                      onClick={() => updateStyle(index, { bold: !layout.style.bold })}
                       className={`rounded-[10px] border border-border px-3 py-2 text-sm font-black ${
-                        layout.stile.grassetto
+                        layout.style.bold
                           ? "bg-accent text-cream"
                           : "bg-white text-ink-soft"
                       }`}
@@ -344,9 +344,9 @@ export default function StoryEditor({ story }) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => updateStyle(index, { corsivo: !layout.stile.corsivo })}
+                      onClick={() => updateStyle(index, { italic: !layout.style.italic })}
                       className={`rounded-[10px] border border-border px-3 py-2 text-sm font-semibold italic ${
-                        layout.stile.corsivo
+                        layout.style.italic
                           ? "bg-accent text-cream"
                           : "bg-white text-ink-soft"
                       }`}
@@ -357,8 +357,8 @@ export default function StoryEditor({ story }) {
                 )}
 
                 <textarea
-                  value={page.testo}
-                  onChange={(event) => updatePage(index, "testo", event.target.value)}
+                  value={page.text}
+                  onChange={(event) => updatePage(index, "text", event.target.value)}
                   rows={5}
                   disabled={!reviewable}
                   className="w-full rounded-[14px] border border-border px-4 py-3 leading-relaxed font-medium outline-accent disabled:bg-cream disabled:text-ink-soft"
@@ -382,8 +382,8 @@ export default function StoryEditor({ story }) {
       <label className="mt-8 block">
         <span className="text-sm font-bold text-ink-soft uppercase">Frase-àncora</span>
         <input
-          value={content.fraseAncora ?? ""}
-          onChange={(event) => setContent({ ...content, fraseAncora: event.target.value })}
+          value={content.anchorPhrase ?? ""}
+          onChange={(event) => setContent({ ...content, anchorPhrase: event.target.value })}
           disabled={!reviewable}
           className="mt-2 w-full rounded-[14px] border border-border bg-white px-4 py-3 font-semibold outline-accent disabled:bg-cream disabled:text-ink-soft"
         />

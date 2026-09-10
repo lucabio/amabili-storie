@@ -94,7 +94,7 @@ export default function Processing() {
       </h1>
       <p className="mt-5 max-w-[520px] text-lg leading-relaxed font-medium text-parchment">
         Ti abbiamo scritto una mail. Rileggiamo ogni pagina a mano, perché un libro
-        che finisce tra le mani di un bambino merita un paio d&apos;occhi umani: ti
+        che finisce tra le mani di un child merita un paio d&apos;occhi umani: ti
         avvisiamo appena è pronta.
       </p>
 

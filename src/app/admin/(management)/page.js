@@ -13,8 +13,8 @@ export default async function MerchantList() {
 
   const { data: brands, error } = await supabase
     .from("brands")
-    .select("id, slug, nome, attivo, prompt_guida, capricci, mostra_prezzi, accetta_pagamenti")
-    .order("creato_il", { ascending: false });
+    .select("id, slug, name, active, guide_prompt, whims, show_prices, accepts_payments")
+    .order("created_at", { ascending: false });
 
   return (
     <div>
@@ -64,7 +64,7 @@ export default async function MerchantList() {
             className="lift-card block rounded-card border border-border bg-white p-6"
           >
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="font-display text-lg font-semibold">{brand.nome}</h2>
+              <h2 className="font-display text-lg font-semibold">{brand.name}</h2>
               <code className="rounded bg-cream-dark px-2 py-0.5 text-xs font-bold">
                 ?version={brand.slug}
               </code>
@@ -73,32 +73,32 @@ export default async function MerchantList() {
                   sito principale
                 </span>
               )}
-              {!brand.attivo && (
+              {!brand.active && (
                 <span className="rounded-full bg-ink-faint/30 px-2.5 py-0.5 text-xs font-bold uppercase">
                   disattivato
                 </span>
               )}
-              {!brand.mostra_prezzi && (
+              {!brand.show_prices && (
                 <span className="rounded-full bg-accent-soft/30 px-2.5 py-0.5 text-xs font-bold uppercase">
                   senza listino
                 </span>
               )}
-              {!brand.accetta_pagamenti && (
+              {!brand.accepts_payments && (
                 <span className="rounded-full bg-accent-soft/30 px-2.5 py-0.5 text-xs font-bold uppercase">
-                  regala le storie
+                  regala le stories
                 </span>
               )}
             </div>
 
             <p className="mt-3 line-clamp-2 font-medium text-ink-soft">
-              {brand.prompt_guida ?? (
-                <span className="italic">Nessun prompt guida: storie senza filo comune.</span>
+              {brand.guide_prompt ?? (
+                <span className="italic">Nessun prompt guida: stories senza filo comune.</span>
               )}
             </p>
 
             <p className="mt-2 text-sm font-semibold text-ink-muted">
-              {brand.capricci
-                ? `${brand.capricci.length} capricci abilitati`
+              {brand.whims
+                ? `${brand.whims.length} capricci abilitati`
                 : "Tutti i capricci"}
             </p>
           </Link>

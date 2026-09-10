@@ -7,7 +7,7 @@ const HOTEL = {
   ...BRAND_DEFAULT,
   slug: "famiglia_serena",
   name: "Hotel Famiglia Serena",
-  theme: { accento: "#2e8b8b", accentoSoft: "#7fc9c0", scuro: "#1f3a3a" },
+  theme: { accent: "#2e8b8b", accentSoft: "#7fc9c0", dark: "#1f3a3a" },
 };
 
 describe("story in progress mail", () => {

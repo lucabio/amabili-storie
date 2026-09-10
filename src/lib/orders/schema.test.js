@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import { formatPrice, PRICE_LIST, orderSchema } from "@/lib/orders/schema";
 
 const PARAMS = {
-  capriccio: "sonno",
-  famiglia: "umani",
-  nome: "Futura",
-  genere: "bimba",
-  eta: 4,
+  whim: "sonno",
+  family: "umani",
+  name: "Futura",
+  gender: "bimba",
+  age: 4,
 };
 
 describe("order", () => {

@@ -29,7 +29,7 @@ export async function GET(_request, { params }) {
   if (!db) return new Response("Supabase non è configurato.", { status: 503 });
 
   const { data: story, error } = await db
-    .from("storie")
+    .from("stories")
     .select("*, brands (*)")
     .eq("id", id)
     .maybeSingle();
@@ -37,7 +37,7 @@ export async function GET(_request, { params }) {
   if (error) return new Response("Lettura fallita.", { status: 500 });
   if (!story) return new Response("Storia inesistente.", { status: 404 });
 
-  const content = storyContentSchema.safeParse(story.contenuto);
+  const content = storyContentSchema.safeParse(story.content);
   if (!content.success) {
     return new Response("Il contenuto della storia non è valido.", { status: 422 });
   }
@@ -52,7 +52,7 @@ export async function GET(_request, { params }) {
     return new Response("Non siamo riusciti a comporre il PDF.", { status: 500 });
   }
 
-  const fileName = `${(content.data.titolo || "storia")
+  const fileName = `${(content.data.title || "storia")
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase() || "storia"}.pdf`;

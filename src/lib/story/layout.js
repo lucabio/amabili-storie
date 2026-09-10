@@ -62,26 +62,26 @@ export const PAGE_RATIO = PAGE_PT.width / PAGE_PT.height;
 
 export const DEFAULT_STYLE = {
   font: "baloo2",
-  dimensione: 16,
-  colore: "#2b211d",
-  allineamento: "center",
-  grassetto: false,
-  corsivo: false,
+  size: 16,
+  color: "#2b211d",
+  align: "center",
+  bold: false,
+  italic: false,
 };
 
 /** Default: image full-page, text in a band at the bottom. */
 export const DEFAULT_LAYOUT = {
-  immagine: { x: 0, y: 0, w: 1, h: 1 },
-  testo: { x: 0.06, y: 0.68, w: 0.88, h: 0.26 },
-  stile: DEFAULT_STYLE,
+  image: { x: 0, y: 0, w: 1, h: 1 },
+  text: { x: 0.06, y: 0.68, w: 0.88, h: 0.26 },
+  style: DEFAULT_STYLE,
 };
 
 /** Merges the saved layout with the defaults: a page without layout is still valid. */
 export function pageLayout(page) {
   const saved = page?.layout ?? {};
   return {
-    immagine: { ...DEFAULT_LAYOUT.immagine, ...(saved.immagine ?? {}) },
-    testo: { ...DEFAULT_LAYOUT.testo, ...(saved.testo ?? {}) },
-    stile: { ...DEFAULT_STYLE, ...(saved.stile ?? {}) },
+    image: { ...DEFAULT_LAYOUT.image, ...(saved.image ?? {}) },
+    text: { ...DEFAULT_LAYOUT.text, ...(saved.text ?? {}) },
+    style: { ...DEFAULT_STYLE, ...(saved.style ?? {}) },
   };
 }

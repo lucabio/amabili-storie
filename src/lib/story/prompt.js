@@ -3,11 +3,11 @@ import { getWhim } from "@/lib/domain/whims";
 
 /** Readable labels for a character's traits, in prompt order. */
 const TRAIT_LABELS = [
-  ["capelli", "capelli"],
-  ["coloreCapelli", "colore capelli"],
-  ["coloreOcchi", "colore occhi"],
-  ["corporatura", "corporatura"],
-  ["descrizione", "dettaglio"],
+  ["hair", "capelli"],
+  ["hairColor", "colore capelli"],
+  ["eyeColor", "colore occhi"],
+  ["build", "corporatura"],
+  ["description", "dettaglio"],
 ];
 
 /**
@@ -57,22 +57,22 @@ ${brand.guidePrompt}`;
 
 /** User prompt: the params chosen by the parent plus the whim's arc. */
 export function buildPrompt(params, pageCount) {
-  const whim = getWhim(params.capriccio);
-  const animal = getAnimal(params.animale);
+  const whim = getWhim(params.whim);
+  const animal = getAnimal(params.animal);
 
   const protagonist =
-    params.famiglia === "animali" && animal
-      ? `un piccolo ${animal.singular} di nome ${params.nome}, in ${animal.setting}`
-      : `${params.genere === "bimba" ? "una bimba" : "un bimbo"} di nome ${params.nome}`;
+    params.family === "animali" && animal
+      ? `un piccolo ${animal.singular} di nome ${params.name}, in ${animal.setting}`
+      : `${params.gender === "bimba" ? "una bimba" : "un bimbo"} di nome ${params.name}`;
 
   const parents =
-    [params.mamma, params.papa].filter(Boolean).join(" e ") || "la mamma e il papà";
+    [params.mother, params.father].filter(Boolean).join(" e ") || "la mamma e il papà";
 
   const difficulty =
-    params.capriccio === "altro" ? params.capriccioLibero : whim.label;
+    params.whim === "altro" ? params.customWhim : whim.label;
 
   const lines = [
-    `Protagonista: ${protagonist}. Ha ${params.eta} anni.`,
+    `Protagonista: ${protagonist}. Ha ${params.age} anni.`,
     `Genitori: ${parents}.`,
     `Difficoltà da affrontare: ${difficulty}.`,
     `Bisogno sottostante da rispettare: ${whim.need}`,
@@ -80,31 +80,31 @@ export function buildPrompt(params, pageCount) {
     `Scrivi esattamente ${pageCount} pagine.`,
   ];
 
-  if (params.dettaglio) {
+  if (params.detail) {
     lines.push(
-      `Dettaglio personale da intrecciare almeno una volta: ${params.dettaglio}.`,
+      `Dettaglio personale da intrecciare almeno una volta: ${params.detail}.`,
     );
   }
 
   const characters = [
-    { key: "bambino", heading: `Aspetto di ${params.nome}` },
+    { key: "child", heading: `Aspetto di ${params.name}` },
     {
-      key: "mamma",
-      heading: params.mamma ? `Aspetto di ${params.mamma}` : "Aspetto della mamma",
+      key: "mother",
+      heading: params.mother ? `Aspetto di ${params.mother}` : "Aspetto della mamma",
     },
     {
-      key: "papa",
-      heading: params.papa ? `Aspetto di ${params.papa}` : "Aspetto del papà",
+      key: "father",
+      heading: params.father ? `Aspetto di ${params.father}` : "Aspetto del papà",
     },
   ];
   for (const { key, heading } of characters) {
-    const description = describeTraits(params.tratti?.[key]);
+    const description = describeTraits(params.traits?.[key]);
     if (description) {
       lines.push(`${heading}: ${description}.`);
     }
   }
 
-  if (params.famiglia === "animali" && animal) {
+  if (params.family === "animali" && animal) {
     lines.push(
       `Tutti i personaggi sono ${animal.plural.toLowerCase()}: mantieni la coerenza animale in tutta la storia.`,
     );
@@ -126,28 +126,28 @@ const ILLUSTRATION_STYLE =
  * (`descrizione` included: "ha sempre in mano un dinosauro di gomma").
  */
 function characterSheet(params) {
-  const animal = getAnimal(params.animale);
-  const age = `${params.eta} anni`;
+  const animal = getAnimal(params.animal);
+  const age = `${params.age} anni`;
 
   const base =
-    params.famiglia === "animali" && animal
-      ? `${params.nome}, un piccolo ${animal.singular} di ${age}`
-      : `${params.nome}, ${params.genere === "bimba" ? "una bambina" : "un bambino"} di ${age}`;
+    params.family === "animali" && animal
+      ? `${params.name}, un piccolo ${animal.singular} di ${age}`
+      : `${params.name}, ${params.gender === "bimba" ? "una bambina" : "un bambino"} di ${age}`;
 
   const lines = [];
-  const childTraits = describeTraits(params.tratti?.bambino);
+  const childTraits = describeTraits(params.traits?.child);
   lines.push(`- Protagonista: ${base}${childTraits ? ` (${childTraits})` : ""}.`);
 
-  const motherTraits = describeTraits(params.tratti?.mamma);
-  const fatherTraits = describeTraits(params.tratti?.papa);
-  if (params.mamma || motherTraits) {
-    lines.push(`- Mamma${params.mamma ? ` (${params.mamma})` : ""}${motherTraits ? `: ${motherTraits}` : ""}.`);
+  const motherTraits = describeTraits(params.traits?.mother);
+  const fatherTraits = describeTraits(params.traits?.father);
+  if (params.mother || motherTraits) {
+    lines.push(`- Mamma${params.mother ? ` (${params.mother})` : ""}${motherTraits ? `: ${motherTraits}` : ""}.`);
   }
-  if (params.papa || fatherTraits) {
-    lines.push(`- Papà${params.papa ? ` (${params.papa})` : ""}${fatherTraits ? `: ${fatherTraits}` : ""}.`);
+  if (params.father || fatherTraits) {
+    lines.push(`- Papà${params.father ? ` (${params.father})` : ""}${fatherTraits ? `: ${fatherTraits}` : ""}.`);
   }
 
-  if (params.famiglia === "animali" && animal) {
+  if (params.family === "animali" && animal) {
     lines.push(`- Tutti i personaggi sono ${animal.plural.toLowerCase()}, in ${animal.setting}.`);
   }
 

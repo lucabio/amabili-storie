@@ -7,10 +7,10 @@
  * each protagonist.
  */
 const FIELDS = [
-  { key: "capelli", placeholder: "Capelli (es. ricci, corti…)" },
-  { key: "coloreCapelli", placeholder: "Colore capelli" },
-  { key: "coloreOcchi", placeholder: "Colore occhi" },
-  { key: "corporatura", placeholder: "Corporatura" },
+  { key: "hair", placeholder: "Capelli (es. ricci, corti…)" },
+  { key: "hairColor", placeholder: "Colore capelli" },
+  { key: "eyeColor", placeholder: "Colore occhi" },
+  { key: "build", placeholder: "Corporatura" },
 ];
 
 const inputClasses =
@@ -34,8 +34,8 @@ export default function CharacterTraits({ title, values, onChange }) {
           className={`${inputClasses} col-span-full`}
           placeholder="Un dettaglio in più (es. ha sempre in mano un dinosauro di gomma)"
           maxLength={200}
-          value={values.descrizione}
-          onChange={onChange("descrizione")}
+          value={values.description}
+          onChange={onChange("description")}
         />
       </div>
     </div>

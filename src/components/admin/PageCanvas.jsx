@@ -30,11 +30,11 @@ export default function PageCanvas({ page, layout, editable, onLayout }) {
     return () => observer.disconnect();
   }, []);
 
-  const meta = fontById(layout.stile.font);
+  const meta = fontById(layout.style.font);
   const fontPx =
     canvasWidth > 0
-      ? layout.stile.dimensione * (canvasWidth / PAGE_PT.width)
-      : layout.stile.dimensione;
+      ? layout.style.size * (canvasWidth / PAGE_PT.width)
+      : layout.style.size;
 
   return (
     <div
@@ -45,41 +45,41 @@ export default function PageCanvas({ page, layout, editable, onLayout }) {
       {canvasWidth > 0 && (
         <>
           <Box
-            box={layout.immagine}
+            box={layout.image}
             canvasWidth={canvasWidth}
             canvasHeight={canvasHeight}
             editable={editable}
             minW={0.1}
             minH={0.1}
-            onCommit={(box) => onLayout({ immagine: box })}
+            onCommit={(box) => onLayout({ image: box })}
           >
-            {page.illustrazioneUrl ? (
+            {page.illustrationUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={page.illustrazioneUrl}
+                src={page.illustrationUrl}
                 alt=""
                 draggable={false}
                 className="pointer-events-none h-full w-full object-cover"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-cream-dark text-xs font-medium text-ink-muted">
-                Nessuna illustrazione
+                Nessuna illustration
               </div>
             )}
           </Box>
 
           <Box
-            box={layout.testo}
+            box={layout.text}
             canvasWidth={canvasWidth}
             canvasHeight={canvasHeight}
             editable={editable}
             minW={0.15}
             minH={0.08}
-            onCommit={(box) => onLayout({ testo: box })}
+            onCommit={(box) => onLayout({ text: box })}
           >
             <div
               className="flex h-full w-full items-center overflow-hidden px-2"
-              style={{ justifyContent: justify(layout.stile.allineamento) }}
+              style={{ justifyContent: justify(layout.style.align) }}
             >
               <p
                 style={{
@@ -87,14 +87,14 @@ export default function PageCanvas({ page, layout, editable, onLayout }) {
                   margin: 0,
                   fontFamily: meta.editorFamily,
                   fontSize: fontPx,
-                  color: layout.stile.colore,
-                  textAlign: layout.stile.allineamento,
-                  fontWeight: layout.stile.grassetto ? 700 : 400,
-                  fontStyle: layout.stile.corsivo && meta.italic ? "italic" : "normal",
+                  color: layout.style.color,
+                  textAlign: layout.style.align,
+                  fontWeight: layout.style.bold ? 700 : 400,
+                  fontStyle: layout.style.italic && meta.italic ? "italic" : "normal",
                   lineHeight: 1.4,
                 }}
               >
-                {page.testo}
+                {page.text}
               </p>
             </div>
           </Box>

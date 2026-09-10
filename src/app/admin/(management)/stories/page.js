@@ -26,12 +26,12 @@ export default async function Queue({ searchParams }) {
   if (!supabase) return null;
 
   let query = supabase
-    .from("storie")
-    .select("id, stato, parametri, creato_il, errore, brands (slug, nome)")
+    .from("stories")
+    .select("id, state, params, created_at, error, brands (slug, name)")
     // Oldest at the top: the queue is worked from the bottom.
-    .order("creato_il", { ascending: true });
+    .order("created_at", { ascending: true });
 
-  if (filters?.state) query = query.eq("stato", filters.state);
+  if (filters?.state) query = query.eq("state", filters.state);
   if (filters?.merchant === "main") query = query.is("brand_id", null);
 
   const { data: stories, error } = await query;
@@ -44,7 +44,7 @@ export default async function Queue({ searchParams }) {
       ? (stories ?? []).filter((story) => story.brands?.slug === filters.merchant)
       : (stories ?? []);
 
-  const toReview = visible.filter((story) => story.stato === "in_revisione").length;
+  const toReview = visible.filter((story) => story.state === "in_revisione").length;
 
   return (
     <div>
@@ -88,23 +88,23 @@ export default async function Queue({ searchParams }) {
           >
             <div className="flex flex-wrap items-center gap-3">
               <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${STATE_COLORS[story.stato]}`}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${STATE_COLORS[story.state]}`}
               >
-                {LABELS[story.stato]}
+                {LABELS[story.state]}
               </span>
               <h2 className="font-display text-lg font-semibold">
-                {story.parametri?.nome ?? "senza nome"}
+                {story.params?.name ?? "senza nome"}
               </h2>
               <span className="text-sm font-semibold text-ink-muted">
-                {story.parametri?.capriccio}
+                {story.params?.whim}
               </span>
               <span className="ml-auto text-sm font-semibold text-ink-muted">
-                {story.brands?.nome ?? "Sito principale"} · {howLongAgo(story.creato_il)}
+                {story.brands?.name ?? "Sito principale"} · {howLongAgo(story.created_at)}
               </span>
             </div>
 
-            {story.errore && (
-              <p className="mt-3 text-sm font-semibold text-accent">{story.errore}</p>
+            {story.error && (
+              <p className="mt-3 text-sm font-semibold text-accent">{story.error}</p>
             )}
           </Link>
         ))}

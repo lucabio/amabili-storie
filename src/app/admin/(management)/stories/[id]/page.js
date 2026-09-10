@@ -11,7 +11,7 @@ export default async function Review({ params }) {
   if (!supabase) return null;
 
   const { data: story } = await supabase
-    .from("storie")
+    .from("stories")
     .select("*")
     .eq("id", id)
     .maybeSingle();

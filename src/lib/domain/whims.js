@@ -5,7 +5,7 @@ import { z } from "zod";
  * the story has to follow. `arc` and `need` end up in the prompt as narrative
  * constraints — they are not text that shows up in the book.
  *
- * `titleTemplate` is a string with a {nome} placeholder, not a function: whims
+ * `titleTemplate` is a string with a {name} placeholder, not a function: whims
  * cross the server→client boundary (the home page hands them to the
  * Configurator) and React cannot serialize functions.
  *
@@ -15,7 +15,7 @@ import { z } from "zod";
  * @typedef {Object} Whim
  * @property {string} id
  * @property {string} label
- * @property {string} titleTemplate  Title for the live cover, with {nome} to replace.
+ * @property {string} titleTemplate  Title for the live cover, with {name} to replace.
  * @property {string} need  Underlying developmental need: drives how the emotion is validated.
  * @property {string} arc   Narrative arc the model has to respect.
  */

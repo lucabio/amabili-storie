@@ -21,14 +21,14 @@ export default function StoryReader({ story, name }) {
             </p>
           )}
           <h1 className="font-display text-[clamp(2rem,4.4vw,3rem)] font-semibold text-cream">
-            «{story.titolo}»
+            «{story.title}»
           </h1>
         </div>
       </header>
 
       <main className="mx-auto max-w-[720px] px-4 py-[clamp(40px,6vw,72px)]">
         <div className="flex flex-col gap-6">
-          {story.pagine.map((page, index) => (
+          {story.pages.map((page, index) => (
             <article
               key={index}
               className="anim-pop rounded-[18px] border border-border bg-cream-light p-7 shadow-[0_10px_30px_rgba(67,48,42,0.08)]"
@@ -36,32 +36,32 @@ export default function StoryReader({ story, name }) {
               <span className="mb-3 block text-[11px] font-extrabold tracking-[0.16em] text-accent uppercase">
                 Pagina {index + 1}
               </span>
-              {page.illustrazioneUrl && (
+              {page.illustrationUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={page.illustrazioneUrl}
+                  src={page.illustrationUrl}
                   alt=""
                   className="mb-4 w-full rounded-[14px] border border-border"
                 />
               )}
-              <p className="text-lg leading-[1.8] font-medium text-ink">{page.testo}</p>
+              <p className="text-lg leading-[1.8] font-medium text-ink">{page.text}</p>
             </article>
           ))}
         </div>
 
-        {story.fraseAncora && (
+        {story.anchorPhrase && (
           <p className="mx-auto mt-12 max-w-[540px] text-center font-display text-[1.3rem] text-accent">
-            La frase-àncora da riusare nella vita reale: «{story.fraseAncora}»
+            La frase-àncora da riusare nella vita reale: «{story.anchorPhrase}»
           </p>
         )}
 
-        {story.guidaGenitori?.length > 0 && (
+        {story.parentGuide?.length > 0 && (
           <div className="mx-auto mt-12 max-w-[620px] rounded-[22px] border border-dashed border-accent-soft/60 bg-sand p-7">
             <p className="font-display text-[1.2rem] font-semibold text-ink">
               Guida per i genitori
             </p>
             <ul className="mt-4 flex flex-col gap-3">
-              {story.guidaGenitori.map((tip, index) => (
+              {story.parentGuide.map((tip, index) => (
                 <li
                   key={index}
                   className="flex gap-3 leading-relaxed font-medium text-ink-soft"

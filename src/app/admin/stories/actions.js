@@ -24,7 +24,7 @@ async function requireAdmin() {
 async function readStory(storyId) {
   const supabase = await createServerSupabase();
   const { data } = await supabase
-    .from("storie")
+    .from("stories")
     .select("*, brands (*)")
     .eq("id", storyId)
     .maybeSingle();
@@ -37,9 +37,9 @@ export async function saveStory(storyId, rawContent) {
   const story = await readStory(storyId);
   if (!story) return { error: "Storia inesistente." };
 
-  if (story.stato !== "in_revisione") {
+  if (story.state !== "in_revisione") {
     return {
-      error: `Una storia "${story.stato}" non si può più correggere: se il libro è già partito, la correzione è un libro nuovo, non una modifica.`,
+      error: `Una storia "${story.state}" non si può più correggere: se il libro è già partito, la correzione è un libro nuovo, non una modifica.`,
     };
   }
 
@@ -50,14 +50,14 @@ export async function saveStory(storyId, rawContent) {
 
   const db = createAdminSupabase();
   const { data: rows, error } = await db
-    .from("storie")
+    .from("stories")
     // `contenuto_originale` is never touched: it is the AI's version, and the
     // difference with this one is the diary of what we always correct.
-    .update({ contenuto: parsed.data })
+    .update({ content: parsed.data })
     // Constraining the UPDATE to the state just read makes the transition
     // atomic: two concurrent requests cannot both pass the check.
     .eq("id", storyId)
-    .eq("stato", story.stato)
+    .eq("state", story.state)
     .select("id");
 
   if (error) return { error: error.message };
@@ -77,23 +77,23 @@ export async function approveStory(storyId) {
   const story = await readStory(storyId);
   if (!story) return { error: "Storia inesistente." };
 
-  if (!transitionAllowed(story.stato, "approvata")) {
-    return { error: `Una storia "${story.stato}" non si può approvare.` };
+  if (!transitionAllowed(story.state, "approvata")) {
+    return { error: `Una storia "${story.state}" non si può approvare.` };
   }
 
   const db = createAdminSupabase();
   const { data: rows, error } = await db
-    .from("storie")
+    .from("stories")
     .update({
-      stato: "approvata",
-      revisionata_da: user.id,
-      revisionata_il: new Date().toISOString(),
+      state: "approvata",
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
     })
     // Constraining the UPDATE to the state just read makes the transition
     // atomic: two concurrent requests (approve + reject, or two approves) cannot
     // both pass the check — "approvata" is irreversible.
     .eq("id", storyId)
-    .eq("stato", story.stato)
+    .eq("state", story.state)
     .select("id");
 
   if (error) return { error: error.message };
@@ -108,7 +108,7 @@ export async function approveStory(storyId) {
   try {
     const brand = brandFromRow(story.brands) ?? BRAND_DEFAULT;
     const { subject, html } = storyReadyMail({
-      name: story.parametri.nome,
+      name: story.params.name,
       brand,
       url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/stories/${storyId}`,
     });
@@ -132,23 +132,23 @@ export async function rejectStory(storyId, note) {
   const story = await readStory(storyId);
   if (!story) return { error: "Storia inesistente." };
 
-  if (!transitionAllowed(story.stato, "rifiutata")) {
-    return { error: `Una storia "${story.stato}" non si può rifiutare.` };
+  if (!transitionAllowed(story.state, "rifiutata")) {
+    return { error: `Una storia "${story.state}" non si può rifiutare.` };
   }
 
   const db = createAdminSupabase();
   const { data: rows, error } = await db
-    .from("storie")
+    .from("stories")
     .update({
-      stato: "rifiutata",
-      note_revisione: cleanNote,
-      revisionata_da: user.id,
-      revisionata_il: new Date().toISOString(),
+      state: "rifiutata",
+      review_notes: cleanNote,
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
     })
     // Constraining the UPDATE to the state just read makes the transition
     // atomic: two concurrent requests cannot both pass the check.
     .eq("id", storyId)
-    .eq("stato", story.stato)
+    .eq("state", story.state)
     .select("id");
 
   if (error) return { error: error.message };
@@ -168,13 +168,13 @@ export async function regenerateStory(storyId) {
   const story = await readStory(storyId);
   if (!story) return { error: "Storia inesistente." };
 
-  if (!transitionAllowed(story.stato, "in_generazione")) {
-    return { error: `Una storia "${story.stato}" non si può rigenerare.` };
+  if (!transitionAllowed(story.state, "in_generazione")) {
+    return { error: `Una storia "${story.state}" non si può rigenerare.` };
   }
 
   // We restart from the order that generated the story: without it there is
   // nothing to relaunch.
-  if (!story.ordine_id) {
+  if (!story.order_id) {
     return {
       error: "Questa storia non ha un ordine collegato: non si sa cosa rigenerare.",
     };
@@ -182,13 +182,13 @@ export async function regenerateStory(storyId) {
 
   const db = createAdminSupabase();
   const { data: rows, error } = await db
-    .from("storie")
-    .update({ stato: "in_generazione", errore: null })
+    .from("stories")
+    .update({ state: "in_generazione", error: null })
     // Constraining the UPDATE to the state just read makes the transition
     // atomic: two clicks on the same "Rigenera" cannot both pass the check and
     // start two workflows for the same order.
     .eq("id", storyId)
-    .eq("stato", story.stato)
+    .eq("state", story.state)
     .select("id");
 
   if (error) return { error: error.message };
@@ -202,7 +202,7 @@ export async function regenerateStory(storyId) {
   // src/workflows/book.js): the story keeps its id, so the link in the email
   // already sent to the parent still points here.
   try {
-    await start(generateBook, [story.ordine_id]);
+    await start(generateBook, [story.order_id]);
   } catch (problem) {
     // start() did not fire: no workflow will ever take charge of this story, and
     // without a workflow nobody will ever mark it "fallita" (that is its job,
@@ -215,12 +215,12 @@ export async function regenerateStory(storyId) {
     const message = `Avvio della rigenerazione fallito: ${problem.message}`;
 
     const { error: recoveryError } = await db
-      .from("storie")
-      .update({ stato: "fallita", errore: message })
+      .from("stories")
+      .update({ state: "fallita", error: message })
       .eq("id", storyId)
       // If in the meantime the workflow did start and moved on, this UPDATE
       // touches nothing: we do not bury a good book.
-      .eq("stato", "in_generazione");
+      .eq("state", "in_generazione");
 
     revalidatePath("/admin/stories");
     revalidatePath(`/admin/stories/${storyId}`);
@@ -260,11 +260,11 @@ export async function generateStoryIllustration(storyId, index, rawScene) {
 
   const story = await readStory(storyId);
   if (!story) return { error: "Storia inesistente." };
-  if (story.stato !== "in_revisione") {
-    return { error: `Una storia "${story.stato}" non si illustra più: si generano prima dell'approvazione.` };
+  if (story.state !== "in_revisione") {
+    return { error: `Una storia "${story.state}" non si illustra più: si generano prima dell'approvazione.` };
   }
 
-  const pages = story.contenuto?.pagine;
+  const pages = story.content?.pages;
   if (!Array.isArray(pages) || index < 0 || index >= pages.length) {
     return { error: "Pagina inesistente." };
   }
@@ -278,7 +278,7 @@ export async function generateStoryIllustration(storyId, index, rawScene) {
   try {
     const { bytes, mediaType } = await generateIllustration({
       scene,
-      params: story.parametri,
+      params: story.params,
     });
     url = await saveIllustration({ storyId, index, bytes, mediaType });
   } catch (problem) {
@@ -291,15 +291,15 @@ export async function generateStoryIllustration(storyId, index, rawScene) {
   // time there is no race between pages; if one day there are two, we will move
   // to a jsonb_set.
   const updatedPages = pages.map((page, i) =>
-    i === index ? { ...page, illustrazioneUrl: url } : page,
+    i === index ? { ...page, illustrationUrl: url } : page,
   );
 
   const db = createAdminSupabase();
   const { data: rows, error } = await db
-    .from("storie")
-    .update({ contenuto: { ...story.contenuto, pagine: updatedPages } })
+    .from("stories")
+    .update({ content: { ...story.content, pages: updatedPages } })
     .eq("id", storyId)
-    .eq("stato", "in_revisione")
+    .eq("state", "in_revisione")
     .select("id");
 
   if (error) return { error: error.message };
