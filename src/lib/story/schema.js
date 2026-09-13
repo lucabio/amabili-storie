@@ -150,6 +150,16 @@ const pageLayoutSchema = z.object({
 });
 
 /**
+ * The cast, drawn once and passed to every page as a reference image (ASD-9):
+ * words describe a category of child, only a picture fixes a face. `text` is the
+ * sheet that drew `url` — the admin's corrected version, reused on every page.
+ */
+export const characterSheetSchema = z.object({
+  text: z.string().trim().min(1, "Serve la scheda personaggi").max(2000),
+  url: z.url(),
+});
+
+/**
  * The content of a saved story. It is the same schema the model produces, but
  * with a free page count: it validates the corrections made by hand in the
  * backoffice, because a manual edit must not be able to produce a malformed
@@ -174,4 +184,7 @@ export const storyContentSchema = z.object({
     .min(1),
   anchorPhrase: z.string().trim().min(1, "La frase-àncora è il cuore del metodo"),
   parentGuide: z.array(z.string().trim().min(1)).min(2).max(4),
+  // Absent on stories older than the sheet. It must be listed here: `saveStory`
+  // parses the whole content, and a key the schema does not know is stripped.
+  characterSheet: characterSheetSchema.nullish(),
 });

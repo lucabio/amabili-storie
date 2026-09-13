@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import PageCanvas from "@/components/admin/PageCanvas";
 import {
   approveStory,
+  generateCharacterSheet,
   generateStoryIllustration,
   rejectStory,
   regenerateStory,
@@ -15,8 +16,15 @@ import { LABELS, transitionAllowed } from "@/lib/story/states";
 
 const ALIGNMENT_LABELS = { left: "Sx", center: "Ce", right: "Dx" };
 
-export default function StoryEditor({ story }) {
+export default function StoryEditor({ story, defaultCharacterSheet }) {
   const [content, setContent] = useState(story.content);
+  // The textarea is local: `content.characterSheet` only changes when the server
+  // has drawn it, so "Salva" can never pair a text with an image it did not draw.
+  const [sheetText, setSheetText] = useState(
+    story.content?.characterSheet?.text ?? defaultCharacterSheet,
+  );
+  const [sheetDrawing, setSheetDrawing] = useState(false);
+  const [sheetError, setSheetError] = useState(null);
   const [note, setNote] = useState("");
   const [result, setResult] = useState(null);
   const [drawing, setDrawing] = useState({});
@@ -35,6 +43,9 @@ export default function StoryEditor({ story }) {
   const regenerable = transitionAllowed(story.state, "in_generazione");
   const bulkRunning = bulk !== null;
   const missing = pages.filter((p) => !p.illustrationUrl).length;
+  const sheet = content.characterSheet;
+  // One drawing at a time: every generation rewrites the whole content JSON.
+  const anyDrawing = bulkRunning || sheetDrawing || Object.values(drawing).some(Boolean);
 
   // You flip pages with the arrow keys — but not while typing in a field, there
   // the arrows move the caret.
@@ -120,6 +131,18 @@ export default function StoryEditor({ story }) {
     setBulk(null);
   }
 
+  async function drawSheet() {
+    setSheetDrawing(true);
+    setSheetError(null);
+    const response = await generateCharacterSheet(story.id, sheetText);
+    setSheetDrawing(false);
+    if (response?.ok) {
+      setContent((previous) => ({ ...previous, characterSheet: response.characterSheet }));
+    } else {
+      setSheetError(response?.error ?? "Foglio personaggi non generato.");
+    }
+  }
+
   function run(action) {
     start(async () => {
       const response = await action();
@@ -186,12 +209,71 @@ export default function StoryEditor({ story }) {
         />
       </label>
 
+      {(reviewable || sheet) && (
+        <section className="mt-8 rounded-card border border-border bg-white p-6">
+          <span className="text-sm font-bold text-ink-soft uppercase">Foglio personaggi</span>
+          <p className="mt-1 text-sm font-medium text-ink-muted">
+            Il cast disegnato una volta sola e passato come riferimento a ogni pagina: è quello
+            che tiene lo stesso viso dalla prima all&apos;ultima.
+          </p>
+
+          <div className="mt-4 grid gap-5 md:grid-cols-2">
+            <div className="flex flex-col gap-3">
+              <textarea
+                value={sheetText}
+                onChange={(event) => setSheetText(event.target.value)}
+                rows={8}
+                disabled={!reviewable}
+                className="w-full rounded-[14px] border border-border px-4 py-3 text-sm leading-relaxed font-medium outline-accent disabled:bg-cream disabled:text-ink-soft"
+              />
+              {reviewable && (
+                <button
+                  type="button"
+                  disabled={anyDrawing || !sheetText.trim()}
+                  onClick={drawSheet}
+                  className="lift rounded-full border border-accent px-5 py-2.5 text-sm font-bold text-accent disabled:opacity-40"
+                >
+                  {sheetDrawing
+                    ? "Sto disegnando…"
+                    : sheet
+                      ? "Rigenera foglio personaggi"
+                      : "Genera foglio personaggi"}
+                </button>
+              )}
+              {reviewable && sheet && sheetText.trim() !== sheet.text && (
+                <p className="text-sm font-medium text-ink-muted">
+                  Hai modificato la scheda: rigenera il foglio perché valga per le pagine.
+                </p>
+              )}
+              {sheetError && (
+                <p className="rounded-[14px] bg-accent/10 px-4 py-3 text-sm font-semibold text-accent">
+                  {sheetError}
+                </p>
+              )}
+            </div>
+
+            {sheet ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={sheet.url}
+                alt="Foglio personaggi"
+                className="w-full rounded-[14px] border border-border"
+              />
+            ) : (
+              <p className="flex items-center justify-center rounded-[14px] border border-dashed border-border p-6 text-center text-sm font-medium text-ink-muted">
+                Ancora nessun foglio: le illustrazioni delle pagine si sbloccano quando c&apos;è.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
       {reviewable && (
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={illustrateAll}
-            disabled={bulkRunning || missing === 0}
+            disabled={!sheet || anyDrawing || missing === 0}
             className="lift rounded-full bg-accent px-6 py-3 font-bold text-cream disabled:opacity-40"
           >
             {bulkRunning
@@ -201,7 +283,9 @@ export default function StoryEditor({ story }) {
                 : `Genera tutte le illustrazioni (${missing})`}
           </button>
           <span className="text-sm font-medium text-ink-muted">
-            Genera le pages ancora senza figura. Le singole si rifanno sfogliando qui sotto.
+            {sheet
+              ? "Genera le pagine ancora senza figura. Le singole si rifanno sfogliando qui sotto."
+              : "Prima genera il foglio personaggi, qui sopra."}
           </span>
         </div>
       )}
@@ -241,7 +325,7 @@ export default function StoryEditor({ story }) {
                 {reviewable && (
                   <button
                     type="button"
-                    disabled={drawing[index] || bulkRunning || !page.illustration?.trim()}
+                    disabled={!sheet || anyDrawing || !page.illustration?.trim()}
                     onClick={() => illustrate(index)}
                     className="lift rounded-full border border-accent px-5 py-2.5 text-sm font-bold text-accent disabled:opacity-40"
                   >

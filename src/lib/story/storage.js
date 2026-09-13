@@ -10,7 +10,8 @@ import { createAdminSupabase } from "@/lib/supabase/server";
 const BUCKET = "illustrazioni";
 
 /**
- * Uploads a page's illustration to Supabase Storage and returns its public URL.
+ * Uploads an illustration — a page (`page-3`) or the character sheet
+ * (`character-sheet`) — to Supabase Storage and returns its public URL.
  * It writes with the service role (which bypasses RLS): there is no way in from
  * the browser. Every generation gets a unique path — so regenerating needs no
  * cache-bust and overwrites nothing (old files stay orphaned: cleanup is a
@@ -18,12 +19,12 @@ const BUCKET = "illustrazioni";
  *
  * @returns {Promise<string>} the public URL of the uploaded image.
  */
-export async function saveIllustration({ storyId, index, bytes, mediaType }) {
+export async function saveIllustration({ storyId, name, bytes, mediaType }) {
   const db = createAdminSupabase();
   if (!db) throw new Error("Supabase non è configurato.");
 
   const extension = mediaType?.split("/")[1] || "png";
-  const path = `${storyId}/page-${index}-${Date.now()}.${extension}`;
+  const path = `${storyId}/${name}-${Date.now()}.${extension}`;
 
   const { error } = await db.storage
     .from(BUCKET)

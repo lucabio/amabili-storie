@@ -186,11 +186,12 @@ const ILLUSTRATION_STYLE =
   "Illustrazione per un libro per bambini, stile acquerello digitale dai colori caldi e morbidi, linee dolci, atmosfera tenera e rassicurante. Composizione pulita, sfondo semplice. NESSUN testo, nessuna scritta, nessuna lettera, nessun numero, nessun bordo o cornice nell'immagine.";
 
 /**
- * The character sheet: the same on every page, so the child looks the same from
- * beginning to end. It is built from the traits the parent filled in
- * (`descrizione` included: "ha sempre in mano un dinosauro di gomma").
+ * The character sheet, as the parent's traits describe it (`description`
+ * included: "ha sempre in mano un dinosauro di gomma"). It is only the starting
+ * point: the admin corrects it in the backoffice, and the corrected text is the
+ * one that draws the cast and every page.
  */
-function characterSheet(params) {
+export function characterSheet(params) {
   const animal = getAnimal(params.animal);
   const age = `${params.age} anni`;
 
@@ -220,15 +221,34 @@ function characterSheet(params) {
 }
 
 /**
- * The prompt to generate the illustration of ONE page: fixed style + character
- * sheet (for coherence between pages) + this page's scene.
+ * The prompt that draws the cast once, before any page: the image that becomes
+ * the reference for all of them. Neutral pose, plain background, faces in view —
+ * it is a model sheet, not a scene.
  */
-export function buildIllustrationPrompt({ scene, params }) {
+export function buildCharacterSheetPrompt(sheet) {
   return [
     ILLUSTRATION_STYLE,
     "",
+    "Foglio personaggi di riferimento per un libro illustrato: tutti i personaggi elencati qui sotto, a figura intera, in piedi uno accanto all'altro, in posa neutra e frontale, su sfondo bianco uniforme. Il viso di ognuno deve vedersi bene.",
+    "",
+    "Personaggi:",
+    sheet,
+  ].join("\n");
+}
+
+/**
+ * The prompt to generate the illustration of ONE page: fixed style + the sheet
+ * that drew the reference image + this page's scene. With a reference the model
+ * also copies the clothes, so it is told what is bound and what is not.
+ */
+export function buildIllustrationPrompt({ scene, sheet }) {
+  return [
+    ILLUSTRATION_STYLE,
+    "",
+    "L'immagine allegata è il foglio personaggi del libro. Stesso viso, stessa corporatura, stessa età del riferimento; abbigliamento, posa e ambientazione seguono la scena, non il riferimento. Disegna solo i personaggi che la scena richiede.",
+    "",
     "Personaggi (mantieni lo stesso identico aspetto in ogni illustrazione del libro):",
-    characterSheet(params),
+    sheet,
     "",
     `Scena da illustrare: ${scene}`,
   ].join("\n");

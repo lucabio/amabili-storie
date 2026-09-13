@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 
 import StoryEditor from "@/components/admin/StoryEditor";
 import { adminSession } from "@/lib/admin/session";
+import { characterSheet } from "@/lib/story/prompt";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 export default async function Review({ params }) {
@@ -30,5 +31,7 @@ export default async function Review({ params }) {
 
   if (!story) notFound();
 
-  return <StoryEditor story={story} />;
+  // Built here, not in the editor: prompt.js carries the whole Method, and it has
+  // no business in the browser bundle.
+  return <StoryEditor story={story} defaultCharacterSheet={characterSheet(story.params)} />;
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { BRAND_DEFAULT, brandFromRow, brandSchema } from "@/lib/brand/schema";
 import { getWhim } from "@/lib/domain/whims";
 import { buildPrompt, buildSystemPrompt } from "@/lib/story/prompt";
-import { paramsForBrand, storyParamsSchema } from "@/lib/story/schema";
+import { paramsForBrand, storyContentSchema, storyParamsSchema } from "@/lib/story/schema";
 
 const BASE = {
   whim: "sonno",
@@ -198,5 +198,28 @@ describe("merchant type — whim | story", () => {
     expect(system).toContain(STORY_BRAND.guidePrompt);
     expect(system).toContain("la trama è decisa da Hotel Famiglia Serena");
     expect(system).not.toContain("filo comune");
+  });
+});
+
+describe("storyContentSchema — characterSheet", () => {
+  const CONTENT = {
+    title: "Futura e la notte",
+    pages: [{ text: "C'era una volta Futura.", illustration: "Futura nel suo letto." }],
+    anchorPhrase: "Il buio è solo la notte che riposa.",
+    parentGuide: ["Lascia una luce accesa.", "Leggete insieme."],
+  };
+
+  it("survives a save: a key the schema does not know would be stripped", () => {
+    const characterSheet = {
+      text: "- Protagonista: Futura, una bambina di 4 anni.",
+      url: "https://example.com/illustrazioni/s/character-sheet-1.png",
+    };
+    expect(storyContentSchema.parse({ ...CONTENT, characterSheet }).characterSheet).toEqual(
+      characterSheet,
+    );
+  });
+
+  it("a story older than the sheet still validates", () => {
+    expect(storyContentSchema.safeParse(CONTENT).success).toBe(true);
   });
 });

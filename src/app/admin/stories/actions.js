@@ -8,7 +8,8 @@ import { BRAND_DEFAULT, brandFromRow } from "@/lib/brand/schema";
 import { sendMail } from "@/lib/mail/send";
 import { storyReadyMail } from "@/lib/mail/templates";
 import { generateIllustration } from "@/lib/story/illustrations";
-import { storyContentSchema } from "@/lib/story/schema";
+import { buildCharacterSheetPrompt, buildIllustrationPrompt } from "@/lib/story/prompt";
+import { characterSheetSchema, storyContentSchema } from "@/lib/story/schema";
 import { transitionAllowed } from "@/lib/story/states";
 import { saveIllustration } from "@/lib/story/storage";
 import { createAdminSupabase, createServerSupabase } from "@/lib/supabase/server";
@@ -272,6 +273,14 @@ export async function generateStoryIllustration(storyId, index, rawScene) {
     return { error: "Pagina inesistente." };
   }
 
+  // No sheet, no page: without the reference image every page draws a different
+  // child — the very bug the sheet fixes, only silent. The editor disables the
+  // button too, but a disabled button protects nothing.
+  const sheet = story.content?.characterSheet;
+  if (!sheet?.url) {
+    return { error: "Prima genera il foglio personaggi: senza, ogni pagina disegna un bambino diverso." };
+  }
+
   const scene = typeof rawScene === "string" ? rawScene.trim() : "";
   if (!scene) {
     return { error: "Serve la descrizione della scena per generare l'illustrazione." };
@@ -280,10 +289,10 @@ export async function generateStoryIllustration(storyId, index, rawScene) {
   let url;
   try {
     const { bytes, mediaType } = await generateIllustration({
-      scene,
-      params: story.params,
+      prompt: buildIllustrationPrompt({ scene, sheet: sheet.text }),
+      reference: sheet.url,
     });
-    url = await saveIllustration({ storyId, index, bytes, mediaType });
+    url = await saveIllustration({ storyId, name: `page-${index}`, bytes, mediaType });
   } catch (problem) {
     return { error: `Illustrazione non generata: ${problem.message}` };
   }
@@ -312,4 +321,49 @@ export async function generateStoryIllustration(storyId, index, rawScene) {
 
   revalidatePath(`/admin/stories/${storyId}`);
   return { ok: true, url };
+}
+
+/**
+ * Draws (or redraws) the cast from the character sheet the admin has in front of
+ * them, and saves text and image together: the text is the one that drew the
+ * image, and every page reuses both. Same read-modify-write as the pages.
+ */
+export async function generateCharacterSheet(storyId, rawText) {
+  await requireAdmin();
+
+  const story = await readStory(storyId);
+  if (!story) return { error: "Storia inesistente." };
+  if (story.state !== "in_revisione") {
+    return { error: `Una storia "${story.state}" non si illustra più: si generano prima dell'approvazione.` };
+  }
+
+  const text = characterSheetSchema.shape.text.safeParse(rawText);
+  if (!text.success) return { error: text.error.issues[0].message };
+
+  let url;
+  try {
+    const { bytes, mediaType } = await generateIllustration({
+      prompt: buildCharacterSheetPrompt(text.data),
+    });
+    url = await saveIllustration({ storyId, name: "character-sheet", bytes, mediaType });
+  } catch (problem) {
+    return { error: `Foglio personaggi non generato: ${problem.message}` };
+  }
+
+  const characterSheet = { text: text.data, url };
+  const db = createAdminSupabase();
+  const { data: rows, error } = await db
+    .from("stories")
+    .update({ content: { ...story.content, characterSheet } })
+    .eq("id", storyId)
+    .eq("state", "in_revisione")
+    .select("id");
+
+  if (error) return { error: error.message };
+  if (!rows || rows.length === 0) {
+    return { error: "Qualcun altro ha già deciso su questa storia nel frattempo: ricarica la pagina." };
+  }
+
+  revalidatePath(`/admin/stories/${storyId}`);
+  return { ok: true, characterSheet };
 }

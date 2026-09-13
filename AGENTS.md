@@ -276,15 +276,16 @@ write the new values, and it rejects them.
 The real backlog lives on Notion (*Amabili Storie – Document Hub → Product Backlog*). Here
 is what whoever touches the code needs to know right away:
 
-1. **Illustrations: generation exists, strong coherence does not.** From the backoffice
-   (`StoryEditor`) every page has a "Genera illustrazione" button with retry:
-   `illustrations.js` calls Nano Banana via the Gateway, `storage.js` saves to Supabase
-   Storage, the URL ends up in `content.pages[i].illustrationUrl` (and shows up in the
-   reader and the PDF). The prompt uses a fixed **character sheet** (from the parent's
-   traits) to keep the appearance constant, but every page is still generated
-   **independently**. The missing step is real coherence: generate a character sheet image
-   and pass it as a **reference image** to every page (Nano Banana accepts input images).
-   Requires migration `0006` applied (storage bucket).
+1. **Illustrations: the character sheet is the anchor, and nobody has measured it yet.**
+   In the backoffice (`StoryEditor`) the first step is the **character sheet** (ASD-9): a
+   textarea prefilled from the parent's traits, which the admin corrects and draws as an
+   image of the cast. `content.characterSheet = { text, url }` holds the text that drew the
+   image. Until it exists the 22 page buttons are disabled, and `generateStoryIllustration`
+   refuses anyway; with it, every page is drawn with the sheet as **reference image** —
+   same face, build and age, clothes free. `illustrations.js` downloads the reference and
+   sends bytes: the Gateway passes URLs through, and a local stack's `127.0.0.1` is
+   unreachable from there. Missing: proof on 22 real pages that the face holds, and what a
+   second reference (AS-32, the merchant's places) does to it. Requires migration `0006`.
 2. **Payments are simulated until Stripe is here.** Whether a merchant charges is decided by
    the per-merchant `accepts_payments` flag from the backoffice — no longer a global env
    var. While `STRIPE_SECRET_KEY` is absent, every order is created with `fake = true`
