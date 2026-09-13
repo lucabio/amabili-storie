@@ -97,6 +97,8 @@ src/
     customer/   session.js — in the customer area being logged in is enough: RLS filters
   workflows/
     book.js                        generateBook: the birth of a book, durable
+scripts/
+  seed-local-users.sh              An admin for the local stack (a db reset erases them)
 supabase/
   migrations/                      0001 … 0011 — apply them with the CLI, never by hand
   templates/                       The access email: paste it into the dashboard
@@ -254,6 +256,17 @@ write the new values, and it rejects them.
 - **Workflow DevKit**: `"use workflow"` functions run in a sandboxed VM (no network, no Node
   modules); only `"use step"` functions have full Node. The workflow orchestrates, the steps
   work.
+- **A key written as a string is a key nobody checks.** Content keys are English
+  everywhere (`content.pages[].illustrationUrl`, `anchorPhrase`, `parentGuide`), but a
+  `updatePage(i, "illustrazioneUrl", …)` that survives a rename is invisible to build, lint
+  and tests: the value simply lands where nobody reads it. That is how the illustration
+  counter stayed at 22 after drawing all 22 pages. `story/content-keys.test.js` walks `src/`
+  and fails if an Italian content key shows up as a literal or a property access.
+- **A read that failed is not a row that is missing.** Discarding the `error` of a query and
+  answering `notFound()` — or "Storia inesistente." — turns a rotated token or a hiccup into
+  a permanent-looking lie, in the face of someone who was editing. Keep the two apart: log
+  the reason, send a dead session to the login page, and leave 404 for what truly is not
+  there.
 - A green test does not prove the product works: **watch the app actually run**. Bugs the
   tests could not see have shipped here — a story stuck forever in `in_generazione`, a lost
   email that killed a paid book, a white-label theme that never reached the screen.
@@ -290,9 +303,19 @@ is what whoever touches the code needs to know right away:
    the customer area (`/account/stories/<id>/pdf`, only if `approvata`), both via `pdf.jsx`
    (`@react-pdf/renderer`). The adapter towards the print supplier (still to be chosen) is
    missing.
-7. **The backoffice has never been used by hand.** Queue, editor, approval and regeneration
-   have been verified by reading the code and driving the actions from scripts, but nobody
-   has yet driven them from the interface.
+7. **The backoffice is now being used by hand, and it is paying off.** Queue, editor and
+   illustrations have been driven from the interface for the first time, and the first two
+   passes found two bugs no test could see: the illustration counter that never went down
+   (a string key missed by the rename) and a 404 landing on top of an editing session (a
+   failed read reported as a missing story). Both fixed. Approval, rejection and
+   regeneration have still only been driven from scripts.
 8. The home page promises *"rigenerazione gratuita se qualcosa non ti convince"*, but the
    parent has no way to ask for it: "Rigenera" only exists in the backoffice. Either give it
    to them, or drop the promise.
+9. **Open thread: the 404 while editing.** The lie is fixed — a failed read now says why —
+   but nobody has yet caught the reason in the act. The suspect is the refetch that
+   `saveStory` forces with `revalidatePath('/admin/stories/<id>')` on every save: that page
+   is `ƒ (Dynamic)`, it reads cookies and is never cached, so the revalidation buys no
+   freshness and only adds one more read at the worst moment. Next occurrence, look for
+   `Lettura della storia … fallita:` in the server log: the reason it prints decides whether
+   that line goes away.

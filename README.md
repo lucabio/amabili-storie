@@ -23,7 +23,27 @@ That is what lets you develop the interface without depending on external servic
 cp .env.example .env.local
 ```
 
-### Supabase
+### Supabase, on this machine
+
+The whole stack runs locally, and it is the shortest way in — no project to create, no keys
+to copy:
+
+```bash
+npx supabase start              # API 54331, Studio 54333
+cp .env.local.local-stack .env.local
+scripts/seed-local-users.sh you@example.com    # an admin to log in with
+```
+
+The access codes go out through **Resend SMTP**, so they reach a real inbox: put
+`RESEND_API_KEY` in `supabase/.env` (the CLI does not read `.env.local`) and seed an
+address you can actually open. Turning `[auth.email.smtp]` off in `supabase/config.toml`
+sends them back to Mailpit instead, <http://127.0.0.1:54334>.
+
+Migrations and `seed.sql` are applied on the way up. `npx supabase db reset` replays them
+from scratch, and erases `auth.users` with them — run the script again after one. Ports are
+5433x on purpose, so another project's local stack can keep the 5432x ones.
+
+### Supabase, the remote project
 
 1. Create the project on [supabase.com](https://supabase.com).
 2. Apply the migrations with the CLI: `npx supabase db push` (never by hand from the
@@ -118,6 +138,18 @@ The brand defines colors, hero copy, whims offered, price list yes/no and — th
 really counts — the **guide prompt**: the common thread every story of that merchant has to
 follow (the stay at the hotel, breakfast, the hotel's dog…). It is all configured from
 `/admin`, without touching the code.
+
+Two kinds of merchant (`brands.type`):
+
+- **whim** — the parent picks a whim from the catalogue and the plot is that whim's
+  narrative arc. Every brand up to migration `0010`.
+- **story** — the plot is always the same one and lives in the guide prompt; the parent only
+  customises the characters. A merchant like this cannot be saved without a guide prompt.
+
+The guide prompt can grow into a whole editorial canon uploaded as `.md`, and it is
+**versioned**: every change writes a row in `guide_prompt_versions`, and every story records
+which version wrote it — so a book delivered months ago stays traceable to the canon it came
+from.
 
 ## Environments
 
