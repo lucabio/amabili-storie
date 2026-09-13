@@ -51,3 +51,4 @@ supabase/.temp/
 .claude/worktrees/
 /.swc
 .devswarm-temp/
+supabase/snippets/
