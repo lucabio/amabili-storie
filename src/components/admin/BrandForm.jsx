@@ -212,12 +212,14 @@ export default function BrandForm({ brand }) {
         }
       >
         <Field
-          label="Prompt guida"
+          label={isStory ? "Prompt guida *" : "Prompt guida"}
           hint="Scrivi in italiano, come parlassi all'autore. Es: «La storia si svolge durante il soggiorno all'Hotel Famiglia Serena, in Val Gardena. Nomina almeno una volta, in modo naturale e mai pubblicitario, la colazione con le torte fatte in casa o Nina, la golden retriever dell'hotel.»"
           error={errors.guidePrompt?.[0]}
         >
           <textarea
             name="guidePrompt"
+            // Only UX: saveBrand refuses a story merchant without it anyway.
+            required={isStory}
             rows={7}
             defaultValue={values.guidePrompt}
             placeholder="La storia si svolge durante il soggiorno all'Hotel…"
@@ -317,6 +319,14 @@ export default function BrandForm({ brand }) {
         >
           {pending ? "Salvataggio…" : isNew ? "Crea merchant" : "Salva modifiche"}
         </button>
+
+        {/* The field errors sit next to their fields, possibly far up the page:
+            without this the button looks like it did nothing. */}
+        {Object.keys(errors).length > 0 && !pending && (
+          <span role="alert" className="text-sm font-bold text-accent">
+            Non salvato: {Object.values(errors).flat().join(" ")}
+          </span>
+        )}
 
         {!isNew && !isMainSite && (
           <button
