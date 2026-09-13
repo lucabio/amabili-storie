@@ -1,0 +1,8 @@
+{
+  "worktreeInclude": [
+    ".env.local",
+    ".env.local.local-stack",
+    ".env.local.remote-dev",
+    "supabase/.env"
+  ]
+}

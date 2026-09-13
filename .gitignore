@@ -50,3 +50,4 @@ supabase/.temp/
 .claude/settings.local.json
 .claude/worktrees/
 /.swc
+.devswarm-temp/

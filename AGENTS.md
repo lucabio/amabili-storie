@@ -174,6 +174,26 @@ developable bare-handed.
 Work happens on `dev`; `main` is only touched via PR. Database: `amb-str-web-app-dev`,
 Frankfurt (the data concerns children and stays in the EU).
 
+**Which database `npm run dev` talks to is decided by `.env.local`**, and both sides are
+kept as files next to it — swap one in and restart:
+
+```bash
+cp .env.local.remote-dev  .env.local   # → amb-str-web-app-dev, the remote project
+cp .env.local.local-stack .env.local   # → amb-str-local, the stack on this machine
+```
+
+The local stack is a full Supabase (`supabase/config.toml`, project `amb-str-local`) on
+ports **5433x** instead of the default 5432x, so it can coexist with another project's
+local stack. Its access codes go out through **Resend SMTP** (`[auth.email.smtp]`), so they
+reach a real inbox: the stack needs `RESEND_API_KEY` in `supabase/.env` — the CLI does not
+read `.env.local` — and the admin you seed must be a real address. Set `enabled = false`
+there to send them back to Mailpit, <http://127.0.0.1:54334>. Config changes need
+`supabase stop && supabase start`. `db reset` re-applies every migration and `seed.sql`,
+and wipes `auth.users` with them — `scripts/seed-local-users.sh` puts an admin back.
+
+**New DevSwarm workspaces** get `.env.local*` and `supabase/.env` copied from the main
+checkout (`.devswarm/config.json`): keep the real ones there.
+
 **How a branch is named:**
 
 ```
@@ -198,6 +218,11 @@ npx vitest run -t "test name"                   # a single test
 
 npx supabase db push          # applies the migrations the remote does not have
 npx supabase migration list   # local and remote must match
+
+npx supabase start            # the local stack: API 54331, Studio 54333, Mailpit 54334
+npx supabase db reset         # every migration again, from scratch, plus seed.sql
+scripts/seed-local-users.sh   # an admin to get into /admin with (a reset erases them)
+npx supabase stop             # stops amb-str-local only, not other projects' stacks
 ```
 
 **Migrations are applied with the CLI, never by hand from the dashboard**: the registry
