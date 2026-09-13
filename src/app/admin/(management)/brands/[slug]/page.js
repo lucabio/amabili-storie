@@ -5,7 +5,7 @@ import { BRAND_DEFAULT } from "@/lib/brand/schema";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 /** The empty form lives on the same path: /admin/brands/new */
-const NEW_SLUG = "nuovo";
+const NEW_SLUG = "new";
 
 export default async function EditMerchant({ params }) {
   // Next 16: params is a Promise.
@@ -34,6 +34,7 @@ export default async function EditMerchant({ params }) {
     slug: row.slug,
     name: row.name,
     active: row.active,
+    type: row.type ?? "whim",
     theme: { ...BRAND_DEFAULT.theme, ...(row.theme ?? {}) },
     logoUrl: row.logo_url ?? "",
     hero: { ...BRAND_DEFAULT.hero, ...(row.hero ?? {}) },

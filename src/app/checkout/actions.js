@@ -5,6 +5,7 @@ import { start } from "workflow/api";
 
 import { resolveBrand } from "@/lib/brand/resolve";
 import { orderSchema } from "@/lib/orders/schema";
+import { paramsForBrand } from "@/lib/story/schema";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { generateBook } from "@/workflows/book";
 
@@ -40,6 +41,11 @@ export async function buy(rawData) {
   // or the price the client sent.
   const brand = await resolveBrand(order.params.brand);
 
+  // Before the order exists: a whim merchant's book without a whim would only
+  // fail later, inside the workflow, after the parent has been told it is coming.
+  const checked = paramsForBrand(order.params, brand);
+  if (checked.error) return { error: checked.error };
+
   // Real payments = Stripe configured. It is the only thing that tells a real
   // purchase from a simulated one: no manual environment flag.
   const realPayments = Boolean(process.env.STRIPE_SECRET_KEY);
@@ -62,7 +68,7 @@ export async function buy(rawData) {
     .insert({
       brand_id: brand.id ?? null,
       email: order.email,
-      params: order.params,
+      params: checked.params,
       format: format,
       price_cents: priceCents,
       state: "pagato",

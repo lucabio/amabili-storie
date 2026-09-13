@@ -86,7 +86,7 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
           «{story.title}»
         </h2>
         <p className="mt-2 mb-10 text-center font-semibold text-accent-soft">
-          Ecco le prime pages della storia di {name}
+          Ecco le prime pagine della storia di {name}
           {" — l'eBook completo ha 20–24 pagine illustrate"}
         </p>
 
@@ -134,7 +134,7 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
                     Porta a casa la storia intera
                   </p>
                   <p className="mt-2.5 leading-relaxed font-medium text-parchment">
-                    20–24 pages illustrate, la stessa cura che hai appena letto, rilette da
+                    20–24 pagine illustrate, la stessa cura che hai appena letto, rilette da
                     un occhio umano prima di arrivarti.
                   </p>
 
@@ -166,7 +166,7 @@ export default function StoryPreview({ story, name, brand, params, initialFormat
                     Il libro completo di {name}, in regalo
                   </p>
                   <p className="mt-2.5 leading-relaxed font-medium text-parchment">
-                    Lascia la tua email: scriviamo le altre pages, le rileggiamo con cura, e
+                    Lascia la tua email: scriviamo le altre pagine, le rileggiamo con cura, e
                     te le mandiamo — gratis, un pensiero di {brand.name}.
                   </p>
                 </>

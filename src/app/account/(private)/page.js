@@ -40,7 +40,7 @@ export default async function CustomerArea() {
     <main className="mx-auto max-w-[820px] px-6 py-12">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-semibold">Le tue stories</h1>
+          <h1 className="font-display text-2xl font-semibold">Le tue storie</h1>
           <p className="mt-1 font-medium text-ink-soft">
             Ogni libro che hai creato, e a che punto è.
           </p>

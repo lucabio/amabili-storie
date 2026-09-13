@@ -90,7 +90,7 @@ src/
   workflows/
     book.js                        generateBook: the birth of a book, durable
 supabase/
-  migrations/                      0001 … 0008 — apply them with the CLI, never by hand
+  migrations/                      0001 … 0010 — apply them with the CLI, never by hand
   templates/                       The access email: paste it into the dashboard
   seed.sql                         Hotel Famiglia Serena, for development
 proxy.js                           Refreshes the Supabase session on /admin/* and /account/*
@@ -119,6 +119,12 @@ the same row, so the link already in the parent's hands keeps working.
 at zero price — because that is how the story enters the queue and gets reread. The main
 site **sells**: three formats (`ebook`, `brossura`, `rilegato`), and the **price is decided
 by the server-side `PRICE_LIST`**, never by the client.
+
+**A brand is a whim merchant or a story merchant** (`brands.type`, migration `0010`).
+`whim`: the parent picks a whim, the plot is its arc. `story`: there is no whim — the plot
+is always the same and lives in `guide_prompt`; the wizard skips the whim step and asks
+when they stayed and what the child liked the most. The params cannot tell which one
+applies: `paramsForBrand` decides, on the server, from the brand read from the database.
 
 `show_prices` is a different thing: it hides the price list in the shop window. A price
 list nobody can pay is inconsistent, so you never write `show_prices` without

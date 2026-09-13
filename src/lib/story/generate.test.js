@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { BRAND_DEFAULT } from "@/lib/brand/schema";
+import { BRAND_DEFAULT, brandSchema } from "@/lib/brand/schema";
 import { AiUnavailable, generateStory, PREVIEW_PAGES } from "@/lib/story/generate";
 
 const PARAMS = {
@@ -32,6 +32,19 @@ describe("generateStory without AI configured", () => {
 
     expect(source).toBe("fallback");
     expect(story.pages).toHaveLength(PREVIEW_PAGES);
+  });
+
+  it("a story merchant's preview runs without AI too, with no whim", async () => {
+    const brand = brandSchema.parse({ slug: "serena", name: "Hotel Famiglia Serena", type: "story" });
+    const { story } = await generateStory({
+      params: { ...PARAMS, whim: null, stayPeriod: "luglio 2026", favoriteMoment: "" },
+      brand,
+      pageCount: PREVIEW_PAGES,
+    });
+
+    expect(story.pages).toHaveLength(PREVIEW_PAGES);
+    expect(story.pages[0].text).toContain("luglio 2026");
+    expect(story.pages[0].text).toContain("Hotel Famiglia Serena");
   });
 
   it("the purchased book fails instead: whoever paid cannot receive a template", async () => {

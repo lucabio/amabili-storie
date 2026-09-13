@@ -60,7 +60,40 @@ function otherTexts({ name, parents, firstParent, opening }) {
   ];
 }
 
-export function fallbackStory(params, pageCount) {
+/**
+ * A story merchant's plot lives in its guide prompt, which a template cannot
+ * follow: this is a generic memory of the stay, only so the preview runs without
+ * AI. A purchased book never gets here (see `generateStory`).
+ */
+function stayStory({ name, who, parents, extra }, params, brand, pageCount) {
+  const when = params.stayPeriod ? `, ${params.stayPeriod}` : "";
+  const favorite = params.favoriteMoment
+    ? ` E la cosa che ${name} amava di più? ${params.favoriteMoment[0].toUpperCase()}${params.favoriteMoment.slice(1)}.`
+    : "";
+  const withParents =
+    parents === "la mamma e il papà" ? "alla mamma e al papà" : `a ${parents}`;
+
+  const texts = [
+    `Questa è la storia di una vacanza speciale: quella di ${who}${when}, da ${brand.name} insieme ${withParents}.${extra}`,
+    `Appena arrivati, ${name} spalancò gli occhi: tutto era nuovo, tutto era da scoprire. Ogni giorno portava un gioco, una risata, una sorpresa.${favorite}`,
+    `L'ultimo giorno ${name} salutò tutti con un abbraccio grande così. Ma i ricordi belli non finiscono mai: restano accesi come stelle. E ogni volta che ${name} ripensa a quella vacanza, il cuore sorride.`,
+  ];
+
+  return {
+    title: `La vacanza di ${name}`,
+    pages: texts.slice(0, pageCount).map((text) => ({
+      text,
+      illustration: `Scena della vacanza di ${name}, stile illustrazione per l'infanzia.`,
+    })),
+    anchorPhrase: "I ricordi belli restano accesi come stelle.",
+    parentGuide: [
+      `Sfogliate il libro insieme e chiedete a ${name} cosa ricorda di quei giorni.`,
+      "Aggiungete a voce un dettaglio nuovo a ogni rilettura: così il ricordo cresce.",
+    ],
+  };
+}
+
+export function fallbackStory(params, pageCount, brand) {
   const whim = getWhim(params.whim);
   const animal = getAnimal(params.animal);
   const name = params.name;
@@ -76,6 +109,11 @@ export function fallbackStory(params, pageCount) {
     [params.mother, params.father].filter(Boolean).join(" e ") || "la mamma e il papà";
   const firstParent = parents.split(" e ")[0];
   const extra = params.detail ? ` A ${name} piaceva tantissimo ${params.detail}.` : "";
+
+  if (brand?.type === "story") {
+    return stayStory({ name, who, parents, extra }, params, brand, pageCount);
+  }
+
   const opening = `C'era una volta, in una casetta piena di allegria, ${who}, con due genitori fantastici: ${parents}.${extra}`;
 
   const context = { name, parents, firstParent, opening };

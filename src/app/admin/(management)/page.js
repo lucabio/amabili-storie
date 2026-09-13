@@ -13,7 +13,7 @@ export default async function MerchantList() {
 
   const { data: brands, error } = await supabase
     .from("brands")
-    .select("id, slug, name, active, guide_prompt, whims, show_prices, accepts_payments")
+    .select("id, slug, name, active, type, guide_prompt, whims, show_prices, accepts_payments")
     .order("created_at", { ascending: false });
 
   return (
@@ -68,6 +68,9 @@ export default async function MerchantList() {
               <code className="rounded bg-cream-dark px-2 py-0.5 text-xs font-bold">
                 ?version={brand.slug}
               </code>
+              <span className="rounded-full bg-dark/10 px-2.5 py-0.5 text-xs font-bold uppercase">
+                {brand.type === "story" ? "storia" : "capricci"}
+              </span>
               {brand.slug === BRAND_DEFAULT.slug && (
                 <span className="rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-bold uppercase">
                   sito principale
@@ -85,22 +88,24 @@ export default async function MerchantList() {
               )}
               {!brand.accepts_payments && (
                 <span className="rounded-full bg-accent-soft/30 px-2.5 py-0.5 text-xs font-bold uppercase">
-                  regala le stories
+                  regala le storie
                 </span>
               )}
             </div>
 
             <p className="mt-3 line-clamp-2 font-medium text-ink-soft">
               {brand.guide_prompt ?? (
-                <span className="italic">Nessun prompt guida: stories senza filo comune.</span>
+                <span className="italic">Nessun prompt guida: storie senza filo comune.</span>
               )}
             </p>
 
-            <p className="mt-2 text-sm font-semibold text-ink-muted">
-              {brand.whims
-                ? `${brand.whims.length} capricci abilitati`
-                : "Tutti i capricci"}
-            </p>
+            {brand.type !== "story" && (
+              <p className="mt-2 text-sm font-semibold text-ink-muted">
+                {brand.whims
+                  ? `${brand.whims.length} capricci abilitati`
+                  : "Tutti i capricci"}
+              </p>
+            )}
           </Link>
         ))}
       </div>

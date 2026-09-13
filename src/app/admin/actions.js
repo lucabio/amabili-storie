@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { adminUser } from "@/lib/admin/session";
-import { BRAND_DEFAULT } from "@/lib/brand/schema";
+import { BRAND_DEFAULT, BRAND_TYPES } from "@/lib/brand/schema";
 import { WHIM_IDS } from "@/lib/domain/whims";
 import { createServerSupabase } from "@/lib/supabase/server";
 
@@ -15,6 +15,7 @@ const hexColor = z
 
 const brandFormSchema = z.object({
   id: z.uuid().nullable(),
+  type: z.enum(BRAND_TYPES, "Scegli la tipologia del merchant"),
   slug: z
     .string()
     .trim()
@@ -40,7 +41,12 @@ const brandFormSchema = z.object({
   whims: z.array(z.enum(WHIM_IDS)).nullable(),
   showPrices: z.boolean(),
   acceptsPayments: z.boolean(),
-});
+})
+  // A story merchant without a guide prompt would sell books with no plot at all.
+  .refine((brand) => brand.type !== "story" || Boolean(brand.guidePrompt), {
+    message: "Un merchant di tipo Storia ha bisogno del prompt guida: è la sua trama.",
+    path: ["guidePrompt"],
+  });
 
 function text(formData, field) {
   const value = formData.get(field);
@@ -55,6 +61,7 @@ export async function saveBrand(_previousState, formData) {
 
   const parsed = brandFormSchema.safeParse({
     id: text(formData, "id") || null,
+    type: text(formData, "type"),
     slug: text(formData, "slug"),
     name: text(formData, "name"),
     active: formData.get("active") === "on",
@@ -107,6 +114,7 @@ export async function saveBrand(_previousState, formData) {
     slug: isMainSite ? BRAND_DEFAULT.slug : data.slug,
     name: data.name,
     active: isMainSite ? true : data.active,
+    type: data.type,
     theme: data.theme,
     logo_url: data.logoUrl || null,
     hero: data.hero,

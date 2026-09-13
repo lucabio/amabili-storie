@@ -17,7 +17,11 @@ const EMPTY_TRAITS = {
   description: "",
 };
 
-const STEP_LABELS = ["Capriccio", "Famiglia", "Protagonisti"];
+const STEPS = [
+  { id: 1, label: "Capriccio" },
+  { id: 2, label: "Famiglia" },
+  { id: 3, label: "Protagonisti" },
+];
 
 const inputClasses =
   "rounded-[14px] border border-border bg-cream px-4 py-3.5 font-semibold text-ink outline-accent";
@@ -63,7 +67,11 @@ function BackButton(props) {
 }
 
 export default function Configurator({ brand, whims }) {
-  const [step, setStep] = useState(1);
+  // A story merchant has no whim to pick — the plot is its own — so the wizard
+  // starts from the family. Only UX: the server enforces it (paramsForBrand).
+  const isStory = brand.type === "story";
+  const steps = isStory ? STEPS.slice(1) : STEPS;
+  const [step, setStep] = useState(isStory ? 2 : 1);
   const [form, setForm] = useState({
     whim: null,
     customWhim: "",
@@ -75,6 +83,8 @@ export default function Configurator({ brand, whims }) {
     mother: "",
     father: "",
     detail: "",
+    stayPeriod: "",
+    favoriteMoment: "",
     traits: {
       child: { ...EMPTY_TRAITS },
       mother: { ...EMPTY_TRAITS },
@@ -106,7 +116,9 @@ export default function Configurator({ brand, whims }) {
   // the format pre-selected at checkout, which stays editable in the preview.
   const chosenFormat = printed.chosen ? printed.format : "ebook";
 
-  const coverTitle = composeTitle(chosenWhim, cleanName || "…");
+  const coverTitle = isStory
+    ? `La vacanza di ${cleanName || "…"}`
+    : composeTitle(chosenWhim, cleanName || "…");
   const initial = (cleanName[0] || "A").toUpperCase();
 
   const step1Done =
@@ -114,7 +126,7 @@ export default function Configurator({ brand, whims }) {
     (form.whim !== "altro" || form.customWhim.trim().length > 0);
   const step2Done =
     Boolean(form.family) && (form.family !== "animali" || Boolean(form.animal));
-  const canGenerate = step1Done && step2Done && cleanName.length > 0;
+  const canGenerate = (isStory || step1Done) && step2Done && cleanName.length > 0;
 
   async function generate() {
     if (!canGenerate || loading) return;
@@ -160,29 +172,29 @@ export default function Configurator({ brand, whims }) {
 
           {/* Stepper */}
           <div className="my-7 flex justify-center" aria-hidden="true">
-            {[1, 2, 3].map((number, index) => (
-              <div key={number} className="flex items-center">
+            {steps.map(({ id, label }, index) => (
+              <div key={id} className="flex items-center">
                 {index > 0 && (
                   <span
-                    className={`mx-1.5 h-0.5 w-8 ${step > index ? "bg-accent" : "bg-border"}`}
+                    className={`mx-1.5 h-0.5 w-8 ${step >= id ? "bg-accent" : "bg-border"}`}
                   />
                 )}
                 <span className="flex flex-col items-center gap-1.5">
                   <span
                     className={`flex h-8.5 w-8.5 items-center justify-center rounded-full font-display text-sm font-bold transition-colors ${
-                      step >= number
+                      step >= id
                         ? "bg-accent text-cream"
                         : "bg-cream-dark text-ink-muted"
                     }`}
                   >
-                    {number}
+                    {index + 1}
                   </span>
                   <span
                     className={`text-[11px] font-bold tracking-[0.06em] uppercase ${
-                      step >= number ? "text-ink" : "text-ink-faint"
+                      step >= id ? "text-ink" : "text-ink-faint"
                     }`}
                   >
-                    {STEP_LABELS[index]}
+                    {label}
                   </span>
                 </span>
               </div>
@@ -193,7 +205,7 @@ export default function Configurator({ brand, whims }) {
             <div>
               {step === 1 && (
                 <div className="anim-pop">
-                  <p className="mb-4 text-[1.1rem] font-bold">Quale whim vuoi risolvere?</p>
+                  <p className="mb-4 text-[1.1rem] font-bold">Quale capriccio vuoi risolvere?</p>
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-2.5">
                     {whims.map((whim) => {
                       const active = form.whim === whim.id;
@@ -224,7 +236,7 @@ export default function Configurator({ brand, whims }) {
                       className={`${inputClasses} mt-3.5 w-full`}
                       placeholder="Raccontacelo tu: es. non vuole lavarsi i denti…"
                       value={form.customWhim}
-                      onChange={update("capriccioLibero")}
+                      onChange={update("customWhim")}
                     />
                   )}
 
@@ -239,7 +251,7 @@ export default function Configurator({ brand, whims }) {
               {step === 2 && (
                 <div className="anim-pop">
                   <p className="mb-4 text-[1.1rem] font-bold">
-                    Come vuoi rappresentare la family?
+                    Come vuoi rappresentare la famiglia?
                   </p>
                   <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-2.5">
                     <Chip
@@ -281,7 +293,7 @@ export default function Configurator({ brand, whims }) {
                   )}
 
                   <div className="mt-2 flex gap-3">
-                    <BackButton onClick={() => setStep(1)} />
+                    {!isStory && <BackButton onClick={() => setStep(1)} />}
                     <NextButton disabled={!step2Done} onClick={() => setStep(3)}>
                       Avanti
                     </NextButton>
@@ -293,6 +305,22 @@ export default function Configurator({ brand, whims }) {
                 <div className="anim-pop">
                   <p className="mb-4 text-[1.1rem] font-bold">Presenta i protagonisti</p>
                   <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3">
+                    {isStory && (
+                      <>
+                        <input
+                          className={inputClasses}
+                          placeholder="Quando siete stati da noi? (es. luglio 2026)"
+                          value={form.stayPeriod}
+                          onChange={update("stayPeriod")}
+                        />
+                        <input
+                          className={inputClasses}
+                          placeholder="Cosa è piaciuto di più? (es. i castelli di sabbia)"
+                          value={form.favoriteMoment}
+                          onChange={update("favoriteMoment")}
+                        />
+                      </>
+                    )}
                     <input
                       className={inputClasses}
                       placeholder="Nome del bambino/a *"
@@ -348,7 +376,7 @@ export default function Configurator({ brand, whims }) {
                         <span className="inline-block transition-transform group-open:rotate-90">
                           ›
                         </span>
-                        Aggiungi qualche detail — facoltativo
+                        Aggiungi qualche dettaglio — facoltativo
                       </span>
                     </summary>
                     <p className="mt-2 mb-4 text-xs font-medium text-ink-muted">
@@ -390,7 +418,7 @@ export default function Configurator({ brand, whims }) {
                             htmlFor="printed-format"
                             className="mb-2 block text-[0.9rem] font-semibold"
                           >
-                            Scegli format:
+                            Scegli il formato:
                           </label>
                           <select
                             id="printed-format"
@@ -472,7 +500,7 @@ export default function Configurator({ brand, whims }) {
 
           {loading && (
             <div className="mt-8 flex items-center justify-center gap-3" role="status">
-              <span className="anim-spinny inline-block h-5.5 w-5.5 rounded-full border-3 border-border border-t-accento" />
+              <span className="anim-spinny inline-block h-5.5 w-5.5 rounded-full border-3 border-border border-t-accent" />
               <span className="font-semibold text-ink-soft">
                 Stiamo scrivendo la storia di {cleanName || "tuo figlio"}…
               </span>

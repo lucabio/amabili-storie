@@ -48,6 +48,15 @@ Stile:
 export function buildSystemPrompt(brand) {
   if (!brand?.guidePrompt) return AMABILI_METHOD;
 
+  // For a story merchant the guide prompt is not the background: it is the plot.
+  if (brand.type === "story") {
+    return `${AMABILI_METHOD}
+
+--- LA STORIA DI QUESTA EDIZIONE (${brand.name}) ---
+In questa edizione non c'è un capriccio da superare: la trama è decisa da ${brand.name} ed è la stessa per ogni famiglia. Seguila fedelmente, senza mai sembrare pubblicità. Cambiano solo i protagonisti e i dettagli personali indicati:
+${brand.guidePrompt}`;
+  }
+
   return `${AMABILI_METHOD}
 
 --- AMBIENTAZIONE OBBLIGATORIA (${brand.name}) ---
@@ -55,9 +64,31 @@ Ogni storia di questa edizione condivide questo filo comune, che va intrecciato 
 ${brand.guidePrompt}`;
 }
 
-/** User prompt: the params chosen by the parent plus the whim's arc. */
-export function buildPrompt(params, pageCount) {
+/**
+ * Where the plot comes from: the whim's arc, or — for a story merchant — the
+ * system prompt, with the two details only that merchant's form asks for.
+ */
+function plotLines(params, brand) {
+  if (brand?.type === "story") {
+    return [
+      "Trama: quella dell'edizione, descritta nelle istruzioni.",
+      params.stayPeriod && `Periodo del soggiorno: ${params.stayPeriod}.`,
+      params.favoriteMoment &&
+        `Cosa è piaciuto di più a ${params.name}, da intrecciare nella storia: ${params.favoriteMoment}.`,
+    ].filter(Boolean);
+  }
+
   const whim = getWhim(params.whim);
+  const difficulty = params.whim === "altro" ? params.customWhim : whim.label;
+  return [
+    `Difficoltà da affrontare: ${difficulty}.`,
+    `Bisogno sottostante da rispettare: ${whim.need}`,
+    `Arco narrativo da seguire: ${whim.arc}`,
+  ];
+}
+
+/** User prompt: the params chosen by the parent plus the plot (see `plotLines`). */
+export function buildPrompt(params, pageCount, brand) {
   const animal = getAnimal(params.animal);
 
   const protagonist =
@@ -68,15 +99,10 @@ export function buildPrompt(params, pageCount) {
   const parents =
     [params.mother, params.father].filter(Boolean).join(" e ") || "la mamma e il papà";
 
-  const difficulty =
-    params.whim === "altro" ? params.customWhim : whim.label;
-
   const lines = [
     `Protagonista: ${protagonist}. Ha ${params.age} anni.`,
     `Genitori: ${parents}.`,
-    `Difficoltà da affrontare: ${difficulty}.`,
-    `Bisogno sottostante da rispettare: ${whim.need}`,
-    `Arco narrativo da seguire: ${whim.arc}`,
+    ...plotLines(params, brand),
     `Scrivi esattamente ${pageCount} pagine.`,
   ];
 

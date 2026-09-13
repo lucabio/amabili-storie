@@ -21,7 +21,8 @@ const characterTraitsSchema = z.object({
 /** What the wizard sends to the server. Validated at the API boundary. */
 export const storyParamsSchema = z
   .object({
-    whim: whimIdSchema,
+    /** null for a story merchant. Whether it is required depends on the brand: see `paramsForBrand`. */
+    whim: whimIdSchema.nullish().default(null),
     /** Required only when whim === "altro". */
     customWhim: z.string().trim().max(300).default(""),
 
@@ -35,6 +36,11 @@ export const storyParamsSchema = z
     mother: z.string().trim().max(40).default(""),
     father: z.string().trim().max(40).default(""),
     detail: z.string().trim().max(300).default(""),
+
+    /** Story merchants only: when the family stayed, e.g. "luglio 2026". */
+    stayPeriod: z.string().trim().max(60).default(""),
+    /** Story merchants only: what the child liked the most, e.g. "i castelli di sabbia". */
+    favoriteMoment: z.string().trim().max(300).default(""),
 
     // prefault, not default: in Zod 4 `.default()` short-circuits and would
     // return the value as-is (e.g. `{}` would stay `{}` instead of applying the
@@ -59,6 +65,25 @@ export const storyParamsSchema = z
     message: "Raccontaci qual è il capriccio",
     path: ["customWhim"],
   });
+
+/**
+ * The params alone cannot tell whether a whim is due: the brand decides, and the
+ * brand is read from the database. Call it at every boundary right after
+ * `resolveBrand` — the client's form is not what enforces this.
+ *
+ * @returns {{params: object} | {error: string}}
+ */
+export function paramsForBrand(params, brand) {
+  // The plot is the merchant's: a whim sent anyway is dropped, not trusted.
+  if (brand.type === "story") {
+    return { params: { ...params, whim: null, customWhim: "" } };
+  }
+  if (!params.whim) return { error: "Scegli il capriccio da risolvere" };
+  if (brand.whims && !brand.whims.includes(params.whim)) {
+    return { error: "Questo capriccio non è disponibile qui" };
+  }
+  return { params };
+}
 
 /**
  * Shape of the story produced by the model. Passed to `generateObject`, so every

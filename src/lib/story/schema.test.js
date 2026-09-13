@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { BRAND_DEFAULT, brandFromRow, brandSchema } from "@/lib/brand/schema";
 import { getWhim } from "@/lib/domain/whims";
-import { buildPrompt } from "@/lib/story/prompt";
-import { storyParamsSchema } from "@/lib/story/schema";
+import { buildPrompt, buildSystemPrompt } from "@/lib/story/prompt";
+import { paramsForBrand, storyParamsSchema } from "@/lib/story/schema";
 
 const BASE = {
   whim: "sonno",
@@ -138,5 +139,64 @@ describe("buildPrompt — the traits", () => {
     });
     expect(buildPrompt(withoutNames, 3)).toContain("Aspetto della mamma: capelli: corti.");
     expect(buildPrompt(withoutNames, 3)).toContain("Aspetto del papà: capelli: lunghi.");
+  });
+});
+
+const STORY_BRAND = brandSchema.parse({
+  slug: "famiglia_serena",
+  name: "Hotel Famiglia Serena",
+  type: "story",
+  guidePrompt: "La famiglia arriva in hotel, conosce Nina la golden retriever e parte felice.",
+});
+
+const STORY_PARAMS = {
+  family: "umani",
+  name: "Futura",
+  gender: "bimba",
+  age: 4,
+  stayPeriod: "luglio 2026",
+  favoriteMoment: "i castelli di sabbia",
+};
+
+describe("merchant type — whim | story", () => {
+  it("a brand row from before migration 0010 is a whim merchant, like the default", () => {
+    const brand = brandFromRow({ slug: "vecchio", name: "Vecchio", active: true });
+
+    expect(brand.type).toBe("whim");
+    expect(BRAND_DEFAULT.type).toBe("whim");
+  });
+
+  it("a story merchant needs no whim, and drops one sent anyway", () => {
+    const withoutWhim = paramsForBrand(storyParamsSchema.parse(STORY_PARAMS), STORY_BRAND);
+    expect(withoutWhim.params.whim).toBeNull();
+
+    const withWhim = paramsForBrand(storyParamsSchema.parse(BASE), STORY_BRAND);
+    expect(withWhim.params.whim).toBeNull();
+  });
+
+  it("a whim merchant still requires a whim, and only one it offers", () => {
+    expect(paramsForBrand(storyParamsSchema.parse(STORY_PARAMS), BRAND_DEFAULT).error).toBeTruthy();
+
+    const mountainHotel = brandSchema.parse({ slug: "monti", name: "Monti", whims: ["buio"] });
+    expect(paramsForBrand(storyParamsSchema.parse(BASE), mountainHotel).error).toBeTruthy();
+    expect(paramsForBrand(storyParamsSchema.parse(BASE), BRAND_DEFAULT).params.whim).toBe("sonno");
+  });
+
+  it("a story prompt has no whim arc, and carries the stay details", () => {
+    const params = storyParamsSchema.parse(STORY_PARAMS);
+    const prompt = buildPrompt(params, 3, STORY_BRAND);
+
+    expect(prompt).not.toContain("Difficoltà da affrontare");
+    expect(prompt).not.toContain("Arco narrativo");
+    expect(prompt).toContain("Periodo del soggiorno: luglio 2026.");
+    expect(prompt).toContain("i castelli di sabbia");
+  });
+
+  it("a story merchant's guide prompt is the plot, not the background", () => {
+    const system = buildSystemPrompt(STORY_BRAND);
+
+    expect(system).toContain(STORY_BRAND.guidePrompt);
+    expect(system).toContain("LA STORIA DI QUESTA EDIZIONE");
+    expect(system).not.toContain("AMBIENTAZIONE OBBLIGATORIA");
   });
 });

@@ -134,7 +134,7 @@ export default function StoryEditor({ story }) {
           {LABELS[story.state]}
         </span>
         <h1 className="font-display text-2xl font-semibold">
-          {story.params?.name} · {story.params?.whim}
+          {story.params?.name} · {story.params?.whim ?? "storia"}
         </h1>
         <a
           href={`/admin/stories/${story.id}/pdf`}

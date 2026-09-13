@@ -1,6 +1,6 @@
 import { resolveBrand } from "@/lib/brand/resolve";
 import { generateStory, PREVIEW_PAGES } from "@/lib/story/generate";
-import { storyParamsSchema } from "@/lib/story/schema";
+import { paramsForBrand, storyParamsSchema } from "@/lib/story/schema";
 
 /** Generating a story costs: raise the limit past the 10s default. */
 export const maxDuration = 60;
@@ -22,8 +22,12 @@ export async function POST(request) {
     );
   }
 
-  const params = parsed.data;
-  const brand = await resolveBrand(params.brand);
+  const brand = await resolveBrand(parsed.data.brand);
+  const checked = paramsForBrand(parsed.data, brand);
+  if (checked.error) {
+    return Response.json({ error: checked.error }, { status: 422 });
+  }
+  const { params } = checked;
 
   try {
     const { story, source } = await generateStory({

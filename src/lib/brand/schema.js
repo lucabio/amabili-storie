@@ -5,6 +5,13 @@ import { WHIM_IDS } from "@/lib/domain/whims";
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colore esadecimale non valido");
 
 /**
+ * `whim`: the parent picks a whim, the plot is its arc.
+ * `story`: the plot is always the same and comes from `guidePrompt`; the parent
+ * only customises the characters.
+ */
+export const BRAND_TYPES = ["whim", "story"];
+
+/**
  * A brand is a white-label version of the portal (e.g. Hotel Famiglia Serena,
  * reachable at amabilistorie.com/?version=famiglia_serena).
  *
@@ -18,6 +25,7 @@ export const brandSchema = z.object({
   slug: z.string().min(1),
   name: z.string().min(1),
   active: z.boolean().default(true),
+  type: z.enum(BRAND_TYPES).default("whim"),
 
   // prefault, not default: in Zod 4 `.default()` short-circuits and returns the
   // value as-is, without applying the defaults of the inner fields. `{}` would
@@ -102,6 +110,9 @@ export function brandFromRow(row) {
     slug: row.slug,
     name: row.name,
     active: row.active,
+    // undefined, not null: a row read before migration 0010 has no `type`, and
+    // must become a whim merchant, not an invalid brand.
+    type: row.type ?? undefined,
     theme: row.theme ?? undefined,
     logoUrl: row.logo_url ?? null,
     hero: row.hero ?? undefined,

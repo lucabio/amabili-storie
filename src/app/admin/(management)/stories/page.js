@@ -96,7 +96,7 @@ export default async function Queue({ searchParams }) {
                 {story.params?.name ?? "senza nome"}
               </h2>
               <span className="text-sm font-semibold text-ink-muted">
-                {story.params?.whim}
+                {story.params?.whim ?? "storia"}
               </span>
               <span className="ml-auto text-sm font-semibold text-ink-muted">
                 {story.brands?.name ?? "Sito principale"} · {howLongAgo(story.created_at)}

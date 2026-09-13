@@ -53,14 +53,14 @@ export async function generateStory({
     console.warn(
       "AI Gateway non configurato: uso i template di fallback. Imposta AI_GATEWAY_API_KEY.",
     );
-    return { story: fallbackStory(params, pageCount), source: "fallback" };
+    return { story: fallbackStory(params, pageCount, brand), source: "fallback" };
   }
 
   const { object } = await generateObject({
     model: MODEL,
     schema: generatedStorySchema(pageCount),
     system: buildSystemPrompt(brand),
-    prompt: buildPrompt(params, pageCount),
+    prompt: buildPrompt(params, pageCount, brand),
     temperature: 0.85,
   });
 

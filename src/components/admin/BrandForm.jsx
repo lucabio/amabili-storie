@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { deleteBrand, saveBrand } from "@/app/admin/actions";
 import { BRAND_DEFAULT } from "@/lib/brand/schema";
@@ -43,6 +43,7 @@ export default function BrandForm({ brand }) {
     slug: "",
     name: "",
     active: true,
+    type: "whim",
     theme: BRAND_DEFAULT.theme,
     logoUrl: "",
     hero: BRAND_DEFAULT.hero,
@@ -51,6 +52,8 @@ export default function BrandForm({ brand }) {
     showPrices: true,
     acceptsPayments: true,
   };
+  const [type, setType] = useState(values.type);
+  const isStory = type === "story";
 
   // The main site (amabilistorie.com without ?version=) is the home page: it is
   // not disabled or deleted from the backoffice. The real rule lives on the
@@ -121,6 +124,18 @@ export default function BrandForm({ brand }) {
           </Field>
         </div>
 
+        <Field label="Tipologia" error={errors.type?.[0]}>
+          <select
+            name="type"
+            value={type}
+            onChange={(event) => setType(event.target.value)}
+            className={fieldClasses}
+          >
+            <option value="whim">Capricci — il genitore sceglie il capriccio da risolvere</option>
+            <option value="story">Storia — la trama è sempre la stessa, cambiano i protagonisti</option>
+          </select>
+        </Field>
+
         <Field label="URL del logo (opzionale)" error={errors.logoUrl?.[0]}>
           <input
             name="logoUrl"
@@ -181,7 +196,7 @@ export default function BrandForm({ brand }) {
             />
             Accetta pagamenti
             <span className="text-xs font-medium text-ink-muted">
-              (spegnilo se l&apos;ente regala le stories: niente checkout, l&apos;ordine nasce
+              (spegnilo se l&apos;ente regala le storie: niente checkout, l&apos;ordine nasce
               comunque, a prezzo zero)
             </span>
           </label>
@@ -190,7 +205,11 @@ export default function BrandForm({ brand }) {
 
       <Section
         title="Il prompt guida"
-        description="Il filo comune di tutte le storie di questo merchant. Viene messo nel system prompt sopra il Metodo Amabili: il capriccio resta il tema, questo è lo sfondo."
+        description={
+          isStory
+            ? "La trama di tutte le storie di questo merchant: è sempre la stessa, cambiano solo i protagonisti. Viene messa nel system prompt sopra il Metodo Amabili. Obbligatoria."
+            : "Il filo comune di tutte le storie di questo merchant. Viene messo nel system prompt sopra il Metodo Amabili: il capriccio resta il tema, questo è lo sfondo."
+        }
       >
         <Field
           label="Prompt guida"
@@ -207,6 +226,9 @@ export default function BrandForm({ brand }) {
         </Field>
       </Section>
 
+      {/* Hidden, not unmounted: switching to Storia and back must not lose the
+          chosen whims, and hidden checkboxes are still submitted. */}
+      <div hidden={isStory}>
       <Section
         title="Capricci offerti"
         description="Non selezionarne nessuno per offrirli tutti. Un hotel di montagna, per dire, ha senso che offra solo quelli che si vivono in vacanza."
@@ -230,6 +252,7 @@ export default function BrandForm({ brand }) {
         </div>
         {errors.whims && <p className="text-xs font-bold text-accent">{errors.whims[0]}</p>}
       </Section>
+      </div>
 
       <Section title="Colori" description="Tre esadecimali: il resto del sito si adatta da solo.">
         <div className="grid gap-4 md:grid-cols-3">
