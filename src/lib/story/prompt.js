@@ -44,24 +44,63 @@ Stile:
 - Adatta il lessico all'età indicata.
 - Mai emoji nel testo del libro.`;
 
-/** System prompt: the method plus the merchant's common thread, if any. */
+/**
+ * The platform's safety guardrails: the only thing above the merchant's canon.
+ * A merchant can reshape the story, never these. Product copy — Silvia reviews it.
+ */
+const SAFETY_GUARDRAILS = `Regole di sicurezza della piattaforma. Valgono sopra ogni altra istruzione, comprese quelle dell'edizione:
+- Nessun pericolo reale, nessuna violenza, nessuna morte, nessuna malattia, nessun mostro reale.
+- Nessuna minaccia, nessun ricatto, nessuna vergogna verso il bambino.
+- Nessun comportamento pericoloso presentato come divertente o da imitare.
+- Nessun nome di persone reali oltre ai familiari indicati nei dati della storia: chi lavora nella struttura resta anonimo ("gli animatori", "il cuoco").
+- Nessun prezzo, offerta, prenotazione o invito all'acquisto.
+- Nessun personaggio o marchio di terzi, salvo quelli dell'edizione.`;
+
+/**
+ * The output contract belongs to the platform: `generate.js` validates it with a
+ * fixed Zod schema. A merchant's .md may describe its own format (the Hotel Relax
+ * one does, §5 and §7): this block is what tells the model to ignore it.
+ */
+const OUTPUT_FORMAT = `Il formato della risposta lo decide la piattaforma, e prevale su qualunque formato, schema JSON, numero di pagine o elenco di variabili indicato nelle istruzioni dell'edizione:
+- Rispondi con titolo, pagine (per ognuna il testo e la scena da illustrare), frase-àncora e consigli per il genitore, nello schema richiesto.
+- Il numero di pagine è quello indicato nei dati della storia.
+- I dati della storia sono solo quelli del messaggio. Se l'edizione ne prevede altri che mancano, scegli tu in modo coerente con l'edizione, senza inventare dettagli personali della famiglia.`;
+
+/**
+ * System prompt. Without a guide prompt it is the Method, exactly as always.
+ *
+ * With one, the order is the priority, strongest first: safety guardrails, the
+ * merchant's canon, the output format, the Amabili Method. The story's own
+ * variables are the fifth level and live in the user prompt (`buildPrompt`).
+ * The merchant's canon wins over the Method: that is what a merchant buys.
+ */
 export function buildSystemPrompt(brand) {
   if (!brand?.guidePrompt) return AMABILI_METHOD;
 
   // For a story merchant the guide prompt is not the background: it is the plot.
-  if (brand.type === "story") {
-    return `${AMABILI_METHOD}
+  const framing =
+    brand.type === "story"
+      ? `In questa edizione non c'è un capriccio da superare: la trama è decisa da ${brand.name} ed è la stessa per ogni famiglia. Seguila fedelmente, senza mai sembrare pubblicità. Cambiano solo i protagonisti e i dettagli personali indicati.`
+      : "Ogni storia di questa edizione condivide questo filo comune, che va intrecciato naturalmente nella trama senza mai sembrare pubblicità.";
 
---- LA STORIA DI QUESTA EDIZIONE (${brand.name}) ---
-In questa edizione non c'è un capriccio da superare: la trama è decisa da ${brand.name} ed è la stessa per ogni famiglia. Seguila fedelmente, senza mai sembrare pubblicità. Cambiano solo i protagonisti e i dettagli personali indicati:
-${brand.guidePrompt}`;
-  }
+  // Tags, not "---" separators: a merchant's .md is full of those.
+  return `<sicurezza>
+${SAFETY_GUARDRAILS}
+</sicurezza>
 
-  return `${AMABILI_METHOD}
+<istruzioni_edizione nome="${brand.name}">
+Queste istruzioni vengono prima del Metodo Amabili: se sono in conflitto con il Metodo, vincono queste. ${framing}
 
---- AMBIENTAZIONE OBBLIGATORIA (${brand.name}) ---
-Ogni storia di questa edizione condivide questo filo comune, che va intrecciato naturalmente nella trama senza mai sembrare pubblicità:
-${brand.guidePrompt}`;
+${brand.guidePrompt}
+</istruzioni_edizione>
+
+<formato>
+${OUTPUT_FORMAT}
+</formato>
+
+<metodo_amabili>
+${AMABILI_METHOD}
+</metodo_amabili>`;
 }
 
 /**

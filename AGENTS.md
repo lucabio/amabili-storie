@@ -23,6 +23,14 @@ which ends up in the system prompt above the Amabili Method. It is the most impo
 of domain in the project: if you touch the prompt pipeline, you are touching the product
 that is sold.
 
+The guide prompt can be a whole editorial canon, uploaded from the backoffice as `.md`
+(ASD-8). With one, the system prompt is assembled by priority — safety guardrails, the
+merchant's canon, the platform's output format, the Amabili Method — and the story's
+variables follow in the user prompt: **the canon beats the Method, the format stays the
+platform's** (a `.md` cannot change the schema `generate.js` validates). Without one, the
+system prompt is the Method alone. Every change is a row in `guide_prompt_versions`, written
+by a trigger (migration `0011`), and every story records the version that wrote it.
+
 ## Language rules
 
 - **The code is English. The product speaks Italian.** Identifiers, file names, comments,
@@ -90,7 +98,7 @@ src/
   workflows/
     book.js                        generateBook: the birth of a book, durable
 supabase/
-  migrations/                      0001 … 0010 — apply them with the CLI, never by hand
+  migrations/                      0001 … 0011 — apply them with the CLI, never by hand
   templates/                       The access email: paste it into the dashboard
   seed.sql                         Hotel Famiglia Serena, for development
 proxy.js                           Refreshes the Supabase session on /admin/* and /account/*

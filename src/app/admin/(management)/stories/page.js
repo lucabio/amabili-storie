@@ -27,7 +27,9 @@ export default async function Queue({ searchParams }) {
 
   let query = supabase
     .from("stories")
-    .select("id, state, params, created_at, error, brands (slug, name)")
+    .select(
+      "id, state, params, created_at, error, brands (slug, name), guide_prompt_versions!stories_guide_prompt_version_id_fkey (version)",
+    )
     // Oldest at the top: the queue is worked from the bottom.
     .order("created_at", { ascending: true });
 
@@ -99,7 +101,10 @@ export default async function Queue({ searchParams }) {
                 {story.params?.whim ?? "storia"}
               </span>
               <span className="ml-auto text-sm font-semibold text-ink-muted">
-                {story.brands?.name ?? "Sito principale"} · {howLongAgo(story.created_at)}
+                {story.brands?.name ?? "Sito principale"}
+                {story.guide_prompt_versions && ` · prompt v${story.guide_prompt_versions.version}`}
+                {" · "}
+                {howLongAgo(story.created_at)}
               </span>
             </div>
 

@@ -144,6 +144,18 @@ export default function StoryEditor({ story }) {
         </a>
       </div>
 
+      {/* The canon that wrote this story, as it was then — not the merchant's current one. */}
+      {story.guide_prompt_versions && (
+        <details className="mt-4 rounded-card border border-border bg-white p-4">
+          <summary className="cursor-pointer text-sm font-bold text-ink-soft">
+            Scritta con il prompt guida v{story.guide_prompt_versions.version}
+          </summary>
+          <pre className="mt-3 max-h-96 overflow-auto text-xs font-medium whitespace-pre-wrap text-ink-soft">
+            {story.guide_prompt_versions.content}
+          </pre>
+        </details>
+      )}
+
       {story.state === "fallita" && story.error && (
         <p className="mt-4 rounded-card bg-accent/10 p-4 font-semibold text-accent">
           La generazione è fallita: {story.error}

@@ -196,7 +196,7 @@ describe("merchant type — whim | story", () => {
     const system = buildSystemPrompt(STORY_BRAND);
 
     expect(system).toContain(STORY_BRAND.guidePrompt);
-    expect(system).toContain("LA STORIA DI QUESTA EDIZIONE");
-    expect(system).not.toContain("AMBIENTAZIONE OBBLIGATORIA");
+    expect(system).toContain("la trama è decisa da Hotel Famiglia Serena");
+    expect(system).not.toContain("filo comune");
   });
 });

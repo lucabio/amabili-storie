@@ -22,7 +22,7 @@ export async function generateBook(orderId) {
   "use workflow";
 
   const { order, brand } = await loadOrder(orderId);
-  const storyId = await createGeneratingStory(order);
+  const storyId = await createGeneratingStory(order, brand);
 
   // The courtesy email must not be able to cost the book: the step retries by
   // itself (the WDK default policy), and if Resend is still down after all
@@ -78,7 +78,7 @@ async function loadOrder(orderId) {
   return { order, brand };
 }
 
-async function createGeneratingStory(order) {
+async function createGeneratingStory(order, brand) {
   "use step";
 
   // getWorkflowMetadata() works inside a step too (not only in the workflow):
@@ -102,6 +102,10 @@ async function createGeneratingStory(order) {
     reviewed_by: null,
     reviewed_at: null,
     run_id: workflowRunId,
+    // The same brand `writeText` generates with: the story stays traceable to
+    // the canon that wrote it, even after the merchant changes it. A
+    // regeneration overwrites it, because it rewrites the text too.
+    guide_prompt_version_id: brand.guidePromptVersionId,
   };
 
   // A regeneration (src/app/admin/stories/actions.js, regenerateStory) relaunches

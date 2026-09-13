@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 
 import { deleteBrand, saveBrand } from "@/app/admin/actions";
 import { BRAND_DEFAULT } from "@/lib/brand/schema";
@@ -48,12 +48,23 @@ export default function BrandForm({ brand }) {
     logoUrl: "",
     hero: BRAND_DEFAULT.hero,
     guidePrompt: "",
+    guidePromptVersion: null,
     whims: null,
     showPrices: true,
     acceptsPayments: true,
   };
   const [type, setType] = useState(values.type);
   const isStory = type === "story";
+
+  // The .md is read here and poured into the textarea: the admin sees what goes
+  // into the prompt before saving, and the server only ever receives text. The
+  // file input has no name, so it is never submitted.
+  const guidePromptRef = useRef(null);
+  async function loadMarkdown(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    guidePromptRef.current.value = await file.text();
+  }
 
   // The main site (amabilistorie.com without ?version=) is the home page: it is
   // not disabled or deleted from the backoffice. The real rule lives on the
@@ -207,20 +218,45 @@ export default function BrandForm({ brand }) {
         title="Il prompt guida"
         description={
           isStory
-            ? "La trama di tutte le storie di questo merchant: è sempre la stessa, cambiano solo i protagonisti. Viene messa nel system prompt sopra il Metodo Amabili. Obbligatoria."
-            : "Il filo comune di tutte le storie di questo merchant. Viene messo nel system prompt sopra il Metodo Amabili: il capriccio resta il tema, questo è lo sfondo."
+            ? "La trama di tutte le storie di questo merchant: è sempre la stessa, cambiano solo i protagonisti. Obbligatoria."
+            : "Il filo comune di tutte le storie di questo merchant."
         }
       >
+        <p className="text-sm font-medium text-ink-soft">
+          È il canone del merchant: se è in conflitto con il Metodo Amabili, vince il prompt
+          guida. Sopra resta solo la sicurezza, e il formato del libro lo decide comunque la
+          piattaforma. Ogni modifica salvata è una nuova versione, e ogni storia ricorda quella
+          con cui è stata scritta.
+        </p>
+
+        <label className="flex flex-wrap items-center gap-3 text-sm font-bold">
+          Carica un file .md
+          <input
+            type="file"
+            accept=".md,.markdown,.txt,text/markdown,text/plain"
+            onChange={loadMarkdown}
+            className="text-sm font-medium text-ink-soft"
+          />
+          <span className="font-medium text-ink-muted">
+            (sostituisce il testo qui sotto: rileggilo e salva)
+          </span>
+        </label>
+
         <Field
           label={isStory ? "Prompt guida *" : "Prompt guida"}
-          hint="Scrivi in italiano, come parlassi all'autore. Es: «La storia si svolge durante il soggiorno all'Hotel Famiglia Serena, in Val Gardena. Nomina almeno una volta, in modo naturale e mai pubblicitario, la colazione con le torte fatte in casa o Nina, la golden retriever dell'hotel.»"
+          hint={
+            values.guidePromptVersion
+              ? `Versione attuale: v${values.guidePromptVersion}.`
+              : "Scrivi in italiano, come parlassi all'autore, o carica un .md. Es: «La storia si svolge durante il soggiorno all'Hotel Famiglia Serena, in Val Gardena. Nomina almeno una volta, in modo naturale e mai pubblicitario, la colazione con le torte fatte in casa o Nina, la golden retriever dell'hotel.»"
+          }
           error={errors.guidePrompt?.[0]}
         >
           <textarea
+            ref={guidePromptRef}
             name="guidePrompt"
             // Only UX: saveBrand refuses a story merchant without it anyway.
             required={isStory}
-            rows={7}
+            rows={12}
             defaultValue={values.guidePrompt}
             placeholder="La storia si svolge durante il soggiorno all'Hotel…"
             className={`${fieldClasses} font-medium`}

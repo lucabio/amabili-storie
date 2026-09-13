@@ -12,7 +12,7 @@ export default async function Review({ params }) {
 
   const { data: story } = await supabase
     .from("stories")
-    .select("*")
+    .select("*, guide_prompt_versions!stories_guide_prompt_version_id_fkey (version, content)")
     .eq("id", id)
     .maybeSingle();
 

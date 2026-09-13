@@ -58,6 +58,9 @@ export const brandSchema = z.object({
   /** The common thread of the merchant's stories. Goes straight into the system prompt. */
   guidePrompt: z.string().nullable().default(null),
 
+  /** The `guide_prompt_versions` row `guidePrompt` is (migration 0011). Stamped on every story. */
+  guidePromptVersionId: z.uuid().nullable().default(null),
+
   /** Subset of whims offered by the merchant. null = all of them. */
   whims: z.array(z.enum(WHIM_IDS)).min(1).nullable().default(null),
 
@@ -117,6 +120,7 @@ export function brandFromRow(row) {
     logoUrl: row.logo_url ?? null,
     hero: row.hero ?? undefined,
     guidePrompt: row.guide_prompt ?? null,
+    guidePromptVersionId: row.guide_prompt_version_id ?? null,
     whims: row.whims ?? null,
     showPrices: row.show_prices,
     acceptsPayments: row.accepts_payments,

@@ -36,7 +36,8 @@ const brandFormSchema = z.object({
     subtitle: z.string().trim().min(1),
     cta: z.string().trim().min(1),
   }),
-  guidePrompt: z.string().trim().nullable(),
+  // A 250-line canon is ~15k characters: the cap is there for a wrong file, not a long one.
+  guidePrompt: z.string().trim().max(100_000, "Il prompt guida è troppo lungo: hai caricato il file giusto?").nullable(),
   /** Empty = all whims. */
   whims: z.array(z.enum(WHIM_IDS)).nullable(),
   showPrices: z.boolean(),
