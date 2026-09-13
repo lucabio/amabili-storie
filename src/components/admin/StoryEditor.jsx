@@ -16,7 +16,7 @@ import { LABELS, transitionAllowed } from "@/lib/story/states";
 
 const ALIGNMENT_LABELS = { left: "Sx", center: "Ce", right: "Dx" };
 
-export default function StoryEditor({ story, defaultCharacterSheet }) {
+export default function StoryEditor({ story, defaultCharacterSheet, placePhotos = [] }) {
   const [content, setContent] = useState(story.content);
   // The textarea is local: `content.characterSheet` only changes when the server
   // has drawn it, so "Salva" can never pair a text with an image it did not draw.
@@ -97,6 +97,11 @@ export default function StoryEditor({ story, defaultCharacterSheet }) {
 
   const updateStyle = (i, patch) => updateLayout(i, { style: patch });
 
+  // A photo the merchant has since deleted is no choice at all: it reads as "Nessuno".
+  function chosenPlace(p) {
+    return placePhotos.some((photo) => photo.url === p.placePhotoUrl) ? p.placePhotoUrl : null;
+  }
+
   async function illustrate(i) {
     setDrawing((s) => ({ ...s, [i]: true }));
     setPageErrors((errors) => {
@@ -104,7 +109,12 @@ export default function StoryEditor({ story, defaultCharacterSheet }) {
       delete copy[i];
       return copy;
     });
-    const response = await generateStoryIllustration(story.id, i, pages[i].illustration);
+    const response = await generateStoryIllustration(
+      story.id,
+      i,
+      pages[i].illustration,
+      chosenPlace(pages[i]),
+    );
     setDrawing((s) => ({ ...s, [i]: false }));
     if (response?.ok && response.url) {
       updatePage(i, "illustrationUrl", response.url);
@@ -355,6 +365,38 @@ export default function StoryEditor({ story, defaultCharacterSheet }) {
                     className="mt-1.5 w-full rounded-[14px] border border-border px-4 py-2.5 text-sm font-medium outline-accent disabled:bg-cream disabled:text-ink-soft"
                   />
                 </label>
+                {placePhotos.length > 0 && (
+                  <label className="block">
+                    <span className="text-xs font-bold text-ink-muted uppercase">
+                      Luogo di riferimento
+                    </span>
+                    <span className="mt-1.5 flex items-center gap-3">
+                      <select
+                        value={chosenPlace(page) ?? ""}
+                        onChange={(event) =>
+                          updatePage(index, "placePhotoUrl", event.target.value || null)
+                        }
+                        disabled={!reviewable}
+                        className="min-w-0 flex-1 rounded-[10px] border border-border bg-white px-2.5 py-2 text-sm font-semibold outline-accent disabled:bg-cream disabled:text-ink-soft"
+                      >
+                        <option value="">Nessuno</option>
+                        {placePhotos.map((photo) => (
+                          <option key={photo.url} value={photo.url}>
+                            {photo.caption}
+                          </option>
+                        ))}
+                      </select>
+                      {chosenPlace(page) && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={chosenPlace(page)}
+                          alt=""
+                          className="h-10 w-14 shrink-0 rounded-[8px] border border-border object-cover"
+                        />
+                      )}
+                    </span>
+                  </label>
+                )}
               </div>
 
               <div className="flex flex-col gap-3">

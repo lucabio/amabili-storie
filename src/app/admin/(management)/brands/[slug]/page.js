@@ -42,6 +42,7 @@ export default async function EditMerchant({ params }) {
     guidePrompt: row.guide_prompt ?? "",
     guidePromptVersion: row.current_version?.version ?? null,
     whims: row.whims,
+    placePhotos: row.place_photos ?? [],
     showPrices: row.show_prices,
     acceptsPayments: row.accepts_payments,
   };

@@ -12,6 +12,16 @@ const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Colore esadecimale non v
 export const BRAND_TYPES = ["whim", "story"];
 
 /**
+ * A photo of one of the merchant's places (ASD-10), a visual reference for the
+ * illustrations only — never for the text. The caption is what lets the admin
+ * pick the right photo for a scene, and it tells the model what it is looking at.
+ */
+export const placePhotoSchema = z.object({
+  url: z.url(),
+  caption: z.string().trim().min(1, "Serve la didascalia: è quella che fa scegliere la foto giusta").max(120),
+});
+
+/**
  * A brand is a white-label version of the portal (e.g. Hotel Famiglia Serena,
  * reachable at amabilistorie.com/?version=famiglia_serena).
  *
@@ -63,6 +73,13 @@ export const brandSchema = z.object({
 
   /** Subset of whims offered by the merchant. null = all of them. */
   whims: z.array(z.enum(WHIM_IDS)).min(1).nullable().default(null),
+
+  /**
+   * Photos of the merchant's places (migration 0012). Empty = drawn as before.
+   * `.catch`, not a validation error: one malformed photo written by hand must
+   * cost the photos, not the whole brand falling back to BRAND_DEFAULT.
+   */
+  placePhotos: z.array(placePhotoSchema).catch([]),
 
   /**
    * A merchant that gives stories away to its guests does not show the price
@@ -122,6 +139,7 @@ export function brandFromRow(row) {
     guidePrompt: row.guide_prompt ?? null,
     guidePromptVersionId: row.guide_prompt_version_id ?? null,
     whims: row.whims ?? null,
+    placePhotos: row.place_photos ?? [],
     showPrices: row.show_prices,
     acceptsPayments: row.accepts_payments,
   });
@@ -131,4 +149,13 @@ export function brandFromRow(row) {
     return null;
   }
   return result.data;
+}
+
+/**
+ * The merchant's photo at `url`, or null. The URL of a page's place arrives from
+ * the client and the server downloads it: only one of the merchant's own photos
+ * may pass, or the server fetches whatever it is told to.
+ */
+export function placePhotoFor(brand, url) {
+  return brand?.placePhotos.find((photo) => photo.url === url) ?? null;
 }

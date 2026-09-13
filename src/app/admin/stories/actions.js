@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { start } from "workflow/api";
 
 import { adminUser } from "@/lib/admin/session";
-import { BRAND_DEFAULT, brandFromRow } from "@/lib/brand/schema";
+import { BRAND_DEFAULT, brandFromRow, placePhotoFor } from "@/lib/brand/schema";
 import { sendMail } from "@/lib/mail/send";
 import { storyReadyMail } from "@/lib/mail/templates";
 import { generateIllustration } from "@/lib/story/illustrations";
@@ -258,8 +258,12 @@ export async function regenerateStory(storyId) {
  * The `scene` comes from the client (the "La scena da illustrare" text the admin
  * has in front of them, even if not saved yet): so we draw what they see, not an
  * older version from the database.
+ *
+ * `rawPlacePhotoUrl` is the merchant's place photo the admin chose for this page
+ * (ASD-10), or nothing. It comes from the client too — and the server downloads
+ * it, so only one of the brand's own photos is accepted.
  */
-export async function generateStoryIllustration(storyId, index, rawScene) {
+export async function generateStoryIllustration(storyId, index, rawScene, rawPlacePhotoUrl) {
   await requireAdmin();
 
   const story = await readStory(storyId);
@@ -286,11 +290,18 @@ export async function generateStoryIllustration(storyId, index, rawScene) {
     return { error: "Serve la descrizione della scena per generare l'illustrazione." };
   }
 
+  const place = rawPlacePhotoUrl ? placePhotoFor(brandFromRow(story.brands), rawPlacePhotoUrl) : null;
+  if (rawPlacePhotoUrl && !place) {
+    return { error: "La foto del luogo scelta non è fra quelle del merchant: forse è stata eliminata." };
+  }
+
   let url;
   try {
     const { bytes, mediaType } = await generateIllustration({
-      prompt: buildIllustrationPrompt({ scene, sheet: sheet.text }),
-      reference: sheet.url,
+      prompt: buildIllustrationPrompt({ scene, sheet: sheet.text, place: place?.caption }),
+      // ponytail: two references stacked on every page with a place. If the face
+      // degrades (to be measured, ASD-10), one reference per page and the sheet wins.
+      references: place ? [sheet.url, place.url] : [sheet.url],
     });
     url = await saveIllustration({ storyId, name: `page-${index}`, bytes, mediaType });
   } catch (problem) {
@@ -303,7 +314,7 @@ export async function generateStoryIllustration(storyId, index, rawScene) {
   // time there is no race between pages; if one day there are two, we will move
   // to a jsonb_set.
   const updatedPages = pages.map((page, i) =>
-    i === index ? { ...page, illustrationUrl: url } : page,
+    i === index ? { ...page, illustrationUrl: url, placePhotoUrl: place?.url ?? null } : page,
   );
 
   const db = createAdminSupabase();

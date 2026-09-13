@@ -52,5 +52,19 @@ describe("illustration prompts", () => {
     expect(prompt).toContain("Stesso viso, stessa corporatura, stessa età del riferimento");
     expect(prompt).toContain("abbigliamento, posa e ambientazione seguono la scena");
     expect(prompt.endsWith("Scena da illustrare: Futura al mare.")).toBe(true);
+    expect(prompt).toContain("L'immagine allegata è il foglio personaggi");
+  });
+
+  it("a place photo is a second image: the setting, never the faces", () => {
+    const prompt = buildIllustrationPrompt({
+      scene: "Futura a colazione.",
+      sheet: SHEET,
+      place: "La sala colazione",
+    });
+
+    expect(prompt).toContain("La prima immagine allegata è il foglio personaggi");
+    expect(prompt).toContain("La seconda immagine allegata è la foto reale del luogo: La sala colazione.");
+    expect(prompt).toContain("I visi vengono solo dal foglio personaggi");
+    expect(prompt.endsWith("Scena da illustrare: Futura a colazione.")).toBe(true);
   });
 });

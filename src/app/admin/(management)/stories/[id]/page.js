@@ -14,7 +14,9 @@ export default async function Review({ params }) {
 
   const { data: story, error } = await supabase
     .from("stories")
-    .select("*, guide_prompt_versions!stories_guide_prompt_version_id_fkey (version, content)")
+    .select(
+      "*, guide_prompt_versions!stories_guide_prompt_version_id_fkey (version, content), brands (place_photos)",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -33,5 +35,11 @@ export default async function Review({ params }) {
 
   // Built here, not in the editor: prompt.js carries the whole Method, and it has
   // no business in the browser bundle.
-  return <StoryEditor story={story} defaultCharacterSheet={characterSheet(story.params)} />;
+  return (
+    <StoryEditor
+      story={story}
+      defaultCharacterSheet={characterSheet(story.params)}
+      placePhotos={story.brands?.place_photos ?? []}
+    />
+  );
 }

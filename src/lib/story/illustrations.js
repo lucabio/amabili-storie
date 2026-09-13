@@ -20,35 +20,36 @@ export class AiUnavailable extends Error {
 }
 
 /**
- * Draws one image from a prompt and, optionally, a reference image (the public
- * URL of the character sheet). Returns the raw bytes and the media type — saving
- * them is the caller's job.
+ * Draws one image from a prompt and the reference images, in the order the
+ * prompt names them (the character sheet, then the merchant's place). Returns the
+ * raw bytes and the media type — saving them is the caller's job.
  *
- * The reference is downloaded here and sent as bytes: the Gateway declares every
- * URL as supported, so the SDK would pass the URL through and leave the fetch to
- * the provider — which can never reach a local stack's 127.0.0.1.
+ * The references are downloaded here and sent as bytes: the Gateway declares
+ * every URL as supported, so the SDK would pass the URL through and leave the
+ * fetch to the provider — which can never reach a local stack's 127.0.0.1.
  *
  * @returns {Promise<{bytes: Uint8Array, mediaType: string}>}
  */
-export async function generateIllustration({ prompt, reference }) {
+export async function generateIllustration({ prompt, references = [] }) {
   if (!aiAvailable()) throw new AiUnavailable();
 
-  const content = [{ type: "text", text: prompt }];
-  if (reference) {
-    const response = await fetch(reference);
-    if (!response.ok) {
-      throw new Error(`Foglio personaggi non leggibile (${response.status}).`);
-    }
-    content.unshift({
-      type: "file",
-      mediaType: response.headers.get("content-type") ?? "image",
-      data: new Uint8Array(await response.arrayBuffer()),
-    });
-  }
+  const images = await Promise.all(
+    references.map(async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Immagine di riferimento non leggibile (${response.status}).`);
+      }
+      return {
+        type: "file",
+        mediaType: response.headers.get("content-type") ?? "image",
+        data: new Uint8Array(await response.arrayBuffer()),
+      };
+    }),
+  );
 
   const result = await generateText({
     model: IMAGE_MODEL,
-    messages: [{ role: "user", content }],
+    messages: [{ role: "user", content: [...images, { type: "text", text: prompt }] }],
   });
 
   const image = result.files?.find((file) => file.mediaType?.startsWith("image/"));

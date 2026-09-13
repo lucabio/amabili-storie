@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { BRAND_DEFAULT, brandFromRow, brandSchema } from "@/lib/brand/schema";
+import { BRAND_DEFAULT, brandFromRow, brandSchema, placePhotoFor } from "@/lib/brand/schema";
 import { getWhim } from "@/lib/domain/whims";
 import { buildPrompt, buildSystemPrompt } from "@/lib/story/prompt";
 import { paramsForBrand, storyContentSchema, storyParamsSchema } from "@/lib/story/schema";
@@ -221,5 +221,37 @@ describe("storyContentSchema — characterSheet", () => {
 
   it("a story older than the sheet still validates", () => {
     expect(storyContentSchema.safeParse(CONTENT).success).toBe(true);
+  });
+
+  it("the place photo chosen for a page survives a save", () => {
+    const placePhotoUrl = "https://example.com/place-photos/b/1.jpg";
+    const pages = [{ ...CONTENT.pages[0], placePhotoUrl }];
+    expect(storyContentSchema.parse({ ...CONTENT, pages }).pages[0].placePhotoUrl).toBe(
+      placePhotoUrl,
+    );
+  });
+});
+
+describe("place photos (ASD-10)", () => {
+  const PHOTO = { url: "https://example.com/place-photos/b/1.jpg", caption: "La sala colazione" };
+  const ROW = { id: null, slug: "serena", name: "Hotel Famiglia Serena", active: true };
+
+  it("a brand row from before migration 0012 has no photos, and stays a valid brand", () => {
+    expect(brandFromRow(ROW).placePhotos).toEqual([]);
+  });
+
+  it("a malformed photo written by hand costs the photos, not the brand", () => {
+    const brand = brandFromRow({ ...ROW, place_photos: [{ url: "not a url", caption: "" }] });
+    expect(brand?.slug).toBe("serena");
+    expect(brand.placePhotos).toEqual([]);
+  });
+
+  it("a page can only be drawn from a photo the merchant really has", () => {
+    const brand = brandFromRow({ ...ROW, place_photos: [PHOTO] });
+
+    expect(placePhotoFor(brand, PHOTO.url)).toEqual(PHOTO);
+    // The URL comes from the client and the server downloads it: anything else is refused.
+    expect(placePhotoFor(brand, "http://169.254.169.254/latest/meta-data")).toBeNull();
+    expect(placePhotoFor(null, PHOTO.url)).toBeNull();
   });
 });

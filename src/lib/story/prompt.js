@@ -240,12 +240,21 @@ export function buildCharacterSheetPrompt(sheet) {
  * The prompt to generate the illustration of ONE page: fixed style + the sheet
  * that drew the reference image + this page's scene. With a reference the model
  * also copies the clothes, so it is told what is bound and what is not.
+ *
+ * `place` is the caption of the merchant's photo sent as second image (ASD-10):
+ * it gives the setting, and it must not become a second source of faces.
  */
-export function buildIllustrationPrompt({ scene, sheet }) {
+export function buildIllustrationPrompt({ scene, sheet, place }) {
   return [
     ILLUSTRATION_STYLE,
     "",
-    "L'immagine allegata è il foglio personaggi del libro. Stesso viso, stessa corporatura, stessa età del riferimento; abbigliamento, posa e ambientazione seguono la scena, non il riferimento. Disegna solo i personaggi che la scena richiede.",
+    `${place ? "La prima immagine allegata" : "L'immagine allegata"} è il foglio personaggi del libro. Stesso viso, stessa corporatura, stessa età del riferimento; abbigliamento, posa e ambientazione seguono la scena, non il riferimento. Disegna solo i personaggi che la scena richiede.`,
+    ...(place
+      ? [
+          "",
+          `La seconda immagine allegata è la foto reale del luogo: ${place}. Ridisegnalo nello stile dell'illustrazione, riconoscibile nella forma, nei colori e negli arredi. Non copiare le persone che compaiono nella foto. I visi vengono solo dal foglio personaggi.`,
+        ]
+      : []),
     "",
     "Personaggi (mantieni lo stesso identico aspetto in ogni illustrazione del libro):",
     sheet,

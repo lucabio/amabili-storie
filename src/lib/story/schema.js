@@ -176,6 +176,9 @@ export const storyContentSchema = z.object({
         // `illustration` stays the scene description (the prompt); this is the
         // drawn result.
         illustrationUrl: z.url().nullish(),
+        // The merchant's place photo chosen as reference for this page (ASD-10).
+        // Only stored here: generation checks it against the brand's photos.
+        placePhotoUrl: z.url().nullish(),
         // Layout: where image and text sit, and with what style. Absent on old
         // stories: we fall back to the defaults.
         layout: pageLayoutSchema.nullish(),

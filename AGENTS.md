@@ -100,7 +100,7 @@ src/
 scripts/
   seed-local-users.sh              An admin for the local stack (a db reset erases them)
 supabase/
-  migrations/                      0001 … 0011 — apply them with the CLI, never by hand
+  migrations/                      0001 … 0012 — apply them with the CLI, never by hand
   templates/                       The access email: paste it into the dashboard
   seed.sql                         Hotel Famiglia Serena, for development
 proxy.js                           Refreshes the Supabase session on /admin/* and /account/*
@@ -284,8 +284,14 @@ is what whoever touches the code needs to know right away:
    refuses anyway; with it, every page is drawn with the sheet as **reference image** —
    same face, build and age, clothes free. `illustrations.js` downloads the reference and
    sends bytes: the Gateway passes URLs through, and a local stack's `127.0.0.1` is
-   unreachable from there. Missing: proof on 22 real pages that the face holds, and what a
-   second reference (AS-32, the merchant's places) does to it. Requires migration `0006`.
+   unreachable from there. **The merchant's places** (ASD-10) are the second reference:
+   `brands.place_photos = [{ url, caption }]` (migration `0012`, bucket `place-photos`),
+   uploaded from `BrandForm` — places only, no identifiable people. In the editor each page
+   picks one photo by caption; `generateStoryIllustration` accepts only a URL the brand
+   really has (the server downloads it) and records it in `pages[].placePhotoUrl`. Missing:
+   proof on 22 real pages that the face holds, and whether stacking the place photo on the
+   sheet waters the face down — if it does, one reference per page and the sheet wins.
+   Requires migrations `0006` and `0012`.
 2. **Payments are simulated until Stripe is here.** Whether a merchant charges is decided by
    the per-merchant `accepts_payments` flag from the backoffice — no longer a global env
    var. While `STRIPE_SECRET_KEY` is absent, every order is created with `fake = true`

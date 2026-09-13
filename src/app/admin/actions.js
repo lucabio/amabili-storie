@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { adminUser } from "@/lib/admin/session";
-import { BRAND_DEFAULT, BRAND_TYPES } from "@/lib/brand/schema";
+import { BRAND_DEFAULT, BRAND_TYPES, placePhotoSchema } from "@/lib/brand/schema";
 import { WHIM_IDS } from "@/lib/domain/whims";
+import { removePlacePhoto, savePlacePhoto } from "@/lib/story/storage";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 const hexColor = z
@@ -167,6 +168,83 @@ export async function deleteBrand(formData) {
 
   revalidatePath("/admin");
   redirect("/admin");
+}
+
+/**
+ * The brand's place photos as they are on Supabase now. They are saved on their
+ * own, the moment they are uploaded or deleted: `saveBrand` never writes the
+ * column, so a "Salva modifiche" cannot lose them.
+ */
+async function readPlacePhotos(supabase, brandId) {
+  const { data: row, error } = await supabase
+    .from("brands")
+    .select("slug, place_photos")
+    .eq("id", brandId)
+    .maybeSingle();
+  if (error) return { error: `Lettura del merchant fallita: ${error.message}` };
+  if (!row) return { error: "Merchant inesistente: salvalo prima di caricare le foto." };
+  return { row };
+}
+
+export async function uploadPlacePhoto(brandId, formData) {
+  if (!(await adminUser())) return { error: "Non autorizzato." };
+
+  const photo = formData.get("photo");
+  if (!(photo instanceof File) || photo.size === 0) return { error: "Scegli una foto." };
+  const caption = placePhotoSchema.shape.caption.safeParse(formData.get("caption"));
+  if (!caption.success) return { error: caption.error.issues[0].message };
+
+  const supabase = await createServerSupabase();
+  const { row, error: readError } = await readPlacePhotos(supabase, brandId);
+  if (readError) return { error: readError };
+
+  let url;
+  try {
+    // Size and type are the bucket's to refuse (migration 0012), whoever uploads.
+    url = await savePlacePhoto({
+      brandId,
+      bytes: new Uint8Array(await photo.arrayBuffer()),
+      mediaType: photo.type,
+    });
+  } catch (problem) {
+    return { error: problem.message };
+  }
+
+  // ponytail: read-modify-write of the array — two admins uploading at the same
+  // instant, the last one wins. An atomic jsonb append (RPC) if that ever happens.
+  const placePhotos = [...row.place_photos, { url, caption: caption.data }];
+  const { error } = await supabase.from("brands").update({ place_photos: placePhotos }).eq("id", brandId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/admin/brands/${row.slug}`);
+  return { ok: true, placePhotos };
+}
+
+export async function deletePlacePhoto(brandId, url) {
+  if (!(await adminUser())) return { error: "Non autorizzato." };
+
+  const supabase = await createServerSupabase();
+  const { row, error: readError } = await readPlacePhotos(supabase, brandId);
+  if (readError) return { error: readError };
+
+  // The URL comes from the client: only a photo the brand really has is removed,
+  // or this would delete any file of the bucket it is handed.
+  const placePhotos = row.place_photos.filter((photo) => photo.url !== url);
+  if (placePhotos.length === row.place_photos.length) return { ok: true, placePhotos };
+
+  const { error } = await supabase.from("brands").update({ place_photos: placePhotos }).eq("id", brandId);
+  if (error) return { error: error.message };
+
+  // The brand no longer points at the file: a failed removal only leaves an
+  // orphan behind, it breaks nothing anyone sees.
+  try {
+    await removePlacePhoto(url);
+  } catch (problem) {
+    console.error(`Foto ${url} rimasta orfana:`, problem.message);
+  }
+
+  revalidatePath(`/admin/brands/${row.slug}`);
+  return { ok: true, placePhotos };
 }
 
 export async function signOut() {

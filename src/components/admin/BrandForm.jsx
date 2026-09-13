@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 
-import { deleteBrand, saveBrand } from "@/app/admin/actions";
+import { deleteBrand, deletePlacePhoto, saveBrand, uploadPlacePhoto } from "@/app/admin/actions";
 import { BRAND_DEFAULT } from "@/lib/brand/schema";
 import { WHIMS } from "@/lib/domain/whims";
 
@@ -30,6 +30,123 @@ function Section({ title, description, children }) {
       )}
       <div className="mt-4 grid gap-4">{children}</div>
     </section>
+  );
+}
+
+/** The bucket's limit (migration 0012). Checked here only to say it in Italian before uploading. */
+const PLACE_PHOTO_MAX_BYTES = 8 * 1024 * 1024;
+
+/**
+ * The merchant's place photos (ASD-10). Inside the brand form, but saved on their
+ * own, the moment they are uploaded or deleted: its inputs have no name, so the
+ * main form never submits them.
+ */
+function PlacePhotos({ brandId, initialPhotos }) {
+  const [photos, setPhotos] = useState(initialPhotos);
+  const [caption, setCaption] = useState("");
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
+
+  async function call(action) {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await action();
+      if (response?.ok) {
+        setPhotos(response.placePhotos);
+        return true;
+      }
+      setError(response?.error ?? "Operazione non riuscita.");
+    } catch (problem) {
+      // A body over the Server Action limit never reaches the action: it throws here.
+      setError(`Operazione non riuscita: ${problem.message}`);
+    } finally {
+      setBusy(false);
+    }
+    return false;
+  }
+
+  async function upload() {
+    const file = fileRef.current.files?.[0];
+    if (!file) return setError("Scegli una foto.");
+    if (file.size > PLACE_PHOTO_MAX_BYTES) {
+      return setError("La foto supera gli 8 MB: riducila e riprova.");
+    }
+    const formData = new FormData();
+    formData.set("photo", file);
+    formData.set("caption", caption);
+    if (await call(() => uploadPlacePhoto(brandId, formData))) {
+      setCaption("");
+      fileRef.current.value = "";
+    }
+  }
+
+  return (
+    <>
+      <p className="rounded-[14px] bg-accent/10 px-4 py-3 text-sm font-semibold text-accent">
+        Solo luoghi, nessuna persona riconoscibile. Le foto di un hotel ritraggono spesso ospiti,
+        a volte bambini: qui finiscono a un modello di immagini e a un indirizzo pubblico, che è
+        un&apos;altra cosa rispetto a pubblicarle sul proprio sito. Se nella foto c&apos;è
+        qualcuno, scegline un&apos;altra.
+      </p>
+
+      {photos.length > 0 && (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
+          {photos.map((photo) => (
+            <figure key={photo.url} className="rounded-[14px] border border-border p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photo.url}
+                alt={photo.caption}
+                className="aspect-[4/3] w-full rounded-[10px] object-cover"
+              />
+              <figcaption className="mt-2 flex items-start justify-between gap-2 text-sm font-semibold">
+                {photo.caption}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => call(() => deletePlacePhoto(brandId, photo.url))}
+                  className="shrink-0 text-xs font-bold text-accent hover:underline disabled:opacity-40"
+                >
+                  Elimina
+                </button>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
+
+      <div className="grid gap-3 md:grid-cols-[auto_1fr_auto] md:items-center">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="text-sm font-medium text-ink-soft"
+        />
+        <input
+          value={caption}
+          onChange={(event) => setCaption(event.target.value)}
+          // Enter here would submit the whole brand form.
+          onKeyDown={(event) => event.key === "Enter" && event.preventDefault()}
+          maxLength={120}
+          placeholder="Didascalia, es: la sala colazione"
+          className={fieldClasses}
+        />
+        <button
+          type="button"
+          disabled={busy || !caption.trim()}
+          onClick={upload}
+          className="lift rounded-full border border-accent px-5 py-2.5 text-sm font-bold text-accent disabled:opacity-40"
+        >
+          {busy ? "Un momento…" : "Carica foto"}
+        </button>
+      </div>
+      {error && <p className="text-xs font-bold text-accent">{error}</p>}
+      <p className="text-xs font-medium text-ink-muted">
+        JPEG, PNG o WebP, fino a 8 MB. Si salvano subito, senza «Salva modifiche».
+      </p>
+    </>
   );
 }
 
@@ -291,6 +408,19 @@ export default function BrandForm({ brand }) {
         {errors.whims && <p className="text-xs font-bold text-accent">{errors.whims[0]}</p>}
       </Section>
       </div>
+
+      <Section
+        title="Foto dei luoghi"
+        description="La sala colazione, la piscina, il bosco dietro l'albergo: nell'editor della storia si sceglie quale accompagna una pagina, così il posto disegnato somiglia a quello vero. Servono alle illustrazioni, non al testo."
+      >
+        {isNew ? (
+          <p className="text-sm font-medium text-ink-muted">
+            Crea prima il merchant: poi qui potrai caricare le foto.
+          </p>
+        ) : (
+          <PlacePhotos brandId={values.id} initialPhotos={values.placePhotos ?? []} />
+        )}
+      </Section>
 
       <Section title="Colori" description="Tre esadecimali: il resto del sito si adatta da solo.">
         <div className="grid gap-4 md:grid-cols-3">

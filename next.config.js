@@ -15,6 +15,12 @@ const nextConfig = {
     "/admin/stories/[id]/pdf": ["./public/fonts/**"],
     "/account/stories/[id]/pdf": ["./public/fonts/**"],
   },
+  experimental: {
+    // Le foto dei luoghi (ASD-10) arrivano a una Server Action: il default di 1MB
+    // rifiuta qualsiasi foto da telefono. 9mb = gli 8 MB del bucket più l'overhead
+    // del multipart, e sotto i 10MB oltre i quali proxy.js tronca il body in silenzio.
+    serverActions: { bodySizeLimit: "9mb" },
+  },
 };
 
 module.exports = withWorkflow(nextConfig);
