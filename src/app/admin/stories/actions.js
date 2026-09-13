@@ -23,11 +23,14 @@ async function requireAdmin() {
 
 async function readStory(storyId) {
   const supabase = await createServerSupabase();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("stories")
     .select("*, brands (*)")
     .eq("id", storyId)
     .maybeSingle();
+  // Same rule as the page: a failed read must not be reported as "the story
+  // does not exist", or a transient problem looks like a permanent one.
+  if (error) throw new Error(`Lettura della storia fallita: ${error.message}`);
   return data;
 }
 
