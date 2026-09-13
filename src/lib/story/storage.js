@@ -4,8 +4,8 @@ import { createAdminSupabase } from "@/lib/supabase/server";
  * The illustrations bucket. Created by migration 0006, public read.
  *
  * The name stays Italian: it is baked into every public URL already stored in
- * `contenuto.pagine[].illustrazioneUrl`, and renaming the bucket would break
- * the images of the stories that already exist.
+ * `content.pages[].illustrationUrl`, and renaming the bucket would break the
+ * images of the stories that already exist.
  */
 const BUCKET = "illustrazioni";
 

@@ -2,8 +2,8 @@
  * The whole book, for the parent who received the link by email. It is the big
  * sister of `StoryPreview` (the 3 free pages): same palette, same shapes, same
  * tone — but here there are all the pages, the anchor phrase and the parent
- * guide. `illustrazione` (the scene description) is never shown;
- * `illustrazioneUrl`, the image generated from the backoffice, is — when it is
+ * guide. `illustration` (the scene description) is never shown;
+ * `illustrationUrl`, the image generated from the backoffice, is — when it is
  * there. Server Component: nothing here needs the browser.
  */
 export default function StoryReader({ story, name }) {

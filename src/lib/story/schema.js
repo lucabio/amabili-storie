@@ -163,7 +163,7 @@ export const storyContentSchema = z.object({
         text: z.string().trim().min(1, "Una pagina non può essere vuota"),
         illustration: z.string().trim().min(1, "Serve la descrizione della scena"),
         // The image generated from the backoffice, if there is one.
-        // `illustrazione` stays the scene description (the prompt); this is the
+        // `illustration` stays the scene description (the prompt); this is the
         // drawn result.
         illustrationUrl: z.url().nullish(),
         // Layout: where image and text sit, and with what style. Absent on old

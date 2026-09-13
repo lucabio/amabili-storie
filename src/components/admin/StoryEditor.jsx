@@ -96,7 +96,7 @@ export default function StoryEditor({ story }) {
     const response = await generateStoryIllustration(story.id, i, pages[i].illustration);
     setDrawing((s) => ({ ...s, [i]: false }));
     if (response?.ok && response.url) {
-      updatePage(i, "illustrazioneUrl", response.url);
+      updatePage(i, "illustrationUrl", response.url);
       return true;
     }
     setPageErrors((errors) => ({
@@ -264,7 +264,7 @@ export default function StoryEditor({ story }) {
                   <textarea
                     value={page.illustration}
                     onChange={(event) =>
-                      updatePage(index, "illustrazione", event.target.value)
+                      updatePage(index, "illustration", event.target.value)
                     }
                     rows={3}
                     disabled={!reviewable}
